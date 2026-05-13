@@ -442,14 +442,3 @@ Test files mirror source: `src/subscription/services/__tests__/subscription.serv
 ```
 
 ---
-
-## 12. Open Items / To-Confirm with ERD
-
-> These items should be verified against the FigJam ERD once fully readable:
-
-- [ ] Does the ERD include a `plan_features` junction table or is `features` stored as JSONB on `plans`?
-- [ ] Are there separate `admin_sessions` or does admin auth reuse the same `refresh_tokens` table?
-- [ ] Is there a `notifications` or `audit_logs` table?
-- [ ] Payment gateway: Midtrans only, or multi-gateway?
-- [ ] Multi-currency support or IDR-only?
-- [ ] Is there a `organizations` / tenant layer above `users`?
