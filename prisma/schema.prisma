@@ -1,0 +1,613 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  OWNER
+}
+
+enum CoinOrderStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+enum CoinTransactionType {
+  TOPUP
+  SPEND
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  RENEWED
+  ON_HOLD
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionEventType {
+  ACTIVATED
+  CANCELED
+  EXPIRED
+  RENEWED
+  PLAN_SWITCHED
+}
+
+enum BillingCycleStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PlanSwitchType {
+  UPGRADE
+  DOWNGRADE
+  CROSSGRADE
+}
+
+enum PlanSwitchStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  name          String
+  email         String          @unique
+  role          Role            @default(OWNER)
+  phone         String?
+  password_hash String
+  is_active                    Boolean         @default(true)
+  activation_token             String?
+  activation_token_expires_at  DateTime?
+  reset_token                  String?
+  reset_token_expires_at       DateTime?
+  created_at    DateTime        @default(now())
+  created_by    Int?
+  updated_at    DateTime        @updatedAt
+  updated_by    Int?
+  deleted_at    DateTime?
+  deleted_by    Int?
+
+  refresh_tokens               RefreshToken[]
+  profile                      UserProfile?
+  payment_methods              UserPaymentMethod[]
+  coin_orders                  CoinOrder[]
+  wallet                       CoinWallet?
+  coin_transactions            CoinTransaction[]
+  subscriptions                Subscription[]
+  subscription_quotas          SubscriptionQuota[]
+  orders                       Order[]
+  // owned_clinics                Clinic[]
+  // assigned_operational_users   OperationalUser[] @relation("AssignedBy")
+  // granted_role_permissions     RolePermission[]  @relation("GrantedBy")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  token_hash String   @unique
+  expires_at DateTime
+  is_revoked Boolean  @default(false)
+  created_at DateTime @default(now())
+  created_by Int?
+  updated_at DateTime @updatedAt
+  updated_by Int?
+  deleted_at DateTime?
+  deleted_by Int?
+
+  user  User  @relation(fields: [user_id],  references: [id])
+
+  @@map("refresh_tokens")
+}
+
+enum SkuType {
+  PACKAGE
+  ADDON
+}
+
+enum ResourceType {
+  CLINIC_ADDON
+  USER_ADDON
+}
+
+model UserProfile {
+  id             Int       @id @default(autoincrement())
+  user_id        Int       @unique
+  date_of_birth  DateTime? @db.Date
+  gender         String?
+  address_line1  String?
+  address_line2  String?
+  city           String?
+  utc_timezone   String?
+  province       String?
+  postal_code    String?
+  country        String?
+  clinic_name    String?
+  photo_url      String?
+  created_at     DateTime  @default(now())
+  created_by     Int?
+  updated_at     DateTime  @updatedAt
+  updated_by     Int?
+  deleted_at     DateTime?
+  deleted_by     Int?
+
+  user           User      @relation(fields: [user_id], references: [id])
+
+  @@map("users_profile")
+}
+
+
+
+enum PackageTier {
+  BASIC
+  LITE
+  MEDIUM
+  PRO
+  ENTERPRISE
+}
+
+model SkuBase {
+  id                    Int         @id @default(autoincrement())
+  sku_name              String
+  sku_code              String      @unique
+  sku_type              SkuType
+  package_tier          PackageTier?
+  rank                  Int         @default(0)
+  billing_duration_days Int         @default(30)
+  coin_cost             Decimal     @db.Decimal(10, 2)
+  is_active             Boolean     @default(true)
+
+  created_at            DateTime    @default(now())
+  created_by            Int?
+  updated_at            DateTime    @updatedAt
+  updated_by            Int?
+  deleted_at            DateTime?
+  deleted_by            Int?
+
+  benefits              SkuBenefit[]
+  features              SkuFeature[]
+  addons                SkuAddon[]
+  subscriptions         Subscription[]
+  orders                Order[]
+  switched_from         PlanSwitch[] @relation("OldSku")
+  switched_to           PlanSwitch[] @relation("NewSku")
+
+  @@map("sku_base")
+}
+
+model SkuBenefit {
+  id            Int       @id @default(autoincrement())
+  sku_id        Int
+  benefit_type  String    // e.g., "clinic", "user"
+  benefit_value String?
+  max_usage     Int?
+  created_at    DateTime  @default(now())
+  created_by    Int?
+  updated_at    DateTime  @updatedAt
+  updated_by    Int?
+  deleted_at    DateTime?
+  deleted_by    Int?
+
+  sku           SkuBase   @relation(fields: [sku_id], references: [id])
+
+  @@map("sku_benefits")
+}
+
+model SkuFeature {
+  id            Int       @id @default(autoincrement())
+  sku_id        Int
+  display_name  String
+  feature       String
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  created_by    Int?
+  updated_at    DateTime  @updatedAt
+  updated_by    Int?
+  deleted_at    DateTime?
+  deleted_by    Int?
+
+  sku           SkuBase   @relation(fields: [sku_id], references: [id])
+
+  @@map("sku_features")
+}
+
+model SkuAddon {
+  id            Int       @id @default(autoincrement())
+  sku_id        Int
+  resource_type ResourceType    // e.g., CLINIC_ADDON, USER_ADDON
+  display_name  String
+  quota_value   Int
+  description   String?   @db.Text
+  created_at    DateTime  @default(now())
+  created_by    Int?
+  updated_at    DateTime  @updatedAt
+  updated_by    Int?
+  deleted_at    DateTime?
+  deleted_by    Int?
+
+  sku           SkuBase   @relation(fields: [sku_id], references: [id])
+
+  @@map("sku_addons")
+}
+
+// --------------------------------------------------------------------------
+// Coin Currency & Wallet Management (Master Data)
+// --------------------------------------------------------------------------
+
+model CoinCurrency {
+  id                Int       @id @default(autoincrement())
+  currency_name     String
+  currency_code     String    @unique // e.g., IDR, USD
+  symbol            String
+  conversion_rate   Decimal   @db.Decimal(10, 4)
+  is_active         Boolean   @default(true)
+  effective_from    DateTime  @db.Date
+  effective_until   DateTime? @db.Date
+  created_at        DateTime  @default(now())
+  created_by        Int?
+  updated_at        DateTime  @updatedAt
+  updated_by        Int?
+  deleted_at        DateTime?
+  deleted_by        Int?
+
+  bundles           CoinBundle[]
+  coin_orders       CoinOrder[]
+  coin_wallets      CoinWallet[]
+  coin_transactions CoinTransaction[]
+
+  @@map("coin_currencies")
+}
+
+model CoinBundle {
+  id                Int       @id @default(autoincrement())
+  bundle_name       String
+  coin_amount       Int
+  currency_id       Int
+  price             Decimal   @db.Decimal(15, 2)
+  discounted_price  Decimal?  @db.Decimal(15, 2)
+  tax_rate          Decimal   @db.Decimal(5, 2)
+  is_active         Boolean   @default(true)
+  created_at        DateTime  @default(now())
+  created_by        Int?
+  updated_at        DateTime  @updatedAt
+  updated_by        Int?
+  deleted_at        DateTime?
+  deleted_by        Int?
+
+  currency          CoinCurrency   @relation(fields: [currency_id], references: [id])
+  coin_orders       CoinOrder[]
+
+  @@map("coin_bundles")
+}
+
+
+// --------------------------------------------------------------------------
+// Tax and Payment Gateway Management (Master Data)
+// --------------------------------------------------------------------------
+
+model TaxConfig {
+  id           Int       @id @default(autoincrement())
+  tax_name     String
+  rate_percent Decimal   @db.Decimal(5, 2)
+  region       String
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  created_by   Int?
+  updated_at   DateTime  @updatedAt
+  updated_by   Int?
+  deleted_at   DateTime?
+  deleted_by   Int?
+
+  @@map("tax_config")
+}
+
+model PaymentGatewayConfig {
+  id           Int       @id @default(autoincrement())
+  gateway_name String
+  provider     String
+  api_key_ref  String
+  webhook_url  String?
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  created_by   Int?
+  updated_at   DateTime  @updatedAt
+  updated_by   Int?
+  deleted_at   DateTime?
+  deleted_by   Int?
+
+  user_payment_methods UserPaymentMethod[]
+
+  @@map("payment_gateway_config")
+}
+
+
+
+// --------------------------------------------------------------------------
+// User Payment Methods
+// --------------------------------------------------------------------------
+
+model UserPaymentMethod {
+  id            Int       @id @default(autoincrement())
+  user_id       Int
+  gateway_id    Int
+  type          String    // e.g., credit_card, bank_transfer
+  masked_number String?
+  token_ref     String?
+  is_default    Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  created_by    Int?
+  updated_at    DateTime  @updatedAt
+  updated_by    Int?
+  deleted_at    DateTime?
+  deleted_by    Int?
+
+  user          User                 @relation(fields: [user_id], references: [id])
+  gateway       PaymentGatewayConfig @relation(fields: [gateway_id], references: [id])
+  coin_orders   CoinOrder[]
+
+  @@map("user_payment_methods")
+}
+
+// --------------------------------------------------------------------------
+// Coin Orders, Wallet & Transactions (Client)
+// --------------------------------------------------------------------------
+
+model CoinOrder {
+  id                Int             @id @default(autoincrement())
+  user_id           Int
+  bundle_id         Int?
+  is_custom_qty     Boolean         @default(false)
+  coin_amount       Int
+  payment_method_id Int?
+  currency_id       Int
+  price_paid        Decimal         @db.Decimal(15, 2)
+  tax_amount        Decimal         @db.Decimal(15, 2) @default(0)
+  status            CoinOrderStatus @default(PENDING)
+  snap_token        String?
+  redirect_url      String?
+  pg_order_id       String?         @unique
+  pg_response_id    String?         @unique
+  created_at        DateTime        @default(now())
+  created_by        Int?
+  updated_at        DateTime        @updatedAt
+  updated_by        Int?
+  deleted_at        DateTime?
+  deleted_by        Int?
+
+  user              User                @relation(fields: [user_id], references: [id])
+  bundle            CoinBundle?         @relation(fields: [bundle_id], references: [id])
+  payment_method    UserPaymentMethod?  @relation(fields: [payment_method_id], references: [id])
+  currency          CoinCurrency        @relation(fields: [currency_id], references: [id])
+
+
+  @@map("coin_orders")
+}
+
+model CoinWallet {
+  id           Int       @id @default(autoincrement())
+  user_id      Int       @unique
+  balance      Decimal   @db.Decimal(15, 2) @default(0)
+  currency_id  Int
+  last_updated DateTime  @default(now())
+  created_at   DateTime  @default(now())
+  created_by   Int?
+  updated_at   DateTime  @updatedAt
+  updated_by   Int?
+  deleted_at   DateTime?
+  deleted_by   Int?
+
+  user         User             @relation(fields: [user_id], references: [id])
+  currency     CoinCurrency     @relation(fields: [currency_id], references: [id])
+  transactions CoinTransaction[]
+
+  @@map("coin_wallet")
+}
+
+model CoinTransaction {
+  id                       Int                 @id @default(autoincrement())
+  wallet_id                Int
+  user_id                  Int
+  type                     CoinTransactionType
+  amount                   Decimal             @db.Decimal(15, 2)
+  currency_id              Int
+  conversion_rate_snapshot Decimal             @db.Decimal(10, 4) @default(1)
+  ref_id                   Int?
+  description              String?             @db.Text
+  created_at               DateTime            @default(now())
+  created_by               Int?
+  updated_at               DateTime            @updatedAt
+  updated_by               Int?
+  deleted_at               DateTime?
+  deleted_by               Int?
+
+  wallet                   CoinWallet   @relation(fields: [wallet_id], references: [id])
+  user                     User         @relation(fields: [user_id], references: [id])
+  currency                 CoinCurrency @relation(fields: [currency_id], references: [id])
+
+  @@map("coin_transactions")
+}
+
+// --------------------------------------------------------------------------
+// Subscription Lifecycle (Client)
+// --------------------------------------------------------------------------
+
+model Subscription {
+  id                     Int                @id @default(autoincrement())
+  user_id                Int
+  sku_id                 Int
+  sku_type               SkuType            // PACKAGE or ADDON
+  parent_subscription_id Int?
+  purchase_token         String?            @unique
+  status                 SubscriptionStatus @default(ACTIVE)
+  auto_renew             Boolean            @default(false)
+  current_billing_start  DateTime?          @db.Date
+  current_billing_end    DateTime?          @db.Date
+  next_billing_date      DateTime?          @db.Date
+  canceled_at            DateTime?
+  expired_at             DateTime?
+  created_at             DateTime           @default(now())
+  created_by             Int?
+  updated_at             DateTime           @updatedAt
+  updated_by             Int?
+  deleted_at             DateTime?
+  deleted_by             Int?
+
+  user                   User               @relation(fields: [user_id], references: [id])
+  sku                    SkuBase            @relation(fields: [sku_id], references: [id])
+  parent_subscription    Subscription?      @relation("SubscriptionSelfRef", fields: [parent_subscription_id], references: [id])
+  child_subscriptions    Subscription[]     @relation("SubscriptionSelfRef")
+  quotas                 SubscriptionQuota[]
+  addon_slot_maps        AddonSlotMap[]
+  orders                 Order[]
+  events                 SubscriptionEvent[]
+  billing_cycles         BillingCycle[]
+  switches_from          PlanSwitch[]       @relation("OldSubscription")
+  switches_to            PlanSwitch[]       @relation("NewSubscription")
+
+  @@map("subscriptions")
+}
+
+model SubscriptionQuota {
+  id                      Int       @id @default(autoincrement())
+  user_id                 Int
+  package_subscription_id Int
+  resource_type           String    // clinic, user
+  total_quota             Int
+  used_quota              Int       @default(0)
+  last_recalculated_at    DateTime? 
+  created_at              DateTime  @default(now())
+  created_by              Int?
+  updated_at              DateTime  @updatedAt
+  updated_by              Int?
+  deleted_at              DateTime?
+  deleted_by              Int?
+
+  user                    User         @relation(fields: [user_id], references: [id])
+  subscription            Subscription @relation(fields: [package_subscription_id], references: [id])
+
+  @@map("subscription_quotas")
+}
+
+model AddonSlotMap {
+  id                    Int       @id @default(autoincrement())
+  addon_subscription_id Int
+  ref_type              String    // clinic, op_user
+  ref_id                Int
+  created_at            DateTime  @default(now())
+  created_by            Int?
+  updated_at            DateTime  @updatedAt
+  updated_by            Int?
+  deleted_at            DateTime?
+  deleted_by            Int?
+
+  subscription          Subscription @relation(fields: [addon_subscription_id], references: [id])
+
+  @@map("addon_slot_map")
+}
+
+model Order {
+  id              Int       @id @default(autoincrement())
+  subscription_id Int
+  user_id         Int
+  sku_id          Int
+  order_number    String    @unique
+  renewal_index   Int       @default(0)
+  coin_amount     Int
+  status          String    @default("COMPLETED")
+  promo_id        Int?
+  created_at      DateTime  @default(now())
+  created_by      Int?
+  updated_at      DateTime  @updatedAt
+  updated_by      Int?
+  deleted_at      DateTime?
+  deleted_by      Int?
+
+  subscription    Subscription @relation(fields: [subscription_id], references: [id])
+  user            User         @relation(fields: [user_id], references: [id])
+  sku             SkuBase      @relation(fields: [sku_id], references: [id])
+  billing_cycles  BillingCycle[]
+
+  @@map("orders")
+}
+
+model SubscriptionEvent {
+  id              Int                   @id @default(autoincrement())
+  subscription_id Int
+  billing_id      Int?
+  event_type      SubscriptionEventType
+  metadata        Json?
+  created_at      DateTime              @default(now())
+  created_by      Int?
+  updated_at      DateTime              @updatedAt
+  updated_by      Int?
+  deleted_at      DateTime?
+  deleted_by      Int?
+
+  subscription    Subscription  @relation(fields: [subscription_id], references: [id])
+  billing_cycle   BillingCycle? @relation(fields: [billing_id], references: [id])
+
+  @@map("subscription_events")
+}
+
+model BillingCycle {
+  id              Int                 @id @default(autoincrement())
+  subscription_id Int
+  order_id        Int?
+  cycle_start     DateTime
+  cycle_end       DateTime
+  status          BillingCycleStatus  @default(PENDING)
+  created_at      DateTime            @default(now())
+  created_by      Int?
+  updated_at      DateTime            @updatedAt
+  updated_by      Int?
+  deleted_at      DateTime?
+  deleted_by      Int?
+
+  subscription    Subscription        @relation(fields: [subscription_id], references: [id])
+  order           Order?              @relation(fields: [order_id], references: [id])
+  events          SubscriptionEvent[]
+
+  @@map("billing_cycles")
+}
+
+model PlanSwitch {
+  id                  Int               @id @default(autoincrement())
+  user_id             Int
+  old_subscription_id Int
+  new_subscription_id Int
+  old_sku_id          Int
+  new_sku_id          Int
+  switch_type         PlanSwitchType
+  prorated_amount     Decimal           @db.Decimal(15, 2)
+  status              PlanSwitchStatus  @default(PENDING)
+  created_at          DateTime          @default(now())
+  created_by          Int?
+  updated_at          DateTime          @updatedAt
+  updated_by          Int?
+  deleted_at          DateTime?
+  deleted_by          Int?
+
+  old_subscription    Subscription  @relation("OldSubscription", fields: [old_subscription_id], references: [id])
+  new_subscription    Subscription  @relation("NewSubscription", fields: [new_subscription_id], references: [id])
+  old_sku             SkuBase       @relation("OldSku", fields: [old_sku_id], references: [id])
+  new_sku             SkuBase       @relation("NewSku", fields: [new_sku_id], references: [id])
+
+  @@map("plan_switches")
+}
+
+

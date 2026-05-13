@@ -1,0 +1,576 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table users {
+  id Int [pk, increment]
+  name String [not null]
+  email String [unique, not null]
+  role Role [not null, default: 'OWNER']
+  phone String
+  password_hash String [not null]
+  is_active Boolean [not null, default: true]
+  activation_token String
+  activation_token_expires_at DateTime
+  reset_token String
+  reset_token_expires_at DateTime
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  refresh_tokens refresh_tokens [not null]
+  profile users_profile
+  payment_methods user_payment_methods [not null]
+  coin_orders coin_orders [not null]
+  wallet coin_wallet
+  coin_transactions coin_transactions [not null]
+  subscriptions subscriptions [not null]
+  subscription_quotas subscription_quotas [not null]
+  orders orders [not null]
+}
+
+Table refresh_tokens {
+  id Int [pk, increment]
+  user_id Int [not null]
+  token_hash String [unique, not null]
+  expires_at DateTime [not null]
+  is_revoked Boolean [not null, default: false]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+}
+
+Table users_profile {
+  id Int [pk, increment]
+  user_id Int [unique, not null]
+  date_of_birth DateTime
+  gender String
+  address_line1 String
+  address_line2 String
+  city String
+  utc_timezone String
+  province String
+  postal_code String
+  country String
+  clinic_name String
+  photo_url String
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+}
+
+Table sku_base {
+  id Int [pk, increment]
+  sku_name String [not null]
+  sku_code String [unique, not null]
+  sku_type SkuType [not null]
+  package_tier PackageTier
+  rank Int [not null, default: 0]
+  billing_duration_days Int [not null, default: 30]
+  coin_cost Decimal [not null]
+  is_active Boolean [not null, default: true]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  benefits sku_benefits [not null]
+  features sku_features [not null]
+  addons sku_addons [not null]
+  subscriptions subscriptions [not null]
+  orders orders [not null]
+  switched_from plan_switches [not null]
+  switched_to plan_switches [not null]
+}
+
+Table sku_benefits {
+  id Int [pk, increment]
+  sku_id Int [not null]
+  benefit_type String [not null]
+  benefit_value String
+  max_usage Int
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  sku sku_base [not null]
+}
+
+Table sku_features {
+  id Int [pk, increment]
+  sku_id Int [not null]
+  display_name String [not null]
+  feature String [not null]
+  is_active Boolean [not null, default: true]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  sku sku_base [not null]
+}
+
+Table sku_addons {
+  id Int [pk, increment]
+  sku_id Int [not null]
+  resource_type ResourceType [not null]
+  display_name String [not null]
+  quota_value Int [not null]
+  description String
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  sku sku_base [not null]
+}
+
+Table coin_currencies {
+  id Int [pk, increment]
+  currency_name String [not null]
+  currency_code String [unique, not null]
+  symbol String [not null]
+  conversion_rate Decimal [not null]
+  is_active Boolean [not null, default: true]
+  effective_from DateTime [not null]
+  effective_until DateTime
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  bundles coin_bundles [not null]
+  coin_orders coin_orders [not null]
+  coin_wallets coin_wallet [not null]
+  coin_transactions coin_transactions [not null]
+}
+
+Table coin_bundles {
+  id Int [pk, increment]
+  bundle_name String [not null]
+  coin_amount Int [not null]
+  currency_id Int [not null]
+  price Decimal [not null]
+  discounted_price Decimal
+  tax_rate Decimal [not null]
+  is_active Boolean [not null, default: true]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  currency coin_currencies [not null]
+  coin_orders coin_orders [not null]
+}
+
+Table tax_config {
+  id Int [pk, increment]
+  tax_name String [not null]
+  rate_percent Decimal [not null]
+  region String [not null]
+  is_active Boolean [not null, default: true]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+}
+
+Table payment_gateway_config {
+  id Int [pk, increment]
+  gateway_name String [not null]
+  provider String [not null]
+  api_key_ref String [not null]
+  webhook_url String
+  is_active Boolean [not null, default: true]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user_payment_methods user_payment_methods [not null]
+}
+
+Table user_payment_methods {
+  id Int [pk, increment]
+  user_id Int [not null]
+  gateway_id Int [not null]
+  type String [not null]
+  masked_number String
+  token_ref String
+  is_default Boolean [not null, default: false]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+  gateway payment_gateway_config [not null]
+  coin_orders coin_orders [not null]
+}
+
+Table coin_orders {
+  id Int [pk, increment]
+  user_id Int [not null]
+  bundle_id Int
+  is_custom_qty Boolean [not null, default: false]
+  coin_amount Int [not null]
+  payment_method_id Int
+  currency_id Int [not null]
+  price_paid Decimal [not null]
+  tax_amount Decimal [not null, default: 0]
+  status CoinOrderStatus [not null, default: 'PENDING']
+  snap_token String
+  redirect_url String
+  pg_order_id String [unique]
+  pg_response_id String [unique]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+  bundle coin_bundles
+  payment_method user_payment_methods
+  currency coin_currencies [not null]
+}
+
+Table coin_wallet {
+  id Int [pk, increment]
+  user_id Int [unique, not null]
+  balance Decimal [not null, default: 0]
+  currency_id Int [not null]
+  last_updated DateTime [default: `now()`, not null]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+  currency coin_currencies [not null]
+  transactions coin_transactions [not null]
+}
+
+Table coin_transactions {
+  id Int [pk, increment]
+  wallet_id Int [not null]
+  user_id Int [not null]
+  type CoinTransactionType [not null]
+  amount Decimal [not null]
+  currency_id Int [not null]
+  conversion_rate_snapshot Decimal [not null, default: 1]
+  ref_id Int
+  description String
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  wallet coin_wallet [not null]
+  user users [not null]
+  currency coin_currencies [not null]
+}
+
+Table subscriptions {
+  id Int [pk, increment]
+  user_id Int [not null]
+  sku_id Int [not null]
+  sku_type SkuType [not null]
+  parent_subscription_id Int
+  purchase_token String [unique]
+  status SubscriptionStatus [not null, default: 'ACTIVE']
+  auto_renew Boolean [not null, default: false]
+  current_billing_start DateTime
+  current_billing_end DateTime
+  next_billing_date DateTime
+  canceled_at DateTime
+  expired_at DateTime
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+  sku sku_base [not null]
+  parent_subscription subscriptions
+  child_subscriptions subscriptions [not null]
+  quotas subscription_quotas [not null]
+  addon_slot_maps addon_slot_map [not null]
+  orders orders [not null]
+  events subscription_events [not null]
+  billing_cycles billing_cycles [not null]
+  switches_from plan_switches [not null]
+  switches_to plan_switches [not null]
+}
+
+Table subscription_quotas {
+  id Int [pk, increment]
+  user_id Int [not null]
+  package_subscription_id Int [not null]
+  resource_type String [not null]
+  total_quota Int [not null]
+  used_quota Int [not null, default: 0]
+  last_recalculated_at DateTime
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  user users [not null]
+  subscription subscriptions [not null]
+}
+
+Table addon_slot_map {
+  id Int [pk, increment]
+  addon_subscription_id Int [not null]
+  ref_type String [not null]
+  ref_id Int [not null]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  subscription subscriptions [not null]
+}
+
+Table orders {
+  id Int [pk, increment]
+  subscription_id Int [not null]
+  user_id Int [not null]
+  sku_id Int [not null]
+  order_number String [unique, not null]
+  renewal_index Int [not null, default: 0]
+  coin_amount Int [not null]
+  status String [not null, default: 'COMPLETED']
+  promo_id Int
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  subscription subscriptions [not null]
+  user users [not null]
+  sku sku_base [not null]
+  billing_cycles billing_cycles [not null]
+}
+
+Table subscription_events {
+  id Int [pk, increment]
+  subscription_id Int [not null]
+  billing_id Int
+  event_type SubscriptionEventType [not null]
+  metadata Json
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  subscription subscriptions [not null]
+  billing_cycle billing_cycles
+}
+
+Table billing_cycles {
+  id Int [pk, increment]
+  subscription_id Int [not null]
+  order_id Int
+  cycle_start DateTime [not null]
+  cycle_end DateTime [not null]
+  status BillingCycleStatus [not null, default: 'PENDING']
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  subscription subscriptions [not null]
+  order orders
+  events subscription_events [not null]
+}
+
+Table plan_switches {
+  id Int [pk, increment]
+  user_id Int [not null]
+  old_subscription_id Int [not null]
+  new_subscription_id Int [not null]
+  old_sku_id Int [not null]
+  new_sku_id Int [not null]
+  switch_type PlanSwitchType [not null]
+  prorated_amount Decimal [not null]
+  status PlanSwitchStatus [not null, default: 'PENDING']
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+  old_subscription subscriptions [not null]
+  new_subscription subscriptions [not null]
+  old_sku sku_base [not null]
+  new_sku sku_base [not null]
+}
+
+Enum Role {
+  ADMIN
+  OWNER
+}
+
+Enum CoinOrderStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
+Enum CoinTransactionType {
+  TOPUP
+  SPEND
+}
+
+Enum SubscriptionStatus {
+  ACTIVE
+  RENEWED
+  ON_HOLD
+  CANCELLED
+  EXPIRED
+}
+
+Enum SubscriptionEventType {
+  ACTIVATED
+  CANCELED
+  EXPIRED
+  RENEWED
+  PLAN_SWITCHED
+}
+
+Enum BillingCycleStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+Enum PlanSwitchType {
+  UPGRADE
+  DOWNGRADE
+  CROSSGRADE
+}
+
+Enum PlanSwitchStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+Enum SkuType {
+  PACKAGE
+  ADDON
+}
+
+Enum ResourceType {
+  CLINIC_ADDON
+  USER_ADDON
+}
+
+Enum PackageTier {
+  BASIC
+  LITE
+  MEDIUM
+  PRO
+  ENTERPRISE
+}
+
+Ref: refresh_tokens.user_id > users.id
+
+Ref: users_profile.user_id - users.id
+
+Ref: sku_benefits.sku_id > sku_base.id
+
+Ref: sku_features.sku_id > sku_base.id
+
+Ref: sku_addons.sku_id > sku_base.id
+
+Ref: coin_bundles.currency_id > coin_currencies.id
+
+Ref: user_payment_methods.user_id > users.id
+
+Ref: user_payment_methods.gateway_id > payment_gateway_config.id
+
+Ref: coin_orders.user_id > users.id
+
+Ref: coin_orders.bundle_id > coin_bundles.id
+
+Ref: coin_orders.payment_method_id > user_payment_methods.id
+
+Ref: coin_orders.currency_id > coin_currencies.id
+
+Ref: coin_wallet.user_id - users.id
+
+Ref: coin_wallet.currency_id > coin_currencies.id
+
+Ref: coin_transactions.wallet_id > coin_wallet.id
+
+Ref: coin_transactions.user_id > users.id
+
+Ref: coin_transactions.currency_id > coin_currencies.id
+
+Ref: subscriptions.user_id > users.id
+
+Ref: subscriptions.sku_id > sku_base.id
+
+Ref: subscriptions.parent_subscription_id - subscriptions.id
+
+Ref: subscription_quotas.user_id > users.id
+
+Ref: subscription_quotas.package_subscription_id > subscriptions.id
+
+Ref: addon_slot_map.addon_subscription_id > subscriptions.id
+
+Ref: orders.subscription_id > subscriptions.id
+
+Ref: orders.user_id > users.id
+
+Ref: orders.sku_id > sku_base.id
+
+Ref: subscription_events.subscription_id > subscriptions.id
+
+Ref: subscription_events.billing_id > billing_cycles.id
+
+Ref: billing_cycles.subscription_id > subscriptions.id
+
+Ref: billing_cycles.order_id > orders.id
+
+Ref: plan_switches.old_subscription_id > subscriptions.id
+
+Ref: plan_switches.new_subscription_id > subscriptions.id
+
+Ref: plan_switches.old_sku_id > sku_base.id
+
+Ref: plan_switches.new_sku_id > sku_base.id
