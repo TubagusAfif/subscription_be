@@ -1,21 +1,30 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
     "rootDir": "./src",
-    "baseUrl": "./src",
     "outDir": "./dist",
     "paths": {
-      "@config/*": ["config/*"],
-      "@middlewares/*": ["middlewares/*"],
-      "@controllers/*": ["controllers/*"],
-      "@routes/*": ["routes/*"],
-      "@utils/*": ["utils/*"]
+      "@config/*": [
+        "./src/config/*"
+      ],
+      "@middlewares/*": [
+        "./src/middlewares/*"
+      ],
+      "@controllers/*": [
+        "./src/controllers/*"
+      ],
+      "@routes/*": [
+        "./src/routes/*"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ]
     },
     "module": "commonjs",
-    "moduleResolution": "node",
     "esModuleInterop": true,
     "target": "esnext",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -27,11 +36,19 @@
     "moduleDetection": "force",
     "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["prisma"],
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "prisma",
+    "src/__tests__"
+  ],
   "ts-node": {
     "compilerOptions": {
-      "types": ["node", "jest"]
+      "types": [
+        "node",
+        "jest"
+      ]
     }
   }
 }
