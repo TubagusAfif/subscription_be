@@ -1,5 +1,5 @@
 {
-  "name": "express-postgres",
+  "name": "subscription_be",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
