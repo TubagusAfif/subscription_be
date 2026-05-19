@@ -145,6 +145,41 @@ export class ClientAuthService {
 
   /** 
   ---------------------------------------------------------------
+    Resends the activation email for an unactivated account.
+    Issues a fresh token with a new 24-hour expiry window.
+  ---------------------------------------------------------------
+  **/
+  async resendActivation(data: { email: string }): Promise<{ message: string }> {
+    const user = await this.userRepository.findByEmail(data.email);
+
+    if (!user) {
+      throw new AppError('USER_NOT_FOUND', 'No account found with this email address.', 404);
+    }
+
+    if (user.is_active) {
+      throw new AppError('ACCOUNT_ALREADY_ACTIVE', 'This account is already activated. Please log in.', 400);
+    }
+
+    // Generate a fresh activation token with a new 24-hour expiry
+    const activationToken = crypto.randomUUID();
+    const activationTokenExpiresAt = new Date();
+    activationTokenExpiresAt.setHours(activationTokenExpiresAt.getHours() + 24);
+
+    await this.userRepository.update(user.id, {
+      activation_token: activationToken,
+      activation_token_expires_at: activationTokenExpiresAt,
+    });
+
+    await this.mailService.sendActivationEmail(
+      { name: user.name, email: user.email },
+      activationToken,
+    );
+
+    return { message: 'Activation email has been resent. Please check your inbox.' };
+  }
+
+  /** 
+  ---------------------------------------------------------------
     Generates a password reset token and sends an email. 
   ---------------------------------------------------------------
   **/

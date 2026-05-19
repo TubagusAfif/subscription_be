@@ -59,3 +59,9 @@ export const resetPasswordSchema = z.object({
   }),
 });
 
+export const resendActivationSchema = z.object({
+  body: z.object({
+    email: z.string('Email is required').email('Invalid email address'),
+  }),
+});
+

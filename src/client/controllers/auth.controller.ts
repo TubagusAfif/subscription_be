@@ -106,4 +106,18 @@ export class ClientAuthController {
       next(error);
     }
   };
+
+  /** 
+  ---------------------------------------------------------------
+    Resends the activation email for an unactivated account.
+  ---------------------------------------------------------------
+  **/
+  resendActivation = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await this.authService.resendActivation(req.body);
+      res.status(200).json(successResponse(result));
+    } catch (error) {
+      next(error);
+    }
+  };
 }
