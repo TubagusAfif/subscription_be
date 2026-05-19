@@ -1,7 +1,7 @@
 {
   "name": "subscription_be",
   "version": "1.0.0",
-  "description": "",
+  "description": "Idental Subscription Back-End",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon ./src/index.ts",
