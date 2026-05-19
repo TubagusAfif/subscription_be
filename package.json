@@ -21,7 +21,7 @@
     "format:check": "prettier --check \"src/**/*.ts\""
   },
   "keywords": [],
-  "author": "",
+  "author": "tubagus",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
