@@ -25,6 +25,7 @@ const envSchema = z.object({
   CLIENT_APP_URL: z.string().default('http://localhost:8085'),
   ALLOWED_ORIGINS: z.string().default(''),
   SENTRY_DSN: z.string().optional(),
+  WALLET_DEFAULT_BALANCE: z.coerce.number().int().nonnegative().default(300),
 });
 
 const _env = envSchema.safeParse(process.env);

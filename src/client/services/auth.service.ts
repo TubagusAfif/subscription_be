@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { UserRepository } from '../../shared/repositories/user.repository';
 import { MailService } from '../../shared/services/mail.service';
 import { AppError } from '../../shared/middlewares/error.middleware';
+import { env } from '../../shared/config/env';
 
 export interface ClientAuthServiceDeps {
   userRepository: UserRepository;
@@ -91,11 +92,11 @@ export class ClientAuthService {
         },
       });
 
-      // Auto-create default wallet with 0 balance
+      // Auto-create default wallet with configurable starting balance
       await tx.coinWallet.create({
         data: {
           user_id: newUser.id,
-          balance: 0,
+          balance: env.WALLET_DEFAULT_BALANCE,
           currency_id: activeCurrency.id,
           created_by: newUser.id,
           updated_by: newUser.id,
