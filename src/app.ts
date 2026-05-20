@@ -10,6 +10,7 @@ import { env } from './shared/config/env';
 import { httpLogStream } from './shared/config/logger';
 import { createSwaggerRouter as createClientSwaggerRouter } from './client/config/swagger';
 import { createSwaggerRouter as createSubscriptionSwaggerRouter } from './subscription/config/swagger';
+import { createMegaBankSwaggerRouter } from './shared/megabank/swagger';
 
 export const createApp = (
   clientRouter: express.Router,
@@ -34,6 +35,7 @@ export const createApp = (
   // API Documentation
   app.use('/api-docs/client', createClientSwaggerRouter());
   app.use('/api-docs/subscription', createSubscriptionSwaggerRouter());
+  app.use('/api-docs/megabank', createMegaBankSwaggerRouter());
 
   // Domain Routers
   app.use(`${env.API_PREFIX}/client`, clientRouter);
