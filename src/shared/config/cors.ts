@@ -1,4 +1,5 @@
 import cors from 'cors';
+import { RequestHandler } from 'express';
 import { env } from './env';
 import { logger } from './logger';
 
@@ -11,7 +12,7 @@ const allowedOrigins: string[] = [
   ...(env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()) : []),
 ].filter(Boolean);
 
-export const corsConfig = cors({
+export const corsConfig: RequestHandler = cors({
   origin: isProduction
     ? (origin, callback) => {
         // Allow requests with no origin (e.g., server-to-server, curl, mobile apps)
