@@ -5,6 +5,9 @@ import { UserRepository } from '../repositories/user.repository';
 import { RefreshTokenRepository } from '../repositories/refresh-token.repository';
 import { AccountRepository } from '../repositories/account.repository';
 import { SharedPlanRepository } from '../repositories/plan.repository';
+import { OrderRepository } from '../repositories/order.repository';
+import { BillingCycleRepository } from '../repositories/billing-cycle.repository';
+import { PlanSwitchRepository } from '../repositories/plan-switch.repository';
 
 // --- Client Repositories ---
 import { CoinOrderRepository } from '../../client/repositories/coin-order.repository';
@@ -20,7 +23,8 @@ import { AddonRepository } from '../../subscription/repositories/addon.repositor
 import { CurrencyRepository } from '../../subscription/repositories/currency.repository';
 import { BundleRepository } from '../../subscription/repositories/bundle.repository';
 import { TaxRepository } from '../../subscription/repositories/tax.repository';
-import { PaymentGatewayRepository } from '../../subscription/repositories/payment-gateway.repository';
+import { DentalAdRepository } from '../../subscription/repositories/dental-ad.repository';
+import { AdminSubscriptionRepository } from '../../subscription/repositories/subscription.repository';
 
 /**
  * Layer 1 — Repository Container
@@ -66,6 +70,30 @@ export class RepositoriesContainer {
       this._sharedPlanRepository = new SharedPlanRepository(this.prisma);
     }
     return this._sharedPlanRepository;
+  }
+
+  private _orderRepository: OrderRepository | undefined;
+  get orderRepository(): OrderRepository {
+    if (!this._orderRepository) {
+      this._orderRepository = new OrderRepository(this.prisma);
+    }
+    return this._orderRepository;
+  }
+
+  private _billingCycleRepository: BillingCycleRepository | undefined;
+  get billingCycleRepository(): BillingCycleRepository {
+    if (!this._billingCycleRepository) {
+      this._billingCycleRepository = new BillingCycleRepository(this.prisma);
+    }
+    return this._billingCycleRepository;
+  }
+
+  private _planSwitchRepository: PlanSwitchRepository | undefined;
+  get planSwitchRepository(): PlanSwitchRepository {
+    if (!this._planSwitchRepository) {
+      this._planSwitchRepository = new PlanSwitchRepository(this.prisma);
+    }
+    return this._planSwitchRepository;
   }
 
   // ===========================================================================
@@ -165,12 +193,20 @@ export class RepositoriesContainer {
     return this._taxRepository;
   }
 
-  private _paymentGatewayRepository: PaymentGatewayRepository | undefined;
-  get paymentGatewayRepository(): PaymentGatewayRepository {
-    if (!this._paymentGatewayRepository) {
-      this._paymentGatewayRepository = new PaymentGatewayRepository(this.prisma);
+  private _dentalAdRepository: DentalAdRepository | undefined;
+  get dentalAdRepository(): DentalAdRepository {
+    if (!this._dentalAdRepository) {
+      this._dentalAdRepository = new DentalAdRepository(this.prisma);
     }
-    return this._paymentGatewayRepository;
+    return this._dentalAdRepository;
+  }
+
+  private _adminSubscriptionRepository: AdminSubscriptionRepository | undefined;
+  get adminSubscriptionRepository(): AdminSubscriptionRepository {
+    if (!this._adminSubscriptionRepository) {
+      this._adminSubscriptionRepository = new AdminSubscriptionRepository(this.prisma);
+    }
+    return this._adminSubscriptionRepository;
   }
 
 
@@ -182,10 +218,15 @@ export class RepositoriesContainer {
     this._userRepository = undefined;
     this._refreshTokenRepository = undefined;
     this._accountRepository = undefined;
+    this._sharedPlanRepository = undefined;
+    this._orderRepository = undefined;
+    this._billingCycleRepository = undefined;
+    this._planSwitchRepository = undefined;
     this._coinOrderRepository = undefined;
     this._coinWalletRepository = undefined;
     this._coinTransactionRepository = undefined;
     this._clientSubscriptionRepository = undefined;
-
+    this._dentalAdRepository = undefined;
+    this._adminSubscriptionRepository = undefined;
   }
 }

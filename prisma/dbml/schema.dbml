@@ -194,26 +194,9 @@ Table tax_config {
   deleted_by Int
 }
 
-Table payment_gateway_config {
-  id Int [pk, increment]
-  gateway_name String [not null]
-  provider String [not null]
-  api_key_ref String [not null]
-  webhook_url String
-  is_active Boolean [not null, default: true]
-  created_at DateTime [default: `now()`, not null]
-  created_by Int
-  updated_at DateTime [not null]
-  updated_by Int
-  deleted_at DateTime
-  deleted_by Int
-  user_payment_methods user_payment_methods [not null]
-}
-
 Table user_payment_methods {
   id Int [pk, increment]
   user_id Int [not null]
-  gateway_id Int [not null]
   type String [not null]
   masked_number String
   token_ref String
@@ -225,7 +208,6 @@ Table user_payment_methods {
   deleted_at DateTime
   deleted_by Int
   user users [not null]
-  gateway payment_gateway_config [not null]
   coin_orders coin_orders [not null]
 }
 
@@ -437,6 +419,19 @@ Table plan_switches {
   new_sku sku_base [not null]
 }
 
+Table dental_ads {
+  id Int [pk, increment]
+  name String [not null]
+  category String [not null]
+  image_path String [not null]
+  created_at DateTime [default: `now()`, not null]
+  created_by Int
+  updated_at DateTime [not null]
+  updated_by Int
+  deleted_at DateTime
+  deleted_by Int
+}
+
 Enum Role {
   ADMIN
   OWNER
@@ -520,8 +515,6 @@ Ref: sku_addons.sku_id > sku_base.id
 Ref: coin_bundles.currency_id > coin_currencies.id
 
 Ref: user_payment_methods.user_id > users.id
-
-Ref: user_payment_methods.gateway_id > payment_gateway_config.id
 
 Ref: coin_orders.user_id > users.id
 

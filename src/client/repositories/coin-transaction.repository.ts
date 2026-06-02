@@ -19,6 +19,32 @@ export class CoinTransactionRepository {
     });
   }
 
+  async findRecentByUserId(userId: number, limit: number = 5) {
+    return this.prisma.coinTransaction.findMany({
+      where: { user_id: userId, deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      take: limit,
+    });
+  }
+
+  async getRevenueStats() {
+    const [topupAgg, spendAgg] = await Promise.all([
+      this.prisma.coinTransaction.aggregate({
+        _sum: { amount: true },
+        where: { deleted_at: null, type: 'TOPUP' },
+      }),
+      this.prisma.coinTransaction.aggregate({
+        _sum: { amount: true },
+        where: { deleted_at: null, type: 'SPEND' },
+      }),
+    ]);
+
+    return {
+      total_coins_purchased: topupAgg._sum.amount,
+      total_coins_spent: spendAgg._sum.amount,
+    };
+  }
+
   async findByWalletId(walletId: number): Promise<CoinTransaction[]> {
     return this.prisma.coinTransaction.findMany({
       where: { wallet_id: walletId, deleted_at: null },

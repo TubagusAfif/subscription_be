@@ -59,7 +59,6 @@ export const createBundleSchema = z.object({
     coin_amount: z.number().int().positive(),
     currency_id: z.number().int().positive(),
     discounted_price: z.number().nonnegative().nullable().optional(),
-    tax_rate: z.number().nonnegative().default(0),
     is_active: z.boolean().default(true),
   }),
 });
@@ -71,7 +70,6 @@ export const updateBundleSchema = z.object({
     coin_amount: z.number().int().positive().optional(),
     currency_id: z.number().int().positive().optional(),
     discounted_price: z.number().nonnegative().nullable().optional(),
-    tax_rate: z.number().nonnegative().optional(),
     is_active: z.boolean().optional(),
   }),
 });

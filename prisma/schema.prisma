@@ -63,33 +63,33 @@ enum PlanSwitchStatus {
 }
 
 model User {
-  id            Int             @id @default(autoincrement())
-  name          String
-  email         String          @unique
-  role          Role            @default(OWNER)
-  phone         String?
-  password_hash String
-  is_active                    Boolean         @default(true)
-  activation_token             String?
-  activation_token_expires_at  DateTime?
-  reset_token                  String?
-  reset_token_expires_at       DateTime?
-  created_at    DateTime        @default(now())
-  created_by    Int?
-  updated_at    DateTime        @updatedAt
-  updated_by    Int?
-  deleted_at    DateTime?
-  deleted_by    Int?
+  id                          Int       @id @default(autoincrement())
+  name                        String
+  email                       String    @unique
+  role                        Role      @default(OWNER)
+  phone                       String?
+  password_hash               String
+  is_active                   Boolean   @default(true)
+  activation_token            String?
+  activation_token_expires_at DateTime?
+  reset_token                 String?
+  reset_token_expires_at      DateTime?
+  created_at                  DateTime  @default(now())
+  created_by                  Int?
+  updated_at                  DateTime  @updatedAt
+  updated_by                  Int?
+  deleted_at                  DateTime?
+  deleted_by                  Int?
 
-  refresh_tokens               RefreshToken[]
-  profile                      UserProfile?
-  payment_methods              UserPaymentMethod[]
-  coin_orders                  CoinOrder[]
-  wallet                       CoinWallet?
-  coin_transactions            CoinTransaction[]
-  subscriptions                Subscription[]
-  subscription_quotas          SubscriptionQuota[]
-  orders                       Order[]
+  refresh_tokens      RefreshToken[]
+  profile             UserProfile?
+  payment_methods     UserPaymentMethod[]
+  coin_orders         CoinOrder[]
+  wallet              CoinWallet?
+  coin_transactions   CoinTransaction[]
+  subscriptions       Subscription[]
+  subscription_quotas SubscriptionQuota[]
+  orders              Order[]
   // owned_clinics                Clinic[]
   // assigned_operational_users   OperationalUser[] @relation("AssignedBy")
   // granted_role_permissions     RolePermission[]  @relation("GrantedBy")
@@ -98,19 +98,19 @@ model User {
 }
 
 model RefreshToken {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   user_id    Int
-  token_hash String   @unique
+  token_hash String    @unique
   expires_at DateTime
-  is_revoked Boolean  @default(false)
-  created_at DateTime @default(now())
+  is_revoked Boolean   @default(false)
+  created_at DateTime  @default(now())
   created_by Int?
-  updated_at DateTime @updatedAt
+  updated_at DateTime  @updatedAt
   updated_by Int?
   deleted_at DateTime?
   deleted_by Int?
 
-  user  User  @relation(fields: [user_id],  references: [id])
+  user User @relation(fields: [user_id], references: [id])
 
   @@map("refresh_tokens")
 }
@@ -126,32 +126,30 @@ enum ResourceType {
 }
 
 model UserProfile {
-  id             Int       @id @default(autoincrement())
-  user_id        Int       @unique
-  date_of_birth  DateTime? @db.Date
-  gender         String?
-  address_line1  String?
-  address_line2  String?
-  city           String?
-  utc_timezone   String?
-  province       String?
-  postal_code    String?
-  country        String?
-  clinic_name    String?
-  photo_url      String?
-  created_at     DateTime  @default(now())
-  created_by     Int?
-  updated_at     DateTime  @updatedAt
-  updated_by     Int?
-  deleted_at     DateTime?
-  deleted_by     Int?
+  id            Int       @id @default(autoincrement())
+  user_id       Int       @unique
+  date_of_birth DateTime? @db.Date
+  gender        String?
+  address_line1 String?
+  address_line2 String?
+  city          String?
+  utc_timezone  String?
+  province      String?
+  postal_code   String?
+  country       String?
+  clinic_name   String?
+  photo_url     String?
+  created_at    DateTime  @default(now())
+  created_by    Int?
+  updated_at    DateTime  @updatedAt
+  updated_by    Int?
+  deleted_at    DateTime?
+  deleted_by    Int?
 
-  user           User      @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 
   @@map("users_profile")
 }
-
-
 
 enum PackageTier {
   BASIC
@@ -162,30 +160,30 @@ enum PackageTier {
 }
 
 model SkuBase {
-  id                    Int         @id @default(autoincrement())
+  id                    Int          @id @default(autoincrement())
   sku_name              String
-  sku_code              String      @unique
+  sku_code              String       @unique
   sku_type              SkuType
   package_tier          PackageTier?
-  rank                  Int         @default(0)
-  billing_duration_days Int         @default(30)
-  coin_cost             Decimal     @db.Decimal(10, 2)
-  is_active             Boolean     @default(true)
+  rank                  Int          @default(0)
+  billing_duration_days Int          @default(30)
+  coin_cost             Decimal      @db.Decimal(10, 2)
+  is_active             Boolean      @default(true)
 
-  created_at            DateTime    @default(now())
-  created_by            Int?
-  updated_at            DateTime    @updatedAt
-  updated_by            Int?
-  deleted_at            DateTime?
-  deleted_by            Int?
+  created_at DateTime  @default(now())
+  created_by Int?
+  updated_at DateTime  @updatedAt
+  updated_by Int?
+  deleted_at DateTime?
+  deleted_by Int?
 
-  benefits              SkuBenefit[]
-  features              SkuFeature[]
-  addons                SkuAddon[]
-  subscriptions         Subscription[]
-  orders                Order[]
-  switched_from         PlanSwitch[] @relation("OldSku")
-  switched_to           PlanSwitch[] @relation("NewSku")
+  benefits      SkuBenefit[]
+  features      SkuFeature[]
+  addons        SkuAddon[]
+  subscriptions Subscription[]
+  orders        Order[]
+  switched_from PlanSwitch[]   @relation("OldSku")
+  switched_to   PlanSwitch[]   @relation("NewSku")
 
   @@map("sku_base")
 }
@@ -193,7 +191,7 @@ model SkuBase {
 model SkuBenefit {
   id            Int       @id @default(autoincrement())
   sku_id        Int
-  benefit_type  String    // e.g., "clinic", "user"
+  benefit_type  String // e.g., "clinic", "user"
   benefit_value String?
   max_usage     Int?
   created_at    DateTime  @default(now())
@@ -203,44 +201,44 @@ model SkuBenefit {
   deleted_at    DateTime?
   deleted_by    Int?
 
-  sku           SkuBase   @relation(fields: [sku_id], references: [id])
+  sku SkuBase @relation(fields: [sku_id], references: [id])
 
   @@map("sku_benefits")
 }
 
 model SkuFeature {
-  id            Int       @id @default(autoincrement())
-  sku_id        Int
-  display_name  String
-  feature       String
-  is_active     Boolean   @default(true)
-  created_at    DateTime  @default(now())
-  created_by    Int?
-  updated_at    DateTime  @updatedAt
-  updated_by    Int?
-  deleted_at    DateTime?
-  deleted_by    Int?
+  id           Int       @id @default(autoincrement())
+  sku_id       Int
+  display_name String
+  feature      String
+  is_active    Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  created_by   Int?
+  updated_at   DateTime  @updatedAt
+  updated_by   Int?
+  deleted_at   DateTime?
+  deleted_by   Int?
 
-  sku           SkuBase   @relation(fields: [sku_id], references: [id])
+  sku SkuBase @relation(fields: [sku_id], references: [id])
 
   @@map("sku_features")
 }
 
 model SkuAddon {
-  id            Int       @id @default(autoincrement())
+  id            Int          @id @default(autoincrement())
   sku_id        Int
-  resource_type ResourceType    // e.g., CLINIC_ADDON, USER_ADDON
+  resource_type ResourceType // e.g., CLINIC_ADDON, USER_ADDON
   display_name  String
   quota_value   Int
-  description   String?   @db.Text
-  created_at    DateTime  @default(now())
+  description   String?      @db.Text
+  created_at    DateTime     @default(now())
   created_by    Int?
-  updated_at    DateTime  @updatedAt
+  updated_at    DateTime     @updatedAt
   updated_by    Int?
   deleted_at    DateTime?
   deleted_by    Int?
 
-  sku           SkuBase   @relation(fields: [sku_id], references: [id])
+  sku SkuBase @relation(fields: [sku_id], references: [id])
 
   @@map("sku_addons")
 }
@@ -250,20 +248,20 @@ model SkuAddon {
 // --------------------------------------------------------------------------
 
 model CoinCurrency {
-  id                Int       @id @default(autoincrement())
-  currency_name     String
-  currency_code     String    @unique // e.g., IDR, USD
-  symbol            String
-  conversion_rate   Decimal   @db.Decimal(10, 4)
-  is_active         Boolean   @default(true)
-  effective_from    DateTime  @db.Date
-  effective_until   DateTime? @db.Date
-  created_at        DateTime  @default(now())
-  created_by        Int?
-  updated_at        DateTime  @updatedAt
-  updated_by        Int?
-  deleted_at        DateTime?
-  deleted_by        Int?
+  id              Int       @id @default(autoincrement())
+  currency_name   String
+  currency_code   String    @unique // e.g., IDR, USD
+  symbol          String
+  conversion_rate Decimal   @db.Decimal(10, 4)
+  is_active       Boolean   @default(true)
+  effective_from  DateTime  @db.Date
+  effective_until DateTime? @db.Date
+  created_at      DateTime  @default(now())
+  created_by      Int?
+  updated_at      DateTime  @updatedAt
+  updated_by      Int?
+  deleted_at      DateTime?
+  deleted_by      Int?
 
   bundles           CoinBundle[]
   coin_orders       CoinOrder[]
@@ -274,27 +272,26 @@ model CoinCurrency {
 }
 
 model CoinBundle {
-  id                Int       @id @default(autoincrement())
-  bundle_name       String
-  coin_amount       Int
-  currency_id       Int
-  price             Decimal   @db.Decimal(15, 2)
-  discounted_price  Decimal?  @db.Decimal(15, 2)
-  tax_rate          Decimal   @db.Decimal(5, 2)
-  is_active         Boolean   @default(true)
-  created_at        DateTime  @default(now())
-  created_by        Int?
-  updated_at        DateTime  @updatedAt
-  updated_by        Int?
-  deleted_at        DateTime?
-  deleted_by        Int?
+  id               Int       @id @default(autoincrement())
+  bundle_name      String
+  coin_amount      Int
+  currency_id      Int
+  price            Decimal   @db.Decimal(15, 2)
+  discounted_price Decimal?  @db.Decimal(15, 2)
+  tax_rate         Decimal   @db.Decimal(5, 2)
+  is_active        Boolean   @default(true)
+  created_at       DateTime  @default(now())
+  created_by       Int?
+  updated_at       DateTime  @updatedAt
+  updated_by       Int?
+  deleted_at       DateTime?
+  deleted_by       Int?
 
-  currency          CoinCurrency   @relation(fields: [currency_id], references: [id])
-  coin_orders       CoinOrder[]
+  currency    CoinCurrency @relation(fields: [currency_id], references: [id])
+  coin_orders CoinOrder[]
 
   @@map("coin_bundles")
 }
-
 
 // --------------------------------------------------------------------------
 // Tax and Payment Gateway Management (Master Data)
@@ -316,27 +313,6 @@ model TaxConfig {
   @@map("tax_config")
 }
 
-model PaymentGatewayConfig {
-  id           Int       @id @default(autoincrement())
-  gateway_name String
-  provider     String
-  api_key_ref  String
-  webhook_url  String?
-  is_active    Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  created_by   Int?
-  updated_at   DateTime  @updatedAt
-  updated_by   Int?
-  deleted_at   DateTime?
-  deleted_by   Int?
-
-  user_payment_methods UserPaymentMethod[]
-
-  @@map("payment_gateway_config")
-}
-
-
-
 // --------------------------------------------------------------------------
 // User Payment Methods
 // --------------------------------------------------------------------------
@@ -344,8 +320,7 @@ model PaymentGatewayConfig {
 model UserPaymentMethod {
   id            Int       @id @default(autoincrement())
   user_id       Int
-  gateway_id    Int
-  type          String    // e.g., credit_card, bank_transfer
+  type          String // e.g., credit_card, bank_transfer
   masked_number String?
   token_ref     String?
   is_default    Boolean   @default(false)
@@ -356,9 +331,8 @@ model UserPaymentMethod {
   deleted_at    DateTime?
   deleted_by    Int?
 
-  user          User                 @relation(fields: [user_id], references: [id])
-  gateway       PaymentGatewayConfig @relation(fields: [gateway_id], references: [id])
-  coin_orders   CoinOrder[]
+  user        User        @relation(fields: [user_id], references: [id])
+  coin_orders CoinOrder[]
 
   @@map("user_payment_methods")
 }
@@ -376,7 +350,7 @@ model CoinOrder {
   payment_method_id Int?
   currency_id       Int
   price_paid        Decimal         @db.Decimal(15, 2)
-  tax_amount        Decimal         @db.Decimal(15, 2) @default(0)
+  tax_amount        Decimal         @default(0) @db.Decimal(15, 2)
   status            CoinOrderStatus @default(PENDING)
   snap_token        String?
   redirect_url      String?
@@ -389,11 +363,10 @@ model CoinOrder {
   deleted_at        DateTime?
   deleted_by        Int?
 
-  user              User                @relation(fields: [user_id], references: [id])
-  bundle            CoinBundle?         @relation(fields: [bundle_id], references: [id])
-  payment_method    UserPaymentMethod?  @relation(fields: [payment_method_id], references: [id])
-  currency          CoinCurrency        @relation(fields: [currency_id], references: [id])
-
+  user           User               @relation(fields: [user_id], references: [id])
+  bundle         CoinBundle?        @relation(fields: [bundle_id], references: [id])
+  payment_method UserPaymentMethod? @relation(fields: [payment_method_id], references: [id])
+  currency       CoinCurrency       @relation(fields: [currency_id], references: [id])
 
   @@map("coin_orders")
 }
@@ -401,7 +374,7 @@ model CoinOrder {
 model CoinWallet {
   id           Int       @id @default(autoincrement())
   user_id      Int       @unique
-  balance      Decimal   @db.Decimal(15, 2) @default(0)
+  balance      Decimal   @default(0) @db.Decimal(15, 2)
   currency_id  Int
   last_updated DateTime  @default(now())
   created_at   DateTime  @default(now())
@@ -411,8 +384,8 @@ model CoinWallet {
   deleted_at   DateTime?
   deleted_by   Int?
 
-  user         User             @relation(fields: [user_id], references: [id])
-  currency     CoinCurrency     @relation(fields: [currency_id], references: [id])
+  user         User              @relation(fields: [user_id], references: [id])
+  currency     CoinCurrency      @relation(fields: [currency_id], references: [id])
   transactions CoinTransaction[]
 
   @@map("coin_wallet")
@@ -425,7 +398,7 @@ model CoinTransaction {
   type                     CoinTransactionType
   amount                   Decimal             @db.Decimal(15, 2)
   currency_id              Int
-  conversion_rate_snapshot Decimal             @db.Decimal(10, 4) @default(1)
+  conversion_rate_snapshot Decimal             @default(1) @db.Decimal(10, 4)
   ref_id                   Int?
   description              String?             @db.Text
   created_at               DateTime            @default(now())
@@ -435,9 +408,9 @@ model CoinTransaction {
   deleted_at               DateTime?
   deleted_by               Int?
 
-  wallet                   CoinWallet   @relation(fields: [wallet_id], references: [id])
-  user                     User         @relation(fields: [user_id], references: [id])
-  currency                 CoinCurrency @relation(fields: [currency_id], references: [id])
+  wallet   CoinWallet   @relation(fields: [wallet_id], references: [id])
+  user     User         @relation(fields: [user_id], references: [id])
+  currency CoinCurrency @relation(fields: [currency_id], references: [id])
 
   @@map("coin_transactions")
 }
@@ -450,7 +423,7 @@ model Subscription {
   id                     Int                @id @default(autoincrement())
   user_id                Int
   sku_id                 Int
-  sku_type               SkuType            // PACKAGE or ADDON
+  sku_type               SkuType // PACKAGE or ADDON
   parent_subscription_id Int?
   purchase_token         String?            @unique
   status                 SubscriptionStatus @default(ACTIVE)
@@ -467,17 +440,17 @@ model Subscription {
   deleted_at             DateTime?
   deleted_by             Int?
 
-  user                   User               @relation(fields: [user_id], references: [id])
-  sku                    SkuBase            @relation(fields: [sku_id], references: [id])
-  parent_subscription    Subscription?      @relation("SubscriptionSelfRef", fields: [parent_subscription_id], references: [id])
-  child_subscriptions    Subscription[]     @relation("SubscriptionSelfRef")
-  quotas                 SubscriptionQuota[]
-  addon_slot_maps        AddonSlotMap[]
-  orders                 Order[]
-  events                 SubscriptionEvent[]
-  billing_cycles         BillingCycle[]
-  switches_from          PlanSwitch[]       @relation("OldSubscription")
-  switches_to            PlanSwitch[]       @relation("NewSubscription")
+  user                User                @relation(fields: [user_id], references: [id])
+  sku                 SkuBase             @relation(fields: [sku_id], references: [id])
+  parent_subscription Subscription?       @relation("SubscriptionSelfRef", fields: [parent_subscription_id], references: [id])
+  child_subscriptions Subscription[]      @relation("SubscriptionSelfRef")
+  quotas              SubscriptionQuota[]
+  addon_slot_maps     AddonSlotMap[]
+  orders              Order[]
+  events              SubscriptionEvent[]
+  billing_cycles      BillingCycle[]
+  switches_from       PlanSwitch[]        @relation("OldSubscription")
+  switches_to         PlanSwitch[]        @relation("NewSubscription")
 
   @@map("subscriptions")
 }
@@ -486,10 +459,10 @@ model SubscriptionQuota {
   id                      Int       @id @default(autoincrement())
   user_id                 Int
   package_subscription_id Int
-  resource_type           String    // clinic, user
+  resource_type           String // clinic, user
   total_quota             Int
   used_quota              Int       @default(0)
-  last_recalculated_at    DateTime? 
+  last_recalculated_at    DateTime?
   created_at              DateTime  @default(now())
   created_by              Int?
   updated_at              DateTime  @updatedAt
@@ -497,8 +470,8 @@ model SubscriptionQuota {
   deleted_at              DateTime?
   deleted_by              Int?
 
-  user                    User         @relation(fields: [user_id], references: [id])
-  subscription            Subscription @relation(fields: [package_subscription_id], references: [id])
+  user         User         @relation(fields: [user_id], references: [id])
+  subscription Subscription @relation(fields: [package_subscription_id], references: [id])
 
   @@map("subscription_quotas")
 }
@@ -506,7 +479,7 @@ model SubscriptionQuota {
 model AddonSlotMap {
   id                    Int       @id @default(autoincrement())
   addon_subscription_id Int
-  ref_type              String    // clinic, op_user
+  ref_type              String // clinic, op_user
   ref_id                Int
   created_at            DateTime  @default(now())
   created_by            Int?
@@ -515,7 +488,7 @@ model AddonSlotMap {
   deleted_at            DateTime?
   deleted_by            Int?
 
-  subscription          Subscription @relation(fields: [addon_subscription_id], references: [id])
+  subscription Subscription @relation(fields: [addon_subscription_id], references: [id])
 
   @@map("addon_slot_map")
 }
@@ -537,10 +510,10 @@ model Order {
   deleted_at      DateTime?
   deleted_by      Int?
 
-  subscription    Subscription @relation(fields: [subscription_id], references: [id])
-  user            User         @relation(fields: [user_id], references: [id])
-  sku             SkuBase      @relation(fields: [sku_id], references: [id])
-  billing_cycles  BillingCycle[]
+  subscription   Subscription   @relation(fields: [subscription_id], references: [id])
+  user           User           @relation(fields: [user_id], references: [id])
+  sku            SkuBase        @relation(fields: [sku_id], references: [id])
+  billing_cycles BillingCycle[]
 
   @@map("orders")
 }
@@ -558,56 +531,69 @@ model SubscriptionEvent {
   deleted_at      DateTime?
   deleted_by      Int?
 
-  subscription    Subscription  @relation(fields: [subscription_id], references: [id])
-  billing_cycle   BillingCycle? @relation(fields: [billing_id], references: [id])
+  subscription  Subscription  @relation(fields: [subscription_id], references: [id])
+  billing_cycle BillingCycle? @relation(fields: [billing_id], references: [id])
 
   @@map("subscription_events")
 }
 
 model BillingCycle {
-  id              Int                 @id @default(autoincrement())
+  id              Int                @id @default(autoincrement())
   subscription_id Int
   order_id        Int?
   cycle_start     DateTime
   cycle_end       DateTime
-  status          BillingCycleStatus  @default(PENDING)
-  created_at      DateTime            @default(now())
+  status          BillingCycleStatus @default(PENDING)
+  created_at      DateTime           @default(now())
   created_by      Int?
-  updated_at      DateTime            @updatedAt
+  updated_at      DateTime           @updatedAt
   updated_by      Int?
   deleted_at      DateTime?
   deleted_by      Int?
 
-  subscription    Subscription        @relation(fields: [subscription_id], references: [id])
-  order           Order?              @relation(fields: [order_id], references: [id])
-  events          SubscriptionEvent[]
+  subscription Subscription        @relation(fields: [subscription_id], references: [id])
+  order        Order?              @relation(fields: [order_id], references: [id])
+  events       SubscriptionEvent[]
 
   @@map("billing_cycles")
 }
 
 model PlanSwitch {
-  id                  Int               @id @default(autoincrement())
+  id                  Int              @id @default(autoincrement())
   user_id             Int
   old_subscription_id Int
   new_subscription_id Int
   old_sku_id          Int
   new_sku_id          Int
   switch_type         PlanSwitchType
-  prorated_amount     Decimal           @db.Decimal(15, 2)
-  status              PlanSwitchStatus  @default(PENDING)
-  created_at          DateTime          @default(now())
+  prorated_amount     Decimal          @db.Decimal(15, 2)
+  status              PlanSwitchStatus @default(PENDING)
+  created_at          DateTime         @default(now())
   created_by          Int?
-  updated_at          DateTime          @updatedAt
+  updated_at          DateTime         @updatedAt
   updated_by          Int?
   deleted_at          DateTime?
   deleted_by          Int?
 
-  old_subscription    Subscription  @relation("OldSubscription", fields: [old_subscription_id], references: [id])
-  new_subscription    Subscription  @relation("NewSubscription", fields: [new_subscription_id], references: [id])
-  old_sku             SkuBase       @relation("OldSku", fields: [old_sku_id], references: [id])
-  new_sku             SkuBase       @relation("NewSku", fields: [new_sku_id], references: [id])
+  old_subscription Subscription @relation("OldSubscription", fields: [old_subscription_id], references: [id])
+  new_subscription Subscription @relation("NewSubscription", fields: [new_subscription_id], references: [id])
+  old_sku          SkuBase      @relation("OldSku", fields: [old_sku_id], references: [id])
+  new_sku          SkuBase      @relation("NewSku", fields: [new_sku_id], references: [id])
 
   @@map("plan_switches")
 }
 
+model DentalAd {
+  id         Int       @id @default(autoincrement())
+  name       String
+  category   String
+  image_path String
+  created_at DateTime  @default(now())
+  created_by Int?
+  updated_at DateTime  @updatedAt
+  updated_by Int?
+  deleted_at DateTime?
+  deleted_by Int?
 
+  @@map("dental_ads")
+}

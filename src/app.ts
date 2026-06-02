@@ -1,4 +1,5 @@
 import express, { Express } from 'express';
+import path from 'path';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import * as Sentry from '@sentry/node';
@@ -16,8 +17,12 @@ export const createApp = (
   clientRouter: express.Router,
   subscriptionRouter: express.Router,
   sharedRouter: express.Router,
+  megaBankRouter: express.Router,
 ): Express => {
   const app = express();
+
+  // Trust proxy for rate limit
+  app.set('trust proxy', 1);
 
   // Security
   app.use(helmetConfig);
@@ -37,10 +42,14 @@ export const createApp = (
   app.use('/api-docs/subscription', createSubscriptionSwaggerRouter());
   app.use('/api-docs/megabank', createMegaBankSwaggerRouter());
 
+  // Static Assets
+  app.use('/public', express.static(path.join(process.cwd(), 'public')));
+
   // Domain Routers
   app.use(`${env.API_PREFIX}/client`, clientRouter);
   app.use(`${env.API_PREFIX}/subscription`, subscriptionRouter);
   app.use(`${env.API_PREFIX}/shared`, sharedRouter);
+  app.use(`${env.API_PREFIX}/megabank`, megaBankRouter);
 
   // Sentry Error Handler
   Sentry.setupExpressErrorHandler(app);

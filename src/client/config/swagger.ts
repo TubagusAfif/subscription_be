@@ -499,9 +499,36 @@ const spec = {
     {
       "name": "Webhooks",
       "description": "MPG (Mega Payment Gateway) payment webhook"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Client dashboard metrics"
     }
   ],
   "paths": {
+    "/client/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get client dashboard metrics",
+        "responses": {
+          "200": {
+            "description": "Dashboard data returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/client/auth/register": {
       "post": {
         "tags": [

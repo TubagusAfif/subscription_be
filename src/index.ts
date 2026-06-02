@@ -12,6 +12,7 @@ import { createAuthenticateMiddleware } from './shared/middlewares/auth.middlewa
 import { createClientRouter } from './client/routes';
 import { createSubscriptionRouter } from './subscription/routes';
 import { createSharedRouter } from './shared/routes';
+import { createMegaBankRouter } from './megabank/routes';
 
 // Initialize Middlewares
 const authenticate = createAuthenticateMiddleware(container.services.tokenService);
@@ -22,6 +23,7 @@ const clientRouter = createClientRouter(
   container.controllers.coinOrderController,
   container.controllers.coinWalletController,
   container.controllers.clientSubscriptionController,
+  container.controllers.clientDashboardController,
   container.controllers.sharedPlanController,
   container.controllers.sharedBundleController,
   container.controllers.sharedCurrencyController,
@@ -34,20 +36,24 @@ const subscriptionRouter = createSubscriptionRouter(
   container.controllers.currencyController,
   container.controllers.bundleController,
   container.controllers.taxController,
-  container.controllers.gatewayController,
   container.controllers.sharedPlanController,
+  container.controllers.dentalAdController,
+  container.controllers.adminDashboardController,
   authenticate,
 );
 
 const sharedRouter = createSharedRouter(
   container.controllers.sharedAuthController,
   container.controllers.uploadController,
-  container.controllers.webhookController,
   container.controllers.accountController,
   authenticate,
 );
 
-const app = createApp(clientRouter, subscriptionRouter, sharedRouter);
+const megaBankRouter = createMegaBankRouter(
+  container.controllers.megaBankWebhookController,
+);
+
+const app = createApp(clientRouter, subscriptionRouter, sharedRouter, megaBankRouter);
 
 async function bootstrap() {
   try {

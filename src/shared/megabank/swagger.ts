@@ -208,15 +208,15 @@ const spec = {
       "description": "Admin APIs for receiving payment webhooks"
     }
   ],
+  "security": [
+    { "bearerAuth": [] }
+  ],
   "paths": {
     "/openapi/v1.0/ipg/inquiries": {
       "post": {
         "tags": ["Client"],
         "summary": "Create Payment Inquiry",
         "description": "Initiate payment on Mega Payment Gateway.",
-        "security": [
-          { "bearerAuth": [] }
-        ],
         "parameters": [
           { "in": "header", "name": "X-TIMESTAMP", "required": true, "schema": { "type": "string" }, "example": "2024-07-02T08:27:12+07:00" },
           { "in": "header", "name": "X-SIGNATURE", "required": true, "schema": { "type": "string" } },
@@ -253,9 +253,6 @@ const spec = {
         "tags": ["Client"],
         "summary": "Check Payment Status",
         "description": "Check the status of a payment by its response ID.",
-        "security": [
-          { "bearerAuth": [] }
-        ],
         "parameters": [
           { "in": "path", "name": "responseId", "required": true, "schema": { "type": "string" }, "example": "a60daf2b-1fd9-42ab-8235-41a264811025" },
           { "in": "header", "name": "X-TIMESTAMP", "required": true, "schema": { "type": "string" }, "example": "2024-07-02T08:27:12+07:00" },

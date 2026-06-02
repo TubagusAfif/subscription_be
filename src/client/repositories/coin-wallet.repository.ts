@@ -14,6 +14,13 @@ export class CoinWalletRepository {
     });
   }
 
+  async findByUserIdWithCurrency(userId: number) {
+    return this.prisma.coinWallet.findUnique({
+      where: { user_id: userId, deleted_at: null },
+      include: { currency: true },
+    });
+  }
+
   async create(data: Prisma.CoinWalletUncheckedCreateInput): Promise<CoinWallet> {
     return this.prisma.coinWallet.create({ data });
   }

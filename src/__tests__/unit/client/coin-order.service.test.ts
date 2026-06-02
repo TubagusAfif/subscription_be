@@ -31,7 +31,7 @@ describe('CoinOrderService', () => {
     findById: jest.fn(),
   };
 
-  const mockMpgService = {
+  const mockMegaBankPaymentService = {
     createInquiry: jest.fn(),
     getPaymentStatus: jest.fn(),
     verifyWebhookSignature: jest.fn(),
@@ -62,7 +62,7 @@ describe('CoinOrderService', () => {
       coinWalletRepository: mockCoinWalletRepo as any,
       coinTransactionRepository: mockCoinTransactionRepo as any,
       bundleRepository: mockBundleRepo as any,
-      mpgService: mockMpgService as any,
+      megaBankPaymentService: mockMegaBankPaymentService as any,
       prisma: mockPrisma as any,
     });
   });
@@ -95,10 +95,12 @@ describe('CoinOrderService', () => {
 
       mockBundleRepo.findById.mockResolvedValue(mockBundle);
       mockCoinOrderRepo.create.mockResolvedValue({ id: 101, status: 'PENDING' });
-      mockMpgService.createInquiry.mockResolvedValue({
+      mockMegaBankPaymentService.createInquiry.mockResolvedValue({
         id: 'mpg-response-123',
-        checkoutUrl: 'https://pgcheckoutdev.bankmega.com/test123',
-        selectionUrl: 'https://pgcheckoutdev.bankmega.com/test123',
+        urls: {
+          checkout: 'https://pgcheckoutdev.bankmega.com/test123',
+          selections: 'https://pgcheckoutdev.bankmega.com/test123',
+        },
         accountRef: '889089999584102',
         status: 'unpaid',
         responseCode: '0',
@@ -122,7 +124,7 @@ describe('CoinOrderService', () => {
         }),
       );
 
-      expect(mockMpgService.createInquiry).toHaveBeenCalledWith(
+      expect(mockMegaBankPaymentService.createInquiry).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: expectedTotalPrice,
           currency: 'IDR',

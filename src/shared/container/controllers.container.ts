@@ -4,7 +4,7 @@ import { ServicesContainer } from './services.container';
 // --- Shared Controllers ---
 import { SharedAuthController } from '../controllers/auth.controller';
 import { UploadController } from '../controllers/upload.controller';
-import { WebhookController } from '../controllers/webhook.controller';
+import { WebhookController as MegaBankWebhookController } from '../../megabank/controllers/webhook.controller';
 import { AccountController } from '../controllers/account.controller';
 import { SharedPlanController } from '../controllers/plan.controller';
 import { SharedBundleController } from '../controllers/bundle.controller';
@@ -22,7 +22,9 @@ import { PlanController } from '../../subscription/controllers/plan.controller';
 import { CurrencyController } from '../../subscription/controllers/currency.controller';
 import { BundleController } from '../../subscription/controllers/bundle.controller';
 import { TaxController } from '../../subscription/controllers/tax.controller';
-import { PaymentGatewayController } from '../../subscription/controllers/payment-gateway.controller';
+import { DentalAdController } from '../../subscription/controllers/dental-ad.controller';
+import { AdminDashboardController } from '../../subscription/controllers/dashboard.controller';
+import { ClientDashboardController } from '../../client/controllers/dashboard.controller';
 
 /**
  * Layer 3 — Controllers Container
@@ -59,15 +61,15 @@ export class ControllersContainer {
     return this._uploadController;
   }
 
-  private _webhookController: WebhookController | undefined;
-  get webhookController(): WebhookController {
-    if (!this._webhookController) {
-      this._webhookController = new WebhookController({
+  private _megaBankWebhookController: MegaBankWebhookController | undefined;
+  get megaBankWebhookController(): MegaBankWebhookController {
+    if (!this._megaBankWebhookController) {
+      this._megaBankWebhookController = new MegaBankWebhookController({
         coinOrderService: this.services.coinOrderService,
-        mpgService: this.services.mpgService,
+        megaBankPaymentService: this.services.megaBankPaymentService,
       });
     }
-    return this._webhookController;
+    return this._megaBankWebhookController;
   }
 
   private _accountController: AccountController | undefined;
@@ -155,6 +157,16 @@ export class ControllersContainer {
     return this._clientSubscriptionController;
   }
 
+  private _clientDashboardController: ClientDashboardController | undefined;
+  get clientDashboardController(): ClientDashboardController {
+    if (!this._clientDashboardController) {
+      this._clientDashboardController = new ClientDashboardController({
+        dashboardService: this.services.clientDashboardService,
+      });
+    }
+    return this._clientDashboardController;
+  }
+
 
 
   // ===========================================================================
@@ -202,6 +214,7 @@ export class ControllersContainer {
       this._bundleController = new BundleController({
         bundleService: this.services.bundleService,
         currencyService: this.services.currencyService,
+        taxService: this.services.taxService,
       });
     }
     return this._bundleController;
@@ -217,14 +230,24 @@ export class ControllersContainer {
     return this._taxController;
   }
 
-  private _gatewayController: PaymentGatewayController | undefined;
-  get gatewayController(): PaymentGatewayController {
-    if (!this._gatewayController) {
-      this._gatewayController = new PaymentGatewayController({
-        gatewayService: this.services.gatewayService,
+  private _dentalAdController: DentalAdController | undefined;
+  get dentalAdController(): DentalAdController {
+    if (!this._dentalAdController) {
+      this._dentalAdController = new DentalAdController(
+        this.services.dentalAdService,
+      );
+    }
+    return this._dentalAdController;
+  }
+
+  private _adminDashboardController: AdminDashboardController | undefined;
+  get adminDashboardController(): AdminDashboardController {
+    if (!this._adminDashboardController) {
+      this._adminDashboardController = new AdminDashboardController({
+        dashboardService: this.services.adminDashboardService,
       });
     }
-    return this._gatewayController;
+    return this._adminDashboardController;
   }
 
 
@@ -236,18 +259,19 @@ export class ControllersContainer {
   reset(): void {
     this._sharedAuthController = undefined;
     this._uploadController = undefined;
-    this._webhookController = undefined;
+    this._megaBankWebhookController = undefined;
     this._accountController = undefined;
     this._clientAuthController = undefined;
     this._coinOrderController = undefined;
     this._coinWalletController = undefined;
     this._clientSubscriptionController = undefined;
+    this._clientDashboardController = undefined;
     this._subscriptionAuthController = undefined;
     this._planController = undefined;
     this._currencyController = undefined;
     this._bundleController = undefined;
     this._taxController = undefined;
-    this._gatewayController = undefined;
-
+    this._dentalAdController = undefined;
+    this._adminDashboardController = undefined;
   }
 }

@@ -3,7 +3,7 @@ import { CoinOrderRepository } from '../repositories/coin-order.repository';
 import { CoinWalletRepository } from '../repositories/coin-wallet.repository';
 import { CoinTransactionRepository } from '../repositories/coin-transaction.repository';
 import { BundleRepository } from '../../subscription/repositories/bundle.repository';
-import { MpgService } from '../../shared/services/mpg.service';
+import { MegaBankPaymentService } from '../../shared/services/external/mega-bank-payment.service';
 import { PrismaClient, CoinOrder } from '@prisma/client';
 import crypto from 'crypto';
 import { env } from '../../shared/config/env';
@@ -13,7 +13,7 @@ export interface CoinOrderServiceDeps {
   coinWalletRepository: CoinWalletRepository;
   coinTransactionRepository: CoinTransactionRepository;
   bundleRepository: BundleRepository;
-  mpgService: MpgService;
+  megaBankPaymentService: MegaBankPaymentService;
   prisma: PrismaClient;
 }
 
@@ -28,7 +28,7 @@ export class CoinOrderService {
   private readonly walletRepo: CoinWalletRepository;
   private readonly transactionRepo: CoinTransactionRepository;
   private readonly bundleRepo: BundleRepository;
-  private readonly mpgService: MpgService;
+  private readonly megaBankPaymentService: MegaBankPaymentService;
   private readonly prisma: PrismaClient;
 
   constructor(deps: CoinOrderServiceDeps) {
@@ -36,7 +36,7 @@ export class CoinOrderService {
     this.walletRepo = deps.coinWalletRepository;
     this.transactionRepo = deps.coinTransactionRepository;
     this.bundleRepo = deps.bundleRepository;
-    this.mpgService = deps.mpgService;
+    this.megaBankPaymentService = deps.megaBankPaymentService;
     this.prisma = deps.prisma;
   }
 
@@ -85,11 +85,13 @@ export class CoinOrderService {
     });
 
     // Create MPG payment inquiry
-    const inquiryResult = await this.mpgService.createInquiry({
+    const inquiryResult = await this.megaBankPaymentService.createInquiry({
       amount: totalPrice,
       currency: 'IDR',
       referenceUrl,
-      orderId: pgOrderId,
+      order: {
+        id: pgOrderId,
+      },
       customer: {
         name: user.name,
         email: user.email,
@@ -98,12 +100,12 @@ export class CoinOrderService {
       paymentSource,
     });
 
-    // Save MPG response ID and checkout URL to order
+    // Save Bank Mega response ID and checkout URL to order
     await this.prisma.coinOrder.update({
       where: { id: order.id },
       data: {
         pg_response_id: inquiryResult.id,
-        redirect_url: inquiryResult.checkoutUrl,
+        redirect_url: inquiryResult.urls.checkout,
       },
     });
 
@@ -111,9 +113,9 @@ export class CoinOrderService {
       order: {
         ...order,
         pg_response_id: inquiryResult.id,
-        redirect_url: inquiryResult.checkoutUrl,
+        redirect_url: inquiryResult.urls.checkout,
       },
-      checkout_url: inquiryResult.checkoutUrl,
+      checkout_url: inquiryResult.urls.checkout,
     };
   }
 

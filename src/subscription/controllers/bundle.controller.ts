@@ -7,19 +7,23 @@ import { stripUndefined } from '../../shared/utils/strip-undefined.util';
 import { AppError } from '../../shared/middlewares/error.middleware';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
 import type { CreateBundleBody, UpdateBundleBody } from '../../shared/validations/coin.validation';
+import { TaxService } from '../services/tax.service';
 
 export interface BundleControllerDeps {
   bundleService: BundleService;
   currencyService: CurrencyService;
+  taxService: TaxService;
 }
 
 export class BundleController {
   private readonly bundleService: BundleService;
   private readonly currencyService: CurrencyService;
+  private readonly taxService: TaxService;
 
   constructor(deps: BundleControllerDeps) {
     this.bundleService = deps.bundleService;
     this.currencyService = deps.currencyService;
+    this.taxService = deps.taxService;
   }
 
   createBundle = async (req: AuthenticatedRequest<CreateBundleBody>, res: Response, next: NextFunction): Promise<void> => {
@@ -27,7 +31,9 @@ export class BundleController {
       const body = stripUndefined(req.body);
       const currency = await this.currencyService.getCurrencyById(body.currency_id);
 
-      if(!currency.is_active){
+      const tax = await this.taxService.getActiveTax();
+
+      if (!currency.is_active) {
         throw new AppError('CURRENCY_INACTIVE', `This Currency is inactive.`, 404);
       }
 
@@ -39,6 +45,7 @@ export class BundleController {
 
       const payload = {
         ...body,
+        tax_rate: tax?.rate_percent || 0,
         price: calculatedPrice,
         currency: { connect: { id: body.currency_id } },
       };
@@ -80,23 +87,29 @@ export class BundleController {
       const payload = { ...req.body } as any;
       const bundleId = Number(req.params.id);
       const existingBundle = await this.bundleService.getBundleById(bundleId);
-      
+      const tax = await this.taxService.getActiveTax();
+
+      let taxRate = existingBundle.tax_rate || 0;
       let currencyId = existingBundle.currency_id;
       let coinAmount = existingBundle.coin_amount;
+
+      if (tax) {
+        taxRate = tax.rate_percent;
+      }
 
       if (payload.currency_id !== undefined) {
         currencyId = payload.currency_id;
         payload.currency = { connect: { id: payload.currency_id } };
         delete payload.currency_id;
       }
-      
+
       if (payload.coin_amount !== undefined) {
         coinAmount = payload.coin_amount;
       }
 
       const currency = await this.currencyService.getCurrencyById(currencyId);
 
-      if(!currency.is_active){
+      if (!currency.is_active) {
         throw new AppError('CURRENCY_INACTIVE', `This Currency is inactive.`, 404);
       }
 
@@ -108,6 +121,7 @@ export class BundleController {
       }
 
       payload.price = calculatedPrice;
+      payload.tax_rate = taxRate;
 
       const bundle = await this.bundleService.updateBundle(
         bundleId,

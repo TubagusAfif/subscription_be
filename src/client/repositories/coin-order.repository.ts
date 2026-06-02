@@ -39,6 +39,35 @@ export class CoinOrderRepository {
     });
   }
 
+  async getOrderStats() {
+    const [totalCoinOrders, paidCoinOrders] = await Promise.all([
+      this.prisma.coinOrder.count({
+        where: { deleted_at: null },
+      }),
+      this.prisma.coinOrder.count({
+        where: { deleted_at: null, status: 'PAID' },
+      }),
+    ]);
+
+    return {
+      total_coin_orders: totalCoinOrders,
+      paid_coin_orders: paidCoinOrders,
+    };
+  }
+
+  async getRecentOrdersWithUsers(limit: number) {
+    return this.prisma.coinOrder.findMany({
+      where: { deleted_at: null },
+      orderBy: { created_at: 'desc' },
+      take: limit,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+  }
+
   async updateStatus(
     id: number,
     status: Prisma.CoinOrderUpdateInput['status'],

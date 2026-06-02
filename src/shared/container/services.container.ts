@@ -2,7 +2,7 @@ import { RepositoriesContainer } from './repositories.container';
 
 // --- Shared Services ---
 import { TokenService } from '../services/token.service';
-import { MpgService } from '../services/mpg.service';
+import { MegaBankPaymentService } from '../services/external/mega-bank-payment.service';
 import { AccountService } from '../services/account.service';
 import { MailService } from '../services/mail.service';
 import { SharedPlanService } from '../services/plan.service';
@@ -22,7 +22,9 @@ import { AddonService } from '../../subscription/services/addon.service';
 import { CurrencyService } from '../../subscription/services/currency.service';
 import { BundleService } from '../../subscription/services/bundle.service';
 import { TaxService } from '../../subscription/services/tax.service';
-import { PaymentGatewayService } from '../../subscription/services/payment-gateway.service';
+import { DentalAdService } from '../../subscription/services/dental-ad.service';
+import { AdminDashboardService } from '../../subscription/services/dashboard.service';
+import { ClientDashboardService } from '../../client/services/dashboard.service';
 
 /**
  * Layer 2 — Services Container
@@ -46,12 +48,12 @@ export class ServicesContainer {
     return this._tokenService;
   }
 
-  private _mpgService: MpgService | undefined;
-  get mpgService(): MpgService {
-    if (!this._mpgService) {
-      this._mpgService = new MpgService();
+  private _megaBankPaymentService: MegaBankPaymentService | undefined;
+  get megaBankPaymentService(): MegaBankPaymentService {
+    if (!this._megaBankPaymentService) {
+      this._megaBankPaymentService = new MegaBankPaymentService();
     }
-    return this._mpgService;
+    return this._megaBankPaymentService;
   }
 
   private _accountService: AccountService | undefined;
@@ -105,7 +107,7 @@ export class ServicesContainer {
         coinWalletRepository: this.repositories.coinWalletRepository,
         coinTransactionRepository: this.repositories.coinTransactionRepository,
         bundleRepository: this.repositories.bundleRepository,
-        mpgService: this.mpgService,
+        megaBankPaymentService: this.megaBankPaymentService,
         prisma: this.repositories.prisma,
       });
     }
@@ -122,6 +124,21 @@ export class ServicesContainer {
       });
     }
     return this._clientSubscriptionService;
+  }
+
+  private _clientDashboardService: ClientDashboardService | undefined;
+  get clientDashboardService(): ClientDashboardService {
+    if (!this._clientDashboardService) {
+      this._clientDashboardService = new ClientDashboardService({
+        userRepository: this.repositories.userRepository,
+        clientSubscriptionRepository: this.repositories.clientSubscriptionRepository,
+        coinWalletRepository: this.repositories.coinWalletRepository,
+        coinTransactionRepository: this.repositories.coinTransactionRepository,
+        orderRepository: this.repositories.orderRepository,
+        billingCycleRepository: this.repositories.billingCycleRepository,
+      });
+    }
+    return this._clientDashboardService;
   }
 
 
@@ -210,15 +227,30 @@ export class ServicesContainer {
     return this._taxService;
   }
 
-  private _gatewayService: PaymentGatewayService | undefined;
-  get gatewayService(): PaymentGatewayService {
-    if (!this._gatewayService) {
-      this._gatewayService = new PaymentGatewayService(
-        this.repositories.paymentGatewayRepository,
+  private _dentalAdService: DentalAdService | undefined;
+  get dentalAdService(): DentalAdService {
+    if (!this._dentalAdService) {
+      this._dentalAdService = new DentalAdService(
+        this.repositories.dentalAdRepository,
       );
     }
-    return this._gatewayService;
+    return this._dentalAdService;
   }
+
+  private _adminDashboardService: AdminDashboardService | undefined;
+  get adminDashboardService(): AdminDashboardService {
+    if (!this._adminDashboardService) {
+      this._adminDashboardService = new AdminDashboardService({
+        userRepository: this.repositories.userRepository,
+        subscriptionRepository: this.repositories.adminSubscriptionRepository,
+        coinTransactionRepository: this.repositories.coinTransactionRepository,
+        coinOrderRepository: this.repositories.coinOrderRepository,
+        planSwitchRepository: this.repositories.planSwitchRepository,
+      });
+    }
+    return this._adminDashboardService;
+  }
+
 
 
   // ===========================================================================
@@ -227,13 +259,15 @@ export class ServicesContainer {
 
   reset(): void {
     this._tokenService = undefined;
-    this._mpgService = undefined;
+    this._megaBankPaymentService = undefined;
     this._accountService = undefined;
     this._mailService = undefined;
     this._clientAuthService = undefined;
     this._coinWalletService = undefined;
     this._coinOrderService = undefined;
     this._clientSubscriptionService = undefined;
-
+    this._clientDashboardService = undefined;
+    this._dentalAdService = undefined;
+    this._adminDashboardService = undefined;
   }
 }

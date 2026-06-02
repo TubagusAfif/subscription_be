@@ -21,6 +21,7 @@ dist/
 # Public folder
 public/
 
-
 # Deploy File
 deploy.sh
+
+.agents

@@ -14,12 +14,15 @@ import { createSubscriptionRouter } from './subscription.routes';
 import { createClientPlanRouter } from './plan.routes';
 import { createClientBundleRouter } from './bundle.routes';
 import { createClientCurrencyRouter } from './currency.routes';
+import { createClientDashboardRouter } from './dashboard.routes';
+import { ClientDashboardController } from '../controllers/dashboard.controller';
 
 export const createClientRouter = (
   authController: ClientAuthController,
   coinOrderController: CoinOrderController,
   coinWalletController: CoinWalletController,
   subscriptionController: ClientSubscriptionController,
+  dashboardController: ClientDashboardController,
   sharedPlanController: SharedPlanController,
   sharedBundleController: SharedBundleController,
   sharedCurrencyController: SharedCurrencyController,
@@ -34,6 +37,7 @@ export const createClientRouter = (
   router.use('/plans', createClientPlanRouter(sharedPlanController, authenticate));
   router.use('/bundles', createClientBundleRouter(sharedBundleController, authenticate));
   router.use('/currency', createClientCurrencyRouter(sharedCurrencyController, authenticate));
+  router.use('/dashboard', createClientDashboardRouter(dashboardController, authenticate));
 
   return router;
 };

@@ -1,34 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import { CoinOrderService } from '../../client/services/coin-order.service';
-import { MpgService, MpgWebhookPayload } from '../services/mpg.service';
-import { AppError } from '../middlewares/error.middleware';
-import { logger } from '../config/logger';
-import { env } from '../config/env';
+import { MegaBankPaymentService, MegaBankWebhookPayload } from '../../shared/services/external/mega-bank-payment.service';
+import { AppError } from '../../shared/middlewares/error.middleware';
+import { logger } from '../../shared/config/logger';
+import { env } from '../../shared/config/env';
 
 export interface WebhookControllerDeps {
   coinOrderService: CoinOrderService;
-  mpgService: MpgService;
+  megaBankPaymentService: MegaBankPaymentService;
 }
 
 /** 
 ---------------------------------------------------------------
-  Controller handling MPG (Mega Payment Gateway) webhook
+  Controller handling Bank Mega Payment Gateway webhook
   notifications and redirect bridge.
 ---------------------------------------------------------------
 **/
 export class WebhookController {
   private readonly coinOrderService: CoinOrderService;
-  private readonly mpgService: MpgService;
+  private readonly megaBankPaymentService: MegaBankPaymentService;
 
   constructor(deps: WebhookControllerDeps) {
     this.coinOrderService = deps.coinOrderService;
-    this.mpgService = deps.mpgService;
+    this.megaBankPaymentService = deps.megaBankPaymentService;
   }
 
   /** 
   ---------------------------------------------------------------
-    Handles POST /api/shared/webhook/mpg
-    Receives payment.received webhook from MPG, verifies the
+    Handles POST /api/megabank/webhook/mpg
+    Receives payment.received webhook from Bank Mega, verifies the
     signature, processes payment status, and responds with
     validateSignature.
   ---------------------------------------------------------------
@@ -41,9 +41,9 @@ export class WebhookController {
     try {
       const signatureHeader = req.headers['signature'] as string;
       const rawBody = JSON.stringify(req.body);
-      const notification = req.body as MpgWebhookPayload;
+      const notification = req.body as MegaBankWebhookPayload;
 
-      logger.info('[WebhookController] Received MPG Notification', {
+      logger.info('[WebhookController] Received Bank Mega Notification', {
         type: notification.type,
         transactionId: notification.transaction?.id,
         inquiryOrderId: notification.inquiry?.order?.id,
@@ -51,14 +51,14 @@ export class WebhookController {
       });
 
       // Verify webhook signature
-      if (signatureHeader && !this.mpgService.verifyWebhookSignature(rawBody, signatureHeader)) {
-        throw new AppError('INVALID_SIGNATURE', 'Invalid MPG webhook signature.', 403);
+      if (signatureHeader && !this.megaBankPaymentService.verifyWebhookSignature(rawBody, signatureHeader)) {
+        throw new AppError('INVALID_SIGNATURE', 'Invalid Bank Mega webhook signature.', 403);
       }
 
       // Extract the order reference from the inquiry
       const orderId = notification.inquiry?.order?.id;
       if (!orderId) {
-        logger.warn('[WebhookController] MPG notification missing order ID');
+        logger.warn('[WebhookController] Bank Mega notification missing order ID');
         res.status(200).json({ status: 'ok' });
         return;
       }
@@ -67,10 +67,10 @@ export class WebhookController {
       const statusCode = notification.transaction?.statusCode;
 
       // Process payment based on transaction status
-      if (this.mpgService.isPaymentSuccess(transactionStatus, statusCode)) {
+      if (this.megaBankPaymentService.isPaymentSuccess(transactionStatus, statusCode)) {
         await this.coinOrderService.handlePaymentSuccess(orderId);
         logger.info('[WebhookController] Payment success processed', { orderId });
-      } else if (this.mpgService.isPaymentFailure(transactionStatus)) {
+      } else if (this.megaBankPaymentService.isPaymentFailure(transactionStatus)) {
         await this.coinOrderService.handlePaymentFailure(orderId);
         logger.info('[WebhookController] Payment failure processed', { orderId });
       }
@@ -78,7 +78,7 @@ export class WebhookController {
 
       // Generate validateSignature response
       const validateSignature = signatureHeader
-        ? this.mpgService.generateValidateSignature(signatureHeader)
+        ? this.megaBankPaymentService.generateValidateSignature(signatureHeader)
         : '';
 
       res.status(200).json({
@@ -92,8 +92,8 @@ export class WebhookController {
 
   /** 
   ---------------------------------------------------------------
-    Handles GET /api/shared/webhook/redirect
-    Bridge endpoint for MPG checkout callbacks.
+    Handles GET /api/megabank/webhook/redirect
+    Bridge endpoint for Bank Mega checkout callbacks.
     Redirects the customer back to the frontend with payment status.
   ---------------------------------------------------------------
   **/
@@ -105,7 +105,7 @@ export class WebhookController {
     try {
       const { order_id, status, status_code } = req.query;
 
-      logger.info('[WebhookController] Received MPG Redirect', { order_id, status });
+      logger.info('[WebhookController] Received Bank Mega Redirect', { order_id, status });
 
       // Determine destination based on status
       let destination = '/payment/unfinish';

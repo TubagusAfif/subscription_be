@@ -41,6 +41,34 @@ const spec = {
           }
         }
       },
+      "ProviderCreateRequest": {
+        "type": "object",
+        "required": ["provider_name"],
+        "properties": {
+          "provider_name": { "type": "string" },
+          "description": { "type": "string", "nullable": true }
+        }
+      },
+      "DentalAd": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "image_path": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateDentalAdRequest": {
+        "type": "object",
+        "required": ["name", "category", "image_path"],
+        "properties": {
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "image_path": { "type": "string" }
+        }
+      },
       "RefreshRequest": {
         "type": "object",
         "required": [
@@ -485,9 +513,40 @@ const spec = {
     {
       "name": "Webhooks",
       "description": "MPG (Mega Payment Gateway) payment webhook"
+    },
+    {
+      "name": "Dental Ads",
+      "description": "Dental advertisement admin"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Admin dashboard metrics"
     }
   ],
   "paths": {
+    "/subscription/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Get admin dashboard metrics",
+        "responses": {
+          "200": {
+            "description": "Dashboard data returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/shared/auth/refresh": {
       "post": {
         "tags": [
@@ -2208,6 +2267,70 @@ const spec = {
           "200": {
             "description": "Admin login successful"
           }
+        }
+      }
+    },
+    "/subscription/dental-ads": {
+      "get": {
+        "tags": ["Dental Ads"],
+        "summary": "Get all dental ads",
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "post": {
+        "tags": ["Dental Ads"],
+        "summary": "Create a new dental ad",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateDentalAdRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" }
+        }
+      }
+    },
+    "/subscription/dental-ads/{id}": {
+      "get": {
+        "tags": ["Dental Ads"],
+        "summary": "Get dental ad by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "put": {
+        "tags": ["Dental Ads"],
+        "summary": "Update dental ad",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateDentalAdRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Success" }
+        }
+      },
+      "delete": {
+        "tags": ["Dental Ads"],
+        "summary": "Delete dental ad",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Success" }
         }
       }
     }
