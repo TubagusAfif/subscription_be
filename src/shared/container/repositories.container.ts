@@ -8,6 +8,9 @@ import { SharedPlanRepository } from '../repositories/plan.repository';
 import { OrderRepository } from '../repositories/order.repository';
 import { BillingCycleRepository } from '../repositories/billing-cycle.repository';
 import { PlanSwitchRepository } from '../repositories/plan-switch.repository';
+import { WebhookOutboxRepository } from '../repositories/webhook-outbox.repository';
+import { InternalRepository } from '../repositories/internal.repository';
+import { TaxRepository } from '../repositories/tax.repository';
 
 // --- Client Repositories ---
 import { CoinOrderRepository } from '../../client/repositories/coin-order.repository';
@@ -22,7 +25,6 @@ import { FeatureRepository } from '../../subscription/repositories/feature.repos
 import { AddonRepository } from '../../subscription/repositories/addon.repository';
 import { CurrencyRepository } from '../../subscription/repositories/currency.repository';
 import { BundleRepository } from '../../subscription/repositories/bundle.repository';
-import { TaxRepository } from '../../subscription/repositories/tax.repository';
 import { DentalAdRepository } from '../../subscription/repositories/dental-ad.repository';
 import { AdminSubscriptionRepository } from '../../subscription/repositories/subscription.repository';
 
@@ -94,6 +96,30 @@ export class RepositoriesContainer {
       this._planSwitchRepository = new PlanSwitchRepository(this.prisma);
     }
     return this._planSwitchRepository;
+  }
+
+  private _webhookOutboxRepository: WebhookOutboxRepository | undefined;
+  get webhookOutboxRepository(): WebhookOutboxRepository {
+    if (!this._webhookOutboxRepository) {
+      this._webhookOutboxRepository = new WebhookOutboxRepository(this.prisma);
+    }
+    return this._webhookOutboxRepository;
+  }
+
+  private _internalRepository: InternalRepository | undefined;
+  get internalRepository(): InternalRepository {
+    if (!this._internalRepository) {
+      this._internalRepository = new InternalRepository(this.prisma);
+    }
+    return this._internalRepository;
+  }
+
+  private _taxRepository: TaxRepository | undefined;
+  get taxRepository(): TaxRepository {
+    if (!this._taxRepository) {
+      this._taxRepository = new TaxRepository(this.prisma);
+    }
+    return this._taxRepository;
   }
 
   // ===========================================================================
@@ -185,13 +211,6 @@ export class RepositoriesContainer {
     return this._bundleRepository;
   }
 
-  private _taxRepository: TaxRepository | undefined;
-  get taxRepository(): TaxRepository {
-    if (!this._taxRepository) {
-      this._taxRepository = new TaxRepository(this.prisma);
-    }
-    return this._taxRepository;
-  }
 
   private _dentalAdRepository: DentalAdRepository | undefined;
   get dentalAdRepository(): DentalAdRepository {
@@ -222,6 +241,8 @@ export class RepositoriesContainer {
     this._orderRepository = undefined;
     this._billingCycleRepository = undefined;
     this._planSwitchRepository = undefined;
+    this._webhookOutboxRepository = undefined;
+    this._internalRepository = undefined;
     this._coinOrderRepository = undefined;
     this._coinWalletRepository = undefined;
     this._coinTransactionRepository = undefined;
