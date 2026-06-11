@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import * as Sentry from '@sentry/node';
 import { logger } from '../config/logger';
+import { env } from '../config/env';
 import { errorResponse } from '../utils/response.util';
 
 export class AppError extends Error {
   constructor(
     public readonly code: string,
-    public readonly message: string,
+    message: string,
     public readonly statusCode: number = 400,
     public readonly details?: unknown,
   ) {
@@ -23,14 +24,14 @@ export const errorHandler = (
   _next: NextFunction,
 ) => {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json(errorResponse(err.code, err.message, err.details));
+    const details = env.NODE_ENV !== 'production' ? err.details : undefined;
+    return res.status(err.statusCode).json(errorResponse(err.code, err.message, details));
   }
 
   // Log the full error internally — never expose to client
   logger.error('Unhandled Exception:', { error: err.message, stack: err.stack });
   Sentry.captureException(err);
 
-  // Sanitized response: generic message, no table/column names or stack traces
   return res
     .status(500)
     .json(
