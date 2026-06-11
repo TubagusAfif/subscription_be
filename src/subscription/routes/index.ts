@@ -9,6 +9,7 @@ import { createCurrencyRouter } from './currency.routes';
 import { BundleController } from '../controllers/bundle.controller';
 import { createBundleRouter } from './bundle.routes';
 import { TaxController } from '../controllers/tax.controller';
+import { SharedTaxController } from '../../shared/controllers/tax.controller';
 import { createTaxRouter } from './tax.routes';
 import { DentalAdController } from '../controllers/dental-ad.controller';
 import { createDentalAdRouter } from './dental-ad.routes';
@@ -22,6 +23,7 @@ export const createSubscriptionRouter = (
   bundleController: BundleController,
   taxController: TaxController,
   sharedPlanController: SharedPlanController,
+  sharedTaxController: SharedTaxController,
   dentalAdController: DentalAdController,
   dashboardController: AdminDashboardController,
   authenticate: RequestHandler,
@@ -32,7 +34,7 @@ export const createSubscriptionRouter = (
   router.use('/plans', createPlanRouter(planController, sharedPlanController, authenticate));
   router.use('/currencies', createCurrencyRouter(currencyController, authenticate));
   router.use('/bundles', createBundleRouter(bundleController, authenticate));
-  router.use('/taxes', createTaxRouter(taxController, authenticate));
+  router.use('/taxes', createTaxRouter(taxController, sharedTaxController, authenticate));
   router.use('/dental-ads', createDentalAdRouter(dentalAdController, authenticate));
   router.use('/dashboard', createDashboardRouter(dashboardController, authenticate));
 
