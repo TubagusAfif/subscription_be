@@ -8,13 +8,19 @@ const idParamSchema = z.object({
 // Coin Order Validation
 // --------------------------------------------------------------------------
 
-export const createCoinOrderSchema = z.object({
+export const createBundleCoinOrderSchema = z.object({
   body: z.object({
     bundle_id: z.number().int().positive('Bundle ID is required'),
-    user_name: z.string().optional(),
-    user_email: z.string().email().optional(),
-    user_phone: z.string().optional(),
-    payment_source: z.enum(['va', 'qris']).optional(),
+    nominal: z.number().positive('Nominal is required'),
+    payment_source: z.enum(['va', 'qris']),
+  }),
+});
+
+export const createCoinOrderSchema = z.object({
+  body: z.object({
+    coin_amount: z.number().int().positive('Coin Amount ID is required'),
+    nominal: z.number().positive('Nominal is required'),
+    payment_source: z.enum(['va', 'qris']),
   }),
 });
 
@@ -25,4 +31,6 @@ export const getCoinOrderSchema = z.object({
 // --------------------------------------------------------------------------
 // Exported Body Types
 // --------------------------------------------------------------------------
+export type CreateBundleCoinOrderBody = z.infer<typeof createBundleCoinOrderSchema>['body'];
+
 export type CreateCoinOrderBody = z.infer<typeof createCoinOrderSchema>['body'];
