@@ -7,7 +7,7 @@ import { stripUndefined } from '../../shared/utils/strip-undefined.util';
 import { AppError } from '../../shared/middlewares/error.middleware';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
 import type { CreateBundleBody, UpdateBundleBody } from '../../shared/validations/coin.validation';
-import { TaxService } from '../services/tax.service';
+import { TaxService } from '../../shared/services/tax.service';
 
 export interface BundleControllerDeps {
   bundleService: BundleService;
