@@ -2,12 +2,16 @@ import { RepositoriesContainer } from './repositories.container';
 
 // --- Shared Services ---
 import { TokenService } from '../services/token.service';
-import { MegaBankPaymentService } from '../services/external/mega-bank-payment.service';
+import { MegaBankPaymentService } from '../../megabank/services/mega-bank-payment.service';
 import { AccountService } from '../services/account.service';
 import { MailService } from '../services/mail.service';
 import { SharedPlanService } from '../services/plan.service';
+import { WebhookOutboxService } from '../services/webhook-outbox.service';
+import { InternalService } from '../services/internal.service';
+import { TaxService } from '../services/tax.service';
 
 // --- Client Services ---
+import { WebhookProcessorService } from '../../megabank/services/webhook-processor.service';
 import { ClientAuthService } from '../../client/services/auth.service';
 import { CoinOrderService } from '../../client/services/coin-order.service';
 import { CoinWalletService } from '../../client/services/coin-wallet.service';
@@ -21,7 +25,6 @@ import { FeatureService } from '../../subscription/services/feature.service';
 import { AddonService } from '../../subscription/services/addon.service';
 import { CurrencyService } from '../../subscription/services/currency.service';
 import { BundleService } from '../../subscription/services/bundle.service';
-import { TaxService } from '../../subscription/services/tax.service';
 import { DentalAdService } from '../../subscription/services/dental-ad.service';
 import { AdminDashboardService } from '../../subscription/services/dashboard.service';
 import { ClientDashboardService } from '../../client/services/dashboard.service';
@@ -46,6 +49,17 @@ export class ServicesContainer {
       this._tokenService = new TokenService(this.repositories.refreshTokenRepository);
     }
     return this._tokenService;
+  }
+
+  private _webhookProcessorService: WebhookProcessorService | undefined;
+  get webhookProcessorService(): WebhookProcessorService {
+    if (!this._webhookProcessorService) {
+      this._webhookProcessorService = new WebhookProcessorService({
+        coinOrderService: this.coinOrderService,
+        megaBankPaymentService: this.megaBankPaymentService,
+      });
+    }
+    return this._webhookProcessorService;
   }
 
   private _megaBankPaymentService: MegaBankPaymentService | undefined;
@@ -107,7 +121,7 @@ export class ServicesContainer {
         coinWalletRepository: this.repositories.coinWalletRepository,
         coinTransactionRepository: this.repositories.coinTransactionRepository,
         bundleRepository: this.repositories.bundleRepository,
-        megaBankPaymentService: this.megaBankPaymentService,
+        currencyRepository: this.repositories.currencyRepository,
         prisma: this.repositories.prisma,
       });
     }
@@ -121,6 +135,7 @@ export class ServicesContainer {
         subscriptionRepository: this.repositories.clientSubscriptionRepository,
         coinWalletService: this.coinWalletService,
         planRepository: this.repositories.sharedPlanRepository,
+        prisma: this.repositories.prisma,
       });
     }
     return this._clientSubscriptionService;
@@ -149,6 +164,30 @@ export class ServicesContainer {
       this._sharedPlanService = new SharedPlanService(this.repositories.sharedPlanRepository);
     }
     return this._sharedPlanService;
+  }
+
+  private _webhookOutboxService: WebhookOutboxService | undefined;
+  get webhookOutboxService(): WebhookOutboxService {
+    if (!this._webhookOutboxService) {
+      this._webhookOutboxService = new WebhookOutboxService(this.repositories.webhookOutboxRepository);
+    }
+    return this._webhookOutboxService;
+  }
+
+  private _internalService: InternalService | undefined;
+  get internalService(): InternalService {
+    if (!this._internalService) {
+      this._internalService = new InternalService(this.repositories.prisma, this.repositories.internalRepository);
+    }
+    return this._internalService;
+  }
+
+  private _taxService: TaxService | undefined;
+  get taxService(): TaxService {
+    if (!this._taxService) {
+      this._taxService = new TaxService(this.repositories.taxRepository);
+    }
+    return this._taxService;
   }
 
   // ===========================================================================
@@ -219,13 +258,6 @@ export class ServicesContainer {
     return this._bundleService;
   }
 
-  private _taxService: TaxService | undefined;
-  get taxService(): TaxService {
-    if (!this._taxService) {
-      this._taxService = new TaxService(this.repositories.taxRepository);
-    }
-    return this._taxService;
-  }
 
   private _dentalAdService: DentalAdService | undefined;
   get dentalAdService(): DentalAdService {
@@ -269,5 +301,7 @@ export class ServicesContainer {
     this._clientDashboardService = undefined;
     this._dentalAdService = undefined;
     this._adminDashboardService = undefined;
+    this._webhookOutboxService = undefined;
+    this._internalService = undefined;
   }
 }
