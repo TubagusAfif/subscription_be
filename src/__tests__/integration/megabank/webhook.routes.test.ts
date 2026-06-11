@@ -3,7 +3,7 @@ import express from 'express';
 import { createWebhookRouter } from '../../../megabank/routes/webhook.routes';
 import { WebhookController } from '../../../megabank/controllers/webhook.controller';
 import { CoinOrderService } from '../../../client/services/coin-order.service';
-import { MegaBankPaymentService } from '../../../shared/services/external/mega-bank-payment.service';
+import { MegaBankPaymentService } from '../../../megabank/services/mega-bank-payment.service';
 
 const mockCoinOrderService = {
   createOrder: jest.fn(),
