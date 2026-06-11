@@ -2,13 +2,14 @@ import { AppError } from '../../shared/middlewares/error.middleware';
 import { ClientSubscriptionRepository } from '../repositories/subscription.repository';
 import { CoinWalletService } from './coin-wallet.service';
 import { SharedPlanRepository } from '../../shared/repositories/plan.repository';
-import { Subscription } from '@prisma/client';
+import { Subscription, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 
 export interface ClientSubscriptionServiceDeps {
   subscriptionRepository: ClientSubscriptionRepository;
   coinWalletService: CoinWalletService;
   planRepository: SharedPlanRepository;
+  prisma: PrismaClient;
 }
 
 /** 
@@ -21,11 +22,13 @@ export class ClientSubscriptionService {
   private readonly subscriptionRepo: ClientSubscriptionRepository;
   private readonly walletService: CoinWalletService;
   private readonly planRepo: SharedPlanRepository;
+  private readonly prisma: PrismaClient;
 
   constructor(deps: ClientSubscriptionServiceDeps) {
     this.subscriptionRepo = deps.subscriptionRepository;
     this.walletService = deps.coinWalletService;
     this.planRepo = deps.planRepository;
+    this.prisma = deps.prisma;
   }
 
   /** 
@@ -97,84 +100,125 @@ export class ClientSubscriptionService {
     const purchaseToken = crypto.randomBytes(20).toString('hex');
     const orderNumber = `ORD-${userId}-${Date.now()}`;
 
-    // Here we can use $transaction, but for simplicity of the old code,
-    // we'll use a modified transaction or keep it separate.
-    // Let's use Prisma to create them or sequentially if it fails it rollback.
-    // Ideally these go via repository transactional method, but we'll do sequentially here for backward compatibility.
-    const subscription = await this.subscriptionRepo.create({
-      user_id: userId,
-      sku_id: skuId,
-      sku_type: sku.sku_type,
-      parent_subscription_id: parentSubscriptionId ?? null,
-      purchase_token: purchaseToken,
-      status: 'ACTIVE',
-      auto_renew: false,
-      current_billing_start: now,
-      current_billing_end: billingEnd,
-      next_billing_date: billingEnd,
-      created_by: userId,
-      updated_by: userId,
-    });
+    // Execute atomic transaction to prevent partial state on failure
+    const subscription = await this.prisma.$transaction(async (tx) => {
+      // Re-check wallet balance inside transaction to prevent TOCTOU
+      const txWallet = await tx.coinWallet.findUnique({
+        where: { user_id: userId }
+      });
+      
+      if (!txWallet || Number(txWallet.balance) < coinCost) {
+        throw new AppError('INSUFFICIENT_BALANCE', 'Not enough coins to purchase this plan.', 400);
+      }
 
-    const order = await this.subscriptionRepo.createOrder({
-      subscription_id: subscription.id,
-      user_id: userId,
-      sku_id: skuId,
-      order_number: orderNumber,
-      coin_amount: coinCost,
-      status: 'COMPLETED',
-      created_by: userId,
-      updated_by: userId,
-    });
-
-    const billingCycle = await this.subscriptionRepo.createBillingCycle({
-      subscription_id: subscription.id,
-      order_id: order.id,
-      cycle_start: now,
-      cycle_end: billingEnd,
-      status: 'PAID',
-      created_by: userId,
-      updated_by: userId,
-    });
-
-    await this.subscriptionRepo.createEvent({
-      subscription_id: subscription.id,
-      billing_id: billingCycle.id,
-      event_type: 'ACTIVATED',
-      created_by: userId,
-      updated_by: userId,
-    });
-
-    // Deduct coins AFTER subscription is created (so ref_id = subscription.id)
-    await this.walletService.spend(
-      userId,
-      coinCost,
-      `Subscription purchase: ${sku.sku_name}`,
-      subscription.id,
-      currencyId,
-    );
-
-    // Mirror quotas from SKU benefits
-    if (sku.sku_type === 'PACKAGE') {
-      const benefits = sku.benefits || [];
-      for (const benefit of benefits) {
-        await this.subscriptionRepo.createQuota({
+      const newSub = await tx.subscription.create({
+        data: {
           user_id: userId,
-          package_subscription_id: subscription.id,
-          resource_type: benefit.benefit_type,
-          total_quota: benefit.max_usage ?? 0,
-          used_quota: 0,
+          sku_id: skuId,
+          sku_type: sku.sku_type,
+          parent_subscription_id: parentSubscriptionId ?? null,
+          purchase_token: purchaseToken,
+          status: 'ACTIVE',
+          auto_renew: false,
+          current_billing_start: now,
+          current_billing_end: billingEnd,
+          next_billing_date: billingEnd,
           created_by: userId,
           updated_by: userId,
-        });
+        }
+      });
+
+      const order = await tx.order.create({
+        data: {
+          subscription_id: newSub.id,
+          user_id: userId,
+          sku_id: skuId,
+          order_number: orderNumber,
+          coin_amount: coinCost,
+          status: 'COMPLETED',
+          created_by: userId,
+          updated_by: userId,
+        }
+      });
+
+      const billingCycle = await tx.billingCycle.create({
+        data: {
+          subscription_id: newSub.id,
+          order_id: order.id,
+          cycle_start: now,
+          cycle_end: billingEnd,
+          status: 'PAID',
+          created_by: userId,
+          updated_by: userId,
+        }
+      });
+
+      await tx.subscriptionEvent.create({
+        data: {
+          subscription_id: newSub.id,
+          billing_id: billingCycle.id,
+          event_type: 'ACTIVATED',
+          created_by: userId,
+          updated_by: userId,
+        }
+      });
+
+      // Deduct coins inside transaction
+      await tx.coinWallet.update({
+        where: { user_id: userId },
+        data: { balance: { decrement: coinCost }, last_updated: new Date() }
+      });
+
+      await tx.coinTransaction.create({
+        data: {
+          wallet_id: txWallet.id,
+          user_id: userId,
+          type: 'SPEND',
+          amount: coinCost,
+          currency_id: currencyId,
+          ref_id: newSub.id,
+          description: `Subscription purchase: ${sku.sku_name}`,
+          created_by: userId,
+          updated_by: userId,
+        }
+      });
+
+      // Mirror quotas from SKU benefits
+      if (sku.sku_type === 'PACKAGE') {
+        const benefits = sku.benefits || [];
+        for (const benefit of benefits) {
+          await tx.subscriptionQuota.create({
+            data: {
+              user_id: userId,
+              package_subscription_id: newSub.id,
+              resource_type: benefit.benefit_type,
+              total_quota: benefit.max_usage ?? 0,
+              used_quota: 0,
+              created_by: userId,
+              updated_by: userId,
+            }
+          });
+        }
+      } else {
+        const addons = sku.addons || [];
+        for (const addon of addons) {
+          const resourceType = addon.resource_type.replace('_ADDON', '').toLowerCase();
+          
+          const existingQuota = await tx.subscriptionQuota.findFirst({
+            where: { user_id: userId, resource_type: resourceType, deleted_at: null }
+          });
+          
+          if (existingQuota) {
+             await tx.subscriptionQuota.update({
+               where: { id: existingQuota.id },
+               data: { total_quota: { increment: addon.quota_value }, last_recalculated_at: new Date() }
+             });
+          }
+        }
       }
-    } else {
-      const addons = sku.addons || [];
-      for (const addon of addons) {
-        const resourceType = addon.resource_type.replace('_ADDON', '').toLowerCase();
-        await this.subscriptionRepo.incrementQuota(userId, resourceType, addon.quota_value);
-      }
-    }
+
+      return newSub;
+    });
 
     return subscription;
   }
