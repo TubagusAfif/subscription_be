@@ -9,6 +9,8 @@ import { AccountController } from '../controllers/account.controller';
 import { SharedPlanController } from '../controllers/plan.controller';
 import { SharedBundleController } from '../controllers/bundle.controller';
 import { SharedCurrencyController } from '../controllers/currency.controller';
+import { InternalController } from '../controllers/internal.controller';
+import { SharedTaxController } from '../controllers/tax.controller';
 
 // --- Client Controllers ---
 import { ClientAuthController } from '../../client/controllers/auth.controller';
@@ -65,7 +67,7 @@ export class ControllersContainer {
   get megaBankWebhookController(): MegaBankWebhookController {
     if (!this._megaBankWebhookController) {
       this._megaBankWebhookController = new MegaBankWebhookController({
-        coinOrderService: this.services.coinOrderService,
+        webhookProcessorService: this.services.webhookProcessorService,
         megaBankPaymentService: this.services.megaBankPaymentService,
       });
     }
@@ -80,6 +82,24 @@ export class ControllersContainer {
       });
     }
     return this._accountController;
+  }
+
+  private _internalController: InternalController | undefined;
+  get internalController(): InternalController {
+    if (!this._internalController) {
+      this._internalController = new InternalController(this.services.internalService);
+    }
+    return this._internalController;
+  }
+
+  private _sharedTaxController: SharedTaxController | undefined;
+  get sharedTaxController(): SharedTaxController {
+    if (!this._sharedTaxController) {
+      this._sharedTaxController = new SharedTaxController({
+        taxService: this.services.taxService,
+      });
+    }
+    return this._sharedTaxController;
   }
 
   // ===========================================================================
@@ -132,6 +152,9 @@ export class ControllersContainer {
     if (!this._coinOrderController) {
       this._coinOrderController = new CoinOrderController({
         coinOrderService: this.services.coinOrderService,
+        accountService: this.services.accountService,
+        megaBankPaymentService: this.services.megaBankPaymentService,
+        taxService: this.services.taxService,
       });
     }
     return this._coinOrderController;
@@ -220,6 +243,7 @@ export class ControllersContainer {
     return this._bundleController;
   }
 
+
   private _taxController: TaxController | undefined;
   get taxController(): TaxController {
     if (!this._taxController) {
@@ -270,8 +294,10 @@ export class ControllersContainer {
     this._planController = undefined;
     this._currencyController = undefined;
     this._bundleController = undefined;
+    this._sharedTaxController = undefined;
     this._taxController = undefined;
     this._dentalAdController = undefined;
     this._adminDashboardController = undefined;
+    this._internalController = undefined;
   }
 }
