@@ -1,5 +1,6 @@
 import { Router, RequestHandler } from 'express';
 import { TaxController } from '../controllers/tax.controller';
+import { SharedTaxController } from '../../shared/controllers/tax.controller';
 import { authorize } from '../../shared/middlewares/auth.middleware';
 import { validate } from '../../shared/middlewares/validate.middleware';
 import {
@@ -10,7 +11,11 @@ import {
   activateTaxSchema,
 } from '../../shared/validations/tax.validation';
 
-export const createTaxRouter = (taxController: TaxController, authenticate: RequestHandler): Router => {
+export const createTaxRouter = (
+  taxController: TaxController,
+  sharedTaxController: SharedTaxController,
+  authenticate: RequestHandler
+): Router => {
   const router = Router();
 
   // All tax master data endpoints require ADMIN or OWNER roles
@@ -18,7 +23,7 @@ export const createTaxRouter = (taxController: TaxController, authenticate: Requ
 
   router.post('/', validate(createTaxSchema), taxController.createTax);
   router.get('/', taxController.getAllTaxes);
-  router.get('/active', taxController.getActiveTax);
+  router.get('/active', sharedTaxController.getActiveTax);
   router.get('/:id', validate(getTaxSchema), taxController.getTaxById);
   router.put('/:id', validate(updateTaxSchema), taxController.updateTax);
   

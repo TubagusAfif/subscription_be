@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { TaxService } from '../services/tax.service';
-import { TaxMapper } from '../mappers/tax.mapper';
+import { TaxService } from '../../shared/services/tax.service';
+import { TaxMapper } from '../../shared/mappers/tax.mapper';
 import { successResponse } from '../../shared/utils/response.util';
 import { stripUndefined } from '../../shared/utils/strip-undefined.util';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
@@ -39,18 +39,6 @@ export class TaxController {
     }
   };
 
-  getActiveTax = async (_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const tax = await this.taxService.getActiveTax();
-      res
-        .status(200)
-        .json(
-          successResponse({ tax: tax ? TaxMapper.toResponse(tax) : null }),
-        );
-    } catch (error) {
-      next(error);
-    }
-  };
 
   getTaxById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
