@@ -26,6 +26,10 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().default(''),
   SENTRY_DSN: z.string().optional(),
   WALLET_DEFAULT_BALANCE: z.coerce.number().int().nonnegative().default(300),
+  WEBHOOK_SHARED_SECRET: z.string().min(32),
+  DOMAIN2_BASE_URL: z.string().url(),
+  GRAFANA_LOKI_HOST: z.string().url().optional(),
+  GRAFANA_LOKI_API_TOKEN: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);
