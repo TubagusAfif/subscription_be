@@ -1,4 +1,5 @@
 import winston from 'winston';
+import LokiTransport from 'winston-loki';
 import { env } from './env';
 
 const { combine, timestamp, printf, colorize, errors } = winston.format;
@@ -21,6 +22,20 @@ const logger = winston.createLogger({
       : combine(colorize(), timestamp({ format: 'HH:mm:ss' }), errors({ stack: true }), devFormat),
   transports: [new winston.transports.Console()],
 });
+
+if (env.GRAFANA_LOKI_HOST && env.GRAFANA_LOKI_API_TOKEN) {
+  logger.add(
+    new LokiTransport({
+      host: env.GRAFANA_LOKI_HOST,
+      basicAuth: env.GRAFANA_LOKI_API_TOKEN,
+      labels: { app: 'subscription-api', component: 'payment-audit' },
+      json: true,
+      format: winston.format.json(),
+      replaceTimestamp: true,
+      onConnectionError: (err) => console.error('Loki connection error:', err),
+    })
+  );
+}
 
 
 // Express-compatible stream for HTTP request logging.
