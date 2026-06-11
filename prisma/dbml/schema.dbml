@@ -432,6 +432,22 @@ Table dental_ads {
   deleted_by Int
 }
 
+Table webhook_outbox {
+  id Int [pk, increment]
+  idempotency_key String [unique, not null]
+  event_type String [not null]
+  company_id Int [not null]
+  payload Json [not null]
+  status WebhookOutboxStatus [not null, default: 'PENDING']
+  attempts Int [not null, default: 0]
+  max_attempts Int [not null, default: 6]
+  next_attempt_at DateTime
+  last_error String
+  sent_at DateTime
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
 Enum Role {
   ADMIN
   OWNER
@@ -500,6 +516,13 @@ Enum PackageTier {
   MEDIUM
   PRO
   ENTERPRISE
+}
+
+Enum WebhookOutboxStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 Ref: refresh_tokens.user_id > users.id

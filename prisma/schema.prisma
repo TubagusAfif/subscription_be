@@ -597,3 +597,33 @@ model DentalAd {
 
   @@map("dental_ads")
 }
+
+// --------------------------------------------------------------------------
+// Webhook Outbox for Domain 2 Integration
+// --------------------------------------------------------------------------
+
+enum WebhookOutboxStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model WebhookOutbox {
+  id              Int                 @id @default(autoincrement())
+  idempotency_key String              @unique
+  event_type      String // e.g. "subscription.created", "addon.expired"
+  company_id      Int
+  payload         Json
+  status          WebhookOutboxStatus @default(PENDING)
+  attempts        Int                 @default(0)
+  max_attempts    Int                 @default(6)
+  next_attempt_at DateTime?
+  last_error      String?             @db.Text
+  sent_at         DateTime?
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
+
+  @@index([status, next_attempt_at])
+  @@map("webhook_outbox")
+}
