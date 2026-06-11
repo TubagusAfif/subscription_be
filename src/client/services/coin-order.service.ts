@@ -3,7 +3,7 @@ import { CoinOrderRepository } from '../repositories/coin-order.repository';
 import { CoinWalletRepository } from '../repositories/coin-wallet.repository';
 import { CoinTransactionRepository } from '../repositories/coin-transaction.repository';
 import { BundleRepository } from '../../subscription/repositories/bundle.repository';
-import { MegaBankPaymentService } from '../../shared/services/external/mega-bank-payment.service';
+import { CurrencyRepository } from '../../subscription/repositories/currency.repository';
 import { PrismaClient, CoinOrder } from '@prisma/client';
 import crypto from 'crypto';
 import { env } from '../../shared/config/env';
@@ -13,7 +13,7 @@ export interface CoinOrderServiceDeps {
   coinWalletRepository: CoinWalletRepository;
   coinTransactionRepository: CoinTransactionRepository;
   bundleRepository: BundleRepository;
-  megaBankPaymentService: MegaBankPaymentService;
+  currencyRepository: CurrencyRepository;
   prisma: PrismaClient;
 }
 
@@ -25,19 +25,15 @@ export interface CoinOrderServiceDeps {
 **/
 export class CoinOrderService {
   private readonly coinOrderRepo: CoinOrderRepository;
-  private readonly walletRepo: CoinWalletRepository;
-  private readonly transactionRepo: CoinTransactionRepository;
   private readonly bundleRepo: BundleRepository;
-  private readonly megaBankPaymentService: MegaBankPaymentService;
   private readonly prisma: PrismaClient;
+  private readonly currencyRepo: CurrencyRepository;
 
   constructor(deps: CoinOrderServiceDeps) {
     this.coinOrderRepo = deps.coinOrderRepository;
-    this.walletRepo = deps.coinWalletRepository;
-    this.transactionRepo = deps.coinTransactionRepository;
     this.bundleRepo = deps.bundleRepository;
-    this.megaBankPaymentService = deps.megaBankPaymentService;
     this.prisma = deps.prisma;
+    this.currencyRepo = deps.currencyRepository;
   }
 
   /** 
@@ -46,30 +42,77 @@ export class CoinOrderService {
     Returns checkout_url for the client to redirect the customer.
   ---------------------------------------------------------------
   **/
-  async createOrder(
-    userId: number,
-    bundleId: number,
-    user: { id: number; name: string; email: string; phone?: string },
-    paymentSource: 'va' | 'qris' = 'va',
-  ): Promise<{ order: CoinOrder; checkout_url: string }> {
-    // Validate bundle exists and is active
+  async prepareBundleOrder(userId: number, bundleId: number) {
     const bundle = await this.bundleRepo.findById(bundleId);
+
     if (!bundle) {
       throw new AppError('BUNDLE_NOT_FOUND', `Coin bundle with ID ${bundleId} not found.`, 404);
     }
 
-    // Calculate pricing
     const price = bundle.discounted_price ? Number(bundle.discounted_price) : Number(bundle.price);
     const taxAmount = price * (Number(bundle.tax_rate) / 100);
     const totalPrice = Math.round(price + taxAmount);
 
-    // Generate unique order ID for MPG
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-
-    // Build reference URL for MPG
     const referenceUrl = `${env.CLIENT_APP_URL}/payment/status?order_id=${pgOrderId}`;
 
-    // Create the order record
+    return { bundle, totalPrice, taxAmount, pgOrderId, referenceUrl };
+  }
+
+  async prepareCustomOrder(userId: number, coinAmount: number, taxRate: number) {
+    const activeCurrency = await this.currencyRepo.findActive();
+
+    if(!activeCurrency) {
+      throw new AppError("INACTIVE_CURRENCY", "There's no active currency", 404);
+    }
+
+    const totalPrice = Math.round(coinAmount * Number(activeCurrency.conversion_rate));
+    const taxAmount = totalPrice * (Number(taxRate) / 100);
+
+
+    const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const referenceUrl = `${env.CLIENT_APP_URL}/payment/status?order_id=${pgOrderId}`;
+    return { pgOrderId, referenceUrl, totalPrice, taxAmount, activeCurrency };
+  }
+
+  async saveCustomOrder(
+    userId: number,
+    coinAmount: number,
+    currencyId: number,
+    totalPrice: number,
+    taxAmount: number,
+    pgOrderId: string,
+    pgResponseId: string,
+    redirectUrl: string
+  ): Promise<{ order: CoinOrder }> {
+    const order = await this.coinOrderRepo.create({
+      user_id: userId,
+      is_custom_qty: true,
+      coin_amount: coinAmount,
+      currency_id: currencyId,
+      price_paid: totalPrice,
+      tax_amount: taxAmount,
+      status: 'PENDING',
+      pg_order_id: pgOrderId,
+      pg_response_id: pgResponseId,
+      redirect_url: redirectUrl,
+      created_by: userId,
+      updated_by: userId,
+    });
+
+    return { order };
+  }
+
+  async saveOrder(
+    userId: number,
+    bundleId: number,
+    bundle: any,
+    totalPrice: number,
+    taxAmount: number,
+    pgOrderId: string,
+    pgResponseId: string,
+    redirectUrl: string
+  ): Promise<{ order: CoinOrder }> {
     const order = await this.coinOrderRepo.create({
       user_id: userId,
       bundle_id: bundleId,
@@ -80,43 +123,13 @@ export class CoinOrderService {
       tax_amount: taxAmount,
       status: 'PENDING',
       pg_order_id: pgOrderId,
+      pg_response_id: pgResponseId,
+      redirect_url: redirectUrl,
       created_by: userId,
       updated_by: userId,
     });
 
-    // Create MPG payment inquiry
-    const inquiryResult = await this.megaBankPaymentService.createInquiry({
-      amount: totalPrice,
-      currency: 'IDR',
-      referenceUrl,
-      order: {
-        id: pgOrderId,
-      },
-      customer: {
-        name: user.name,
-        email: user.email,
-        phoneNumber: user.phone || '',
-      },
-      paymentSource,
-    });
-
-    // Save Bank Mega response ID and checkout URL to order
-    await this.prisma.coinOrder.update({
-      where: { id: order.id },
-      data: {
-        pg_response_id: inquiryResult.id,
-        redirect_url: inquiryResult.urls.checkout,
-      },
-    });
-
-    return {
-      order: {
-        ...order,
-        pg_response_id: inquiryResult.id,
-        redirect_url: inquiryResult.urls.checkout,
-      },
-      checkout_url: inquiryResult.urls.checkout,
-    };
+    return { order };
   }
 
   /** 
@@ -155,12 +168,23 @@ export class CoinOrderService {
       throw new AppError('ORDER_NOT_FOUND', `Order ${pgOrderId} not found.`, 404);
     }
 
-    // Avoid double-crediting
-    if (order.status === 'PAID') return;
-
     // Wrap in transaction — order update, wallet credit, and transaction log
     // must all succeed or all roll back
     await this.prisma.$transaction(async (tx) => {
+      // ── Idempotency Guard ──
+      // Re-fetch order inside transaction to lock it and guarantee latest status.
+      // This prevents race conditions if multiple webhooks arrive simultaneously.
+      const txOrder = await tx.coinOrder.findUnique({
+        where: { id: order.id },
+      });
+
+      if (!txOrder) throw new AppError('ORDER_NOT_FOUND', `Order ${pgOrderId} not found.`, 404);
+
+      if (txOrder.status === 'PAID' || txOrder.status === 'FAILED') {
+        // Already processed, return gracefully without updating
+        return;
+      }
+
       // Update order status
       await tx.coinOrder.update({
         where: { id: order.id },
@@ -222,6 +246,10 @@ export class CoinOrderService {
 
     if (order.status !== 'PENDING') return;
 
-    await this.coinOrderRepo.updateStatus(order.id, 'FAILED');
+    // Use updateMany for atomic check-and-set to prevent TOCTOU race conditions
+    await this.prisma.coinOrder.updateMany({
+      where: { id: order.id, status: 'PENDING' },
+      data: { status: 'FAILED' },
+    });
   }
 }
