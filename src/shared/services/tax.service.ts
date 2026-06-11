@@ -1,8 +1,8 @@
-import { AppError } from '../../shared/middlewares/error.middleware';
+import { AppError } from '../middlewares/error.middleware';
 import { TaxRepository } from '../repositories/tax.repository';
 import { Prisma, TaxConfig } from '@prisma/client';
-import { PaginatedResult } from '../../shared/types/pagination.types';
-import { paginate } from '../../shared/utils/pagination.util';
+import { PaginatedResult } from '../types/pagination.types';
+import { paginate } from '../utils/pagination.util';
 
 /** 
 ---------------------------------------------------------------
