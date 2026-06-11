@@ -52,8 +52,8 @@ export class SharedPlanRepository {
   }
 
   async findById(id: number): Promise<PlanWithRelations | null> {
-    return this.prisma.skuBase.findUnique({
-      where: { id },
+    return this.prisma.skuBase.findFirst({
+      where: { id, deleted_at: null },
       include: {
         benefits: { where: { deleted_at: null } },
         features: { where: { deleted_at: null } },
