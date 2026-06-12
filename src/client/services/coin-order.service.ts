@@ -54,7 +54,7 @@ export class CoinOrderService {
     const totalPrice = Math.round(price + taxAmount);
 
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    const referenceUrl = `${env.CLIENT_APP_URL}/payment/status?order_id=${pgOrderId}`;
+    const referenceUrl = `${env.BASE_URL}/api/v1/client/coin-orders/status?order_id=${pgOrderId}`;
 
     return { bundle, totalPrice, taxAmount, pgOrderId, referenceUrl };
   }
@@ -153,6 +153,19 @@ export class CoinOrderService {
     }
     if (order.user_id !== userId) {
       throw new AppError('FORBIDDEN', 'You do not have access to this order.', 403);
+    }
+    return order;
+  }
+
+  /** 
+  ---------------------------------------------------------------
+    Gets a single order by PG Order ID (for unauthenticated status check).
+  ---------------------------------------------------------------
+  **/
+  async getOrderByPgOrderId(pgOrderId: string): Promise<CoinOrder> {
+    const order = await this.coinOrderRepo.findByPgOrderId(pgOrderId);
+    if (!order) {
+      throw new AppError('ORDER_NOT_FOUND', `Coin order with PG Order ID ${pgOrderId} not found.`, 404);
     }
     return order;
   }

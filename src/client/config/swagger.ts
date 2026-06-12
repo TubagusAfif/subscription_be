@@ -933,6 +933,63 @@ const spec = {
         }
       }
     },
+    "/client/coin-orders/status": {
+      "get": {
+        "tags": [
+          "Coin Orders"
+        ],
+        "summary": "Get coin order status by PG Order ID (Unauthenticated)",
+        "security": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Payment Gateway Order ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coin order status detail",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "order": {
+                      "id": 1,
+                      "user_id": 1,
+                      "bundle_id": 2,
+                      "is_custom_qty": false,
+                      "coin_amount": 500,
+                      "currency_id": 1,
+                      "price_paid": 75000,
+                      "tax_amount": 8250,
+                      "discount_id": null,
+                      "status": "PAID",
+                      "checkout_url": "https://pgcheckoutdev.bankmega.com/...",
+                      "pg_order_id": "COIN-1-1234567890-abc123",
+                      "pg_response_id": "a60daf2b-1fd9-42ab-8235-41a264811025",
+                      "created_at": "2025-01-01T00:00:00.000Z",
+                      "updated_at": "2025-01-01T00:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/client/coin-orders/{id}": {
       "get": {
         "tags": [

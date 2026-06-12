@@ -6,10 +6,13 @@ import {
   createBundleCoinOrderSchema,
   createCoinOrderSchema,
   getCoinOrderSchema,
+  getCoinOrderStatusSchema,
 } from '../../shared/validations/coin-order.validation';
 
 export const createCoinOrderRouter = (coinOrderController: CoinOrderController, authenticate: RequestHandler): Router => {
   const router = Router();
+
+  router.get('/status', validate(getCoinOrderStatusSchema), coinOrderController.getOrderByPgOrderId);
 
   router.use(authenticate, authorize(['OWNER']));
 

@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { CoinOrderService } from '../services/coin-order.service';
 import { AccountService } from '../../shared/services/account.service'
 import { CoinOrderMapper } from '../mappers/coin-order.mapper';
@@ -151,6 +151,18 @@ export class CoinOrderController {
   getOrderById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const order = await this.coinOrderService.getOrderById(Number(req.params.id), Number(req.user.sub));
+      res.status(200).json(
+        successResponse(CoinOrderMapper.toResponse(order)),
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getOrderByPgOrderId = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const pgOrderId = req.query.order_id as string;
+      const order = await this.coinOrderService.getOrderByPgOrderId(pgOrderId);
       res.status(200).json(
         successResponse(CoinOrderMapper.toResponse(order)),
       );

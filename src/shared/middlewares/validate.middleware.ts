@@ -14,7 +14,14 @@ export const validate = (schema: ZodObject<any>): RequestHandler => {
 
       // Assign validated & coerced data back to prevent any/unknown leakage
       if (parsed.body) req.body = parsed.body;
-      if (parsed.query) req.query = parsed.query as typeof req.query;
+      if (parsed.query) {
+        Object.defineProperty(req, 'query', {
+          value: parsed.query,
+          writable: true,
+          enumerable: true,
+          configurable: true,
+        });
+      }
       if (parsed.params) req.params = parsed.params as typeof req.params;
 
       next();
