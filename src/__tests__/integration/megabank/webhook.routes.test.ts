@@ -23,18 +23,21 @@ const mockMegaBankPaymentService = {
   isInquiryPaid: jest.fn(),
 } as unknown as jest.Mocked<MegaBankPaymentService>;
 
+const mockWebhookProcessorService = {
+  processWebhook: jest.fn(),
+};
+
 const app = express();
-app.use(express.json());
 
 const webhookController = new WebhookController({
   megaBankPaymentService: mockMegaBankPaymentService,
-  coinOrderService: mockCoinOrderService,
+  webhookProcessorService: mockWebhookProcessorService,
 } as any);
 const webhookRouter = createWebhookRouter(webhookController);
 
 app.use('/api/v1/megabank/webhooks', webhookRouter);
 app.use((err: any, req: any, res: any, next: any) => {
-  res.status(err.statusCode || 500).json({ success: false, error: err });
+  res.status(err.statusCode || 500).json({ success: false, error: { message: err.message, code: err.code } });
 });
 
 describe('MegaBank Webhook API Routes', () => {
@@ -73,7 +76,7 @@ describe('MegaBank Webhook API Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('ok');
       expect(response.body.validateSignature).toBe('abc123');
-      expect(mockCoinOrderService.handlePaymentSuccess).toHaveBeenCalledWith('COIN-1-123');
+      expect(mockWebhookProcessorService.processWebhook).toHaveBeenCalledWith(payload);
     });
 
     it('should process failed payment webhook', async () => {
@@ -96,7 +99,7 @@ describe('MegaBank Webhook API Routes', () => {
       mockMegaBankPaymentService.isPaymentSuccess.mockReturnValue(false);
       mockMegaBankPaymentService.isPaymentFailure.mockReturnValue(true);
       mockMegaBankPaymentService.generateValidateSignature.mockReturnValue('def456');
-      mockCoinOrderService.handlePaymentFailure.mockResolvedValue(undefined);
+      mockWebhookProcessorService.processWebhook.mockResolvedValue(undefined);
 
       const response = await request(app)
         .post('/api/v1/megabank/webhooks/mpg')
@@ -105,7 +108,7 @@ describe('MegaBank Webhook API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('ok');
-      expect(mockCoinOrderService.handlePaymentFailure).toHaveBeenCalledWith('COIN-1-123');
+      expect(mockWebhookProcessorService.processWebhook).toHaveBeenCalledWith(payload);
     });
 
     it('should deny unauthorized webhook signatures', async () => {
@@ -131,7 +134,7 @@ describe('MegaBank Webhook API Routes', () => {
 
       expect(response.status).toBe(403);
       expect(response.body.error.message).toContain('Invalid Bank Mega webhook signature.');
-      expect(mockCoinOrderService.handlePaymentSuccess).not.toHaveBeenCalled();
+      expect(mockWebhookProcessorService.processWebhook).not.toHaveBeenCalled();
     });
   });
 });

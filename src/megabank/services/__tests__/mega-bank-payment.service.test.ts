@@ -1,5 +1,6 @@
 import { MegaBankPaymentService } from '../mega-bank-payment.service';
 import * as httpUtil from '../../../shared/utils/http.util';
+import { MegaBankTokenUtil } from '../../utils/mega-bank-token.util';
 
 // Mock httpUtil and cryptoUtil
 jest.mock('../../../shared/utils/http.util');
@@ -23,25 +24,25 @@ describe('MegaBankPaymentService', () => {
         json: async () => ({ accessToken: 'new_token', expiresIn: 300 }),
       });
 
-      const token = await service.getAccessToken();
+      const token = await MegaBankTokenUtil.getAccessToken();
       expect(token).toBe('new_token');
       expect(httpUtil.fetchWithTimeout).toHaveBeenCalledTimes(1);
     });
 
     it('should return cached token if within TTL', async () => {
       // Force cache token
-      (service as any).cachedToken = {
+      (MegaBankTokenUtil as any).cachedToken = {
         accessToken: 'cached_token',
         expiresAt: Date.now() + 100000,
       };
 
-      const token = await service.getAccessToken();
+      const token = await MegaBankTokenUtil.getAccessToken();
       expect(token).toBe('cached_token');
       expect(httpUtil.fetchWithTimeout).not.toHaveBeenCalled();
     });
 
     it('should invalidate token cache and fetch new token', async () => {
-      (service as any).cachedToken = {
+      (MegaBankTokenUtil as any).cachedToken = {
         accessToken: 'cached_token',
         expiresAt: Date.now() + 100000,
       };
@@ -52,7 +53,7 @@ describe('MegaBankPaymentService', () => {
       });
 
       service.invalidateTokenCache();
-      const token = await service.getAccessToken();
+      const token = await MegaBankTokenUtil.getAccessToken();
       expect(token).toBe('fresh_token');
       expect(httpUtil.fetchWithTimeout).toHaveBeenCalledTimes(1);
     });
