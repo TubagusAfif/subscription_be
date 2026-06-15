@@ -16,7 +16,11 @@ export const updateAccountSchema = z.object({
         postal_code: z.string().optional().nullable(),
         country: z.string().optional().nullable(),
         clinic_name: z.string().optional().nullable(),
-        photo_url: z.string().optional().nullable(),
+        photo_url: z
+          .string()
+          .regex(/^(?!https?:\/\/).*/i, 'Photo URL must be a relative path, not a full URL')
+          .optional()
+          .nullable(),
       })
       .optional()
       .nullable(),
