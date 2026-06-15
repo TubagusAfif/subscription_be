@@ -81,4 +81,14 @@ export class CoinOrderRepository {
       data,
     });
   }
+
+  async updatePaymentInfo(id: number, pgResponseId: string, redirectUrl: string): Promise<CoinOrder> {
+    return this.prisma.coinOrder.update({
+      where: { id },
+      data: {
+        pg_response_id: pgResponseId,
+        redirect_url: redirectUrl,
+      },
+    });
+  }
 }

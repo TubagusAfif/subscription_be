@@ -42,7 +42,7 @@ describe('CoinOrderService', () => {
   };
 
   const mockTx = {
-    coinOrder: { update: jest.fn() },
+    coinOrder: { update: jest.fn(), findUnique: jest.fn() },
     coinWallet: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     coinTransaction: { create: jest.fn() },
   };
@@ -67,20 +67,20 @@ describe('CoinOrderService', () => {
     });
   });
 
-  describe('createOrder', () => {
+  describe('prepareBundleOrder', () => {
     it('should throw BUNDLE_NOT_FOUND if bundle does not exist', async () => {
       mockBundleRepo.findById.mockResolvedValue(null);
 
       await expect(
-        coinOrderService.createOrder(1, 999, { id: 1, name: 'Test', email: 'test@example.com' }),
+        coinOrderService.prepareBundleOrder(1, 999),
       ).rejects.toThrow(AppError);
 
       await expect(
-        coinOrderService.createOrder(1, 999, { id: 1, name: 'Test', email: 'test@example.com' }),
+        coinOrderService.prepareBundleOrder(1, 999),
       ).rejects.toMatchObject({ statusCode: 404, message: 'Coin bundle with ID 999 not found.' });
     });
 
-    it('should create an order and an MPG payment inquiry successfully', async () => {
+    it('should prepare an order and calculate price and tax correctly', async () => {
       const mockBundle = {
         id: 1,
         bundle_name: '100 Coins',
@@ -91,48 +91,18 @@ describe('CoinOrderService', () => {
         tax_rate: '11',
       };
 
-      const expectedTotalPrice = 90000 + 90000 * 0.11; // 99900
+      const expectedTaxAmount = 90000 * 0.11;
+      const expectedTotalPrice = 90000 + expectedTaxAmount; // 99900
 
       mockBundleRepo.findById.mockResolvedValue(mockBundle);
-      mockCoinOrderRepo.create.mockResolvedValue({ id: 101, status: 'PENDING' });
-      mockMegaBankPaymentService.createInquiry.mockResolvedValue({
-        id: 'mpg-response-123',
-        urls: {
-          checkout: 'https://pgcheckoutdev.bankmega.com/test123',
-          selections: 'https://pgcheckoutdev.bankmega.com/test123',
-        },
-        accountRef: '889089999584102',
-        status: 'unpaid',
-        responseCode: '0',
-        responseDesc: 'Success',
-      });
-      mockPrisma.coinOrder.update.mockResolvedValue({ id: 101, status: 'PENDING' });
 
-      const result = await coinOrderService.createOrder(1, 1, {
-        id: 1,
-        name: 'Test',
-        email: 'test@example.com',
-      });
+      const result = await coinOrderService.prepareBundleOrder(1, 1);
 
-      expect(mockCoinOrderRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          user_id: 1,
-          bundle_id: 1,
-          coin_amount: 100,
-          price_paid: expectedTotalPrice,
-          status: 'PENDING',
-        }),
-      );
-
-      expect(mockMegaBankPaymentService.createInquiry).toHaveBeenCalledWith(
-        expect.objectContaining({
-          amount: expectedTotalPrice,
-          currency: 'IDR',
-          paymentSource: 'va',
-        }),
-      );
-
-      expect(result.checkout_url).toContain('https://pgcheckoutdev.bankmega.com');
+      expect(mockBundleRepo.findById).toHaveBeenCalledWith(1);
+      expect(result.bundle).toEqual(mockBundle);
+      expect(result.taxAmount).toBe(expectedTaxAmount);
+      expect(result.totalPrice).toBe(expectedTotalPrice);
+      expect(result.pgOrderId).toContain('COIN-1-');
     });
   });
 
@@ -144,7 +114,8 @@ describe('CoinOrderService', () => {
     });
 
     it('should skip if order is already PAID', async () => {
-      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({ status: 'PAID' });
+      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({ id: 10, status: 'PAID' });
+      mockTx.coinOrder.findUnique.mockResolvedValue({ id: 10, status: 'PAID' });
 
       await coinOrderService.handlePaymentSuccess('already-paid-id');
 
@@ -162,6 +133,7 @@ describe('CoinOrderService', () => {
       const mockWallet = { id: 11, user_id: 1, balance: 50 };
 
       mockCoinOrderRepo.findByPgOrderId.mockResolvedValue(mockOrder);
+      mockTx.coinOrder.findUnique.mockResolvedValue(mockOrder);
       mockTx.coinWallet.findUnique.mockResolvedValue(mockWallet);
 
       await coinOrderService.handlePaymentSuccess('valid-pg-order-id');

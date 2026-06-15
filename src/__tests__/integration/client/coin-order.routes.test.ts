@@ -5,7 +5,10 @@ import { CoinOrderController } from '../../../client/controllers/coin-order.cont
 import { CoinOrderService } from '../../../client/services/coin-order.service';
 
 const mockCoinOrderService = {
-  createOrder: jest.fn(),
+  prepareBundleOrder: jest.fn(),
+  saveOrder: jest.fn(),
+  prepareCustomOrder: jest.fn(),
+  saveCustomOrder: jest.fn(),
   getUserOrders: jest.fn(),
   getOrderById: jest.fn(),
   handlePaymentSuccess: jest.fn(),
@@ -24,8 +27,15 @@ const mockAuthenticate: express.RequestHandler = (req: any, _res, next) => {
 const app = express();
 app.use(express.json());
 
+const mockAccountService = { getAccount: jest.fn() };
+const mockTaxService = { getActiveTax: jest.fn() };
+const mockMegaBankPaymentService = { createInquiry: jest.fn() };
+
 const coinOrderController = new CoinOrderController({
   coinOrderService: mockCoinOrderService,
+  accountService: mockAccountService,
+  taxService: mockTaxService,
+  megaBankPaymentService: mockMegaBankPaymentService,
 } as any);
 const coinOrderRouter = createCoinOrderRouter(coinOrderController, mockAuthenticate);
 
@@ -42,44 +52,56 @@ describe('Coin Order API Routes', () => {
     mockUser = { sub: 1, role: 'OWNER', email: 'owner@test.com', name: 'Owner' };
   });
 
-  describe('POST /api/v1/client/coin-orders', () => {
-    it('should create an order successfully when authenticated as OWNER', async () => {
-      mockCoinOrderService.createOrder.mockResolvedValue({
-        checkout_url: 'https://pgcheckoutdev.bankmega.com/test123',
+  describe('POST /api/v1/client/coin-orders/bundle', () => {
+    it('should create a bundle order successfully when authenticated as OWNER', async () => {
+      mockCoinOrderService.prepareBundleOrder.mockResolvedValue({
+        bundle: { id: 1, coin_amount: 100, currency_id: 1 },
+        totalPrice: 100000,
+        taxAmount: 11000,
+        pgOrderId: 'COIN-1-123',
+        referenceUrl: 'https://reference'
+      } as any);
+
+      mockAccountService.getAccount.mockResolvedValue({
+        name: 'User 1',
+        email: 'user1@example.com'
+      });
+
+      mockMegaBankPaymentService.createInquiry.mockResolvedValue({
+        id: 'inq-123',
+        urls: { checkout: 'https://pgcheckoutdev.bankmega.com/test123' }
+      } as any);
+
+      mockCoinOrderService.saveOrder.mockResolvedValue({
         order: { id: 1 } as any,
       });
 
       const response = await request(app)
-        .post('/api/v1/client/coin-orders')
+        .post('/api/v1/client/coin-orders/bundle')
         .set('Authorization', `Bearer ${ownerToken}`)
-        .send({ bundle_id: 1 });
+        .send({ bundle_id: 1, nominal: 100000, payment_source: 'va' });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data.checkout_url).toContain('https://pgcheckoutdev.bankmega.com');
-      expect(mockCoinOrderService.createOrder).toHaveBeenCalledWith(1, 1, {
-        id: 1,
-        email: 'user1@example.com',
-        name: 'User 1',
-        phone: '',
-      }, 'va');
+      expect(mockCoinOrderService.saveOrder).toHaveBeenCalled();
     });
 
     it('should return 401 if missing auth token', async () => {
-      const response = await request(app).post('/api/v1/client/coin-orders').send({ bundle_id: 1 });
+      const response = await request(app).post('/api/v1/client/coin-orders/bundle').send({ bundle_id: 1, nominal: 100000, payment_source: 'va' });
 
       expect(response.status).toBe(401);
-      expect(mockCoinOrderService.createOrder).not.toHaveBeenCalled();
+      expect(mockCoinOrderService.saveOrder).not.toHaveBeenCalled();
     });
 
-    it('should return 400 if validation fails (missing bundle_id)', async () => {
+    it('should return 400 if validation fails (missing nominal)', async () => {
       const response = await request(app)
-        .post('/api/v1/client/coin-orders')
+        .post('/api/v1/client/coin-orders/bundle')
         .set('Authorization', `Bearer ${ownerToken}`)
-        .send({});
+        .send({ bundle_id: 1 });
 
       expect(response.status).toBe(400);
-      expect(mockCoinOrderService.createOrder).not.toHaveBeenCalled();
+      expect(mockCoinOrderService.saveOrder).not.toHaveBeenCalled();
     });
   });
 

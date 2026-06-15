@@ -81,9 +81,7 @@ export class CoinOrderService {
     currencyId: number,
     totalPrice: number,
     taxAmount: number,
-    pgOrderId: string,
-    pgResponseId: string,
-    redirectUrl: string
+    pgOrderId: string
   ): Promise<{ order: CoinOrder }> {
     const order = await this.coinOrderRepo.create({
       user_id: userId,
@@ -94,8 +92,6 @@ export class CoinOrderService {
       tax_amount: taxAmount,
       status: 'PENDING',
       pg_order_id: pgOrderId,
-      pg_response_id: pgResponseId,
-      redirect_url: redirectUrl,
       created_by: userId,
       updated_by: userId,
     });
@@ -109,9 +105,7 @@ export class CoinOrderService {
     bundle: any,
     totalPrice: number,
     taxAmount: number,
-    pgOrderId: string,
-    pgResponseId: string,
-    redirectUrl: string
+    pgOrderId: string
   ): Promise<{ order: CoinOrder }> {
     const order = await this.coinOrderRepo.create({
       user_id: userId,
@@ -123,13 +117,15 @@ export class CoinOrderService {
       tax_amount: taxAmount,
       status: 'PENDING',
       pg_order_id: pgOrderId,
-      pg_response_id: pgResponseId,
-      redirect_url: redirectUrl,
       created_by: userId,
       updated_by: userId,
     });
 
     return { order };
+  }
+
+  async updateOrderPaymentInfo(orderId: number, pgResponseId: string, redirectUrl: string) {
+    return this.coinOrderRepo.updatePaymentInfo(orderId, pgResponseId, redirectUrl);
   }
 
   /** 

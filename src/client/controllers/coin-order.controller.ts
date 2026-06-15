@@ -52,6 +52,15 @@ export class CoinOrderController {
 
       const userData = await this.accountService.getAccount(userId);
 
+      const result = await this.coinOrderService.saveCustomOrder(
+        userId,
+        coin_amount,
+        activeCurrency.id,
+        totalPrice,
+        taxAmount,
+        pgOrderId
+      );
+
       const inquiryResult = await this.megaBankPaymentService.createInquiry({
         amount: totalPrice,
         currency: 'IDR',
@@ -65,15 +74,10 @@ export class CoinOrderController {
         paymentSource: payment_source || 'va',
       });
 
-      const result = await this.coinOrderService.saveCustomOrder(
-        userId,
-        coin_amount,
-        activeCurrency.id,
-        totalPrice,
-        taxAmount,
-        pgOrderId,
+      await this.coinOrderService.updateOrderPaymentInfo(
+        result.order.id,
         inquiryResult.id,
-        inquiryResult.urls.checkout
+        inquiryResult.urls.checkout || ""
       );
 
       res.status(201).json(
@@ -92,15 +96,24 @@ export class CoinOrderController {
       const { bundle_id, payment_source, nominal } = req.body;
       const userId = Number(req.user.sub);
 
-      const { bundle, totalPrice, taxAmount, pgOrderId, referenceUrl } = 
+      const { bundle, totalPrice, taxAmount, pgOrderId, referenceUrl } =
         await this.coinOrderService.prepareBundleOrder(userId, bundle_id);
-      
+
       if(nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
         throw new AppError('INVALID_NOMINAL', 'Nominal does not match the total price.', 400);
       }
 
       const userData = await this.accountService.getAccount(Number(req.user.sub));
+
+      const result = await this.coinOrderService.saveOrder(
+        Number(req.user.sub),
+        bundle_id,
+        bundle,
+        totalPrice,
+        taxAmount,
+        pgOrderId
+      );
 
       const inquiryResult = await this.megaBankPaymentService.createInquiry({
         amount: totalPrice,
@@ -115,21 +128,18 @@ export class CoinOrderController {
         paymentSource: payment_source || 'va',
       });
 
-      const result = await this.coinOrderService.saveOrder(
-        Number(req.user.sub),
-        bundle_id,
-        bundle,
-        totalPrice,
-        taxAmount,
-        pgOrderId,
+      logger.info(`[Inquiry Result]: ${JSON.stringify(inquiryResult)}`)
+
+      await this.coinOrderService.updateOrderPaymentInfo(
+        result.order.id,
         inquiryResult.id,
-        inquiryResult.urls.checkout
+        inquiryResult.urls.checkout || ""
       );
 
       res.status(201).json(
         successResponse({
           ...CoinOrderMapper.toResponse(result.order),
-          checkout_url: inquiryResult.urls.checkout,
+          checkout_url: inquiryResult.urls.checkout || "",
         }),
       );
     } catch (error) {
