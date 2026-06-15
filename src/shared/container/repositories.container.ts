@@ -17,6 +17,7 @@ import { CoinOrderRepository } from '../../client/repositories/coin-order.reposi
 import { CoinWalletRepository } from '../../client/repositories/coin-wallet.repository';
 import { CoinTransactionRepository } from '../../client/repositories/coin-transaction.repository';
 import { ClientSubscriptionRepository } from '../../client/repositories/subscription.repository';
+import { ClientAccountRepository } from '../../client/repositories/account.repository';
 
 // --- Subscription Repositories ---
 import { PlanRepository } from '../../subscription/repositories/plan.repository';
@@ -158,6 +159,14 @@ export class RepositoriesContainer {
     return this._clientSubscriptionRepository;
   }
 
+  private _clientAccountRepository: ClientAccountRepository | undefined;
+  get clientAccountRepository(): ClientAccountRepository {
+    if (!this._clientAccountRepository) {
+      this._clientAccountRepository = new ClientAccountRepository(this.prisma);
+    }
+    return this._clientAccountRepository;
+  }
+
 
   // ===========================================================================
   // Subscription Repositories
@@ -247,6 +256,7 @@ export class RepositoriesContainer {
     this._coinWalletRepository = undefined;
     this._coinTransactionRepository = undefined;
     this._clientSubscriptionRepository = undefined;
+    this._clientAccountRepository = undefined;
     this._dentalAdRepository = undefined;
     this._adminSubscriptionRepository = undefined;
   }

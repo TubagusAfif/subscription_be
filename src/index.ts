@@ -27,6 +27,7 @@ const clientRouter = createClientRouter(
   container.controllers.coinWalletController,
   container.controllers.clientSubscriptionController,
   container.controllers.clientDashboardController,
+  container.controllers.clientAccountController,
   container.controllers.sharedPlanController,
   container.controllers.sharedBundleController,
   container.controllers.sharedCurrencyController,

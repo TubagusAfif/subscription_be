@@ -16,6 +16,7 @@ import { ClientAuthService } from '../../client/services/auth.service';
 import { CoinOrderService } from '../../client/services/coin-order.service';
 import { CoinWalletService } from '../../client/services/coin-wallet.service';
 import { ClientSubscriptionService } from '../../client/services/subscription.service';
+import { ClientAccountService } from '../../client/services/account.service';
 
 // --- Subscription Services ---
 import { SubscriptionAuthService } from '../../subscription/services/auth.service';
@@ -154,6 +155,14 @@ export class ServicesContainer {
       });
     }
     return this._clientDashboardService;
+  }
+
+  private _clientAccountService: ClientAccountService | undefined;
+  get clientAccountService(): ClientAccountService {
+    if (!this._clientAccountService) {
+      this._clientAccountService = new ClientAccountService(this.repositories.clientAccountRepository);
+    }
+    return this._clientAccountService;
   }
 
 
@@ -299,6 +308,7 @@ export class ServicesContainer {
     this._coinOrderService = undefined;
     this._clientSubscriptionService = undefined;
     this._clientDashboardService = undefined;
+    this._clientAccountService = undefined;
     this._dentalAdService = undefined;
     this._adminDashboardService = undefined;
     this._webhookOutboxService = undefined;

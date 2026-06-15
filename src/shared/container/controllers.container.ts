@@ -17,6 +17,7 @@ import { ClientAuthController } from '../../client/controllers/auth.controller';
 import { CoinOrderController } from '../../client/controllers/coin-order.controller';
 import { CoinWalletController } from '../../client/controllers/coin-wallet.controller';
 import { ClientSubscriptionController } from '../../client/controllers/subscription.controller';
+import { ClientAccountController } from '../../client/controllers/account.controller';
 
 // --- Subscription Controllers ---
 import { SubscriptionAuthController } from '../../subscription/controllers/auth.controller';
@@ -190,6 +191,16 @@ export class ControllersContainer {
     return this._clientDashboardController;
   }
 
+  private _clientAccountController: ClientAccountController | undefined;
+  get clientAccountController(): ClientAccountController {
+    if (!this._clientAccountController) {
+      this._clientAccountController = new ClientAccountController({
+        accountService: this.services.clientAccountService,
+      });
+    }
+    return this._clientAccountController;
+  }
+
 
 
   // ===========================================================================
@@ -290,6 +301,7 @@ export class ControllersContainer {
     this._coinWalletController = undefined;
     this._clientSubscriptionController = undefined;
     this._clientDashboardController = undefined;
+    this._clientAccountController = undefined;
     this._subscriptionAuthController = undefined;
     this._planController = undefined;
     this._currencyController = undefined;

@@ -8,6 +8,7 @@ import { SharedPlanController } from '../../shared/controllers/plan.controller';
 import { SharedBundleController } from '../../shared/controllers/bundle.controller';
 import { SharedCurrencyController } from '../../shared/controllers/currency.controller';
 import { SharedTaxController } from '../../shared/controllers/tax.controller';
+import { ClientAccountController } from '../controllers/account.controller';
 
 import { createCoinOrderRouter } from './coin-order.routes';
 import { createCoinWalletRouter } from './coin-wallet.routes';
@@ -17,6 +18,7 @@ import { createClientBundleRouter } from './bundle.routes';
 import { createClientCurrencyRouter } from './currency.routes';
 import { createClientDashboardRouter } from './dashboard.routes';
 import { createClientTaxRouter } from './tax.routes';
+import { createClientAccountRouter } from './account.routes';
 import { ClientDashboardController } from '../controllers/dashboard.controller';
 
 export const createClientRouter = (
@@ -25,6 +27,7 @@ export const createClientRouter = (
   coinWalletController: CoinWalletController,
   subscriptionController: ClientSubscriptionController,
   dashboardController: ClientDashboardController,
+  accountController: ClientAccountController,
   sharedPlanController: SharedPlanController,
   sharedBundleController: SharedBundleController,
   sharedCurrencyController: SharedCurrencyController,
@@ -42,6 +45,7 @@ export const createClientRouter = (
   router.use('/currency', createClientCurrencyRouter(sharedCurrencyController, authenticate));
   router.use('/dashboard', createClientDashboardRouter(dashboardController, authenticate));
   router.use('/taxes', createClientTaxRouter(sharedTaxController, authenticate));
+  router.use('/account', createClientAccountRouter(accountController, authenticate));
 
   return router;
 };
