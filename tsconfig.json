@@ -41,7 +41,8 @@
   ],
   "exclude": [
     "prisma",
-    "src/__tests__"
+    "src/**/__tests__",
+    "src/**/*.test.ts"
   ],
   "ts-node": {
     "compilerOptions": {
