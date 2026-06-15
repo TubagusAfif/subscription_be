@@ -1,6 +1,6 @@
 // Inject required env vars before any module imports so that
 // the Zod-based env.ts validation passes in the test environment.
-process.env['NODE_ENV'] = 'test';
+process.env['NODE_ENV'] = 'staging';
 process.env['DATABASE_URL'] = 'postgresql://test:test@localhost:5432/testdb';
 process.env['JWT_SECRET'] = 'test-super-secret-jwt-key-for-unit-tests';
 process.env['JWT_ACCESS_EXPIRES_IN'] = '15m';

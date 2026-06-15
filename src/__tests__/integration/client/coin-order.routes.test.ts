@@ -13,6 +13,7 @@ const mockCoinOrderService = {
   getOrderById: jest.fn(),
   handlePaymentSuccess: jest.fn(),
   handlePaymentFailure: jest.fn(),
+  updateOrderPaymentInfo: jest.fn(),
 } as unknown as jest.Mocked<CoinOrderService>;
 
 let mockUser: { sub: number; role: string; email?: string; name?: string };

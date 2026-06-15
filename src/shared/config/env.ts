@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'staging']).default('development'),
   PORT: z.coerce.number().default(3000),
   API_PREFIX: z.string().default('/api/v1'),
   BASE_URL: z.string().default(''),
