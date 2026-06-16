@@ -15,7 +15,8 @@ const envSchema = z.object({
   MPG_BASE_URL: z.string().url().default('https://developer.bankmega.app'),
   MPG_PARTNER_ID: z.string().min(1),
   MPG_CHANNEL_ID: z.string().min(1).default('95221'),
-  MPG_SECRET_KEY_PATH: z.string().min(1),
+  MPG_SECRET_KEY: z.string().optional(),
+  MPG_SECRET_KEY_PATH: z.string().optional().default('./mpg_secret.key'),
   MPG_CLIENT_ID: z.string().min(1),
   MPG_CLIENT_SECRET: z.string().min(1),
   SMTP_HOST: z.string().min(1),
@@ -41,14 +42,17 @@ if (!_env.success) {
   throw new Error('Invalid environment variables');
 }
 
-// Read the MPG secret key from the file path specified in .env
-const secretKeyPath = path.resolve(_env.data.MPG_SECRET_KEY_PATH);
-let mpgSecretKey: string;
-try {
-  mpgSecretKey = fs.readFileSync(secretKeyPath, 'utf-8').trim();
-} catch (err) {
-  process.stderr.write(`Failed to read MPG secret key from ${secretKeyPath}\n`);
-  throw new Error(`Failed to read MPG secret key file: ${secretKeyPath}`);
+// Read the MPG secret key from environment variable directly or fallback to file path
+let mpgSecretKey = _env.data.MPG_SECRET_KEY;
+
+if (!mpgSecretKey) {
+  const secretKeyPath = path.resolve(_env.data.MPG_SECRET_KEY_PATH);
+  try {
+    mpgSecretKey = fs.readFileSync(secretKeyPath, 'utf-8').trim();
+  } catch (err) {
+    process.stderr.write(`Failed to read MPG secret key from ${secretKeyPath} and MPG_SECRET_KEY env variable is not set.\n`);
+    throw new Error(`Failed to read MPG secret key: missing from both env and file`);
+  }
 }
 
 export const env = {
