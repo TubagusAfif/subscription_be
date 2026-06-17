@@ -156,8 +156,9 @@ export class CoinOrderRepository {
     endDate?: Date | undefined;
     paymentMethodId?: number | undefined;
     status?: string | undefined;
+    interval?: 'day' | 'week' | 'month';
   }) {
-    const { startDate, endDate, paymentMethodId, status } = filters;
+    const { startDate, endDate, paymentMethodId, status, interval = 'day' } = filters;
 
     let conditions = [Prisma.sql`deleted_at IS NULL`];
 
@@ -176,9 +177,18 @@ export class CoinOrderRepository {
 
     const whereQuery = Prisma.join(conditions, ' AND ');
 
+    let dateTrunc: Prisma.Sql;
+    if (interval === 'month') {
+      dateTrunc = Prisma.sql`DATE_TRUNC('month', created_at)`;
+    } else if (interval === 'week') {
+      dateTrunc = Prisma.sql`DATE_TRUNC('week', created_at)`;
+    } else {
+      dateTrunc = Prisma.sql`DATE(created_at)`;
+    }
+
     const result = await this.prisma.$queryRaw<any[]>`
       SELECT 
-        DATE(created_at) as date,
+        ${dateTrunc} as date,
         COUNT(id)::int as total_orders,
         SUM(coin_price)::numeric as total_coin_price,
         SUM(tax_amount)::numeric as total_tax_amount,
@@ -186,8 +196,8 @@ export class CoinOrderRepository {
         SUM(price_paid)::numeric as total_price_paid
       FROM coin_orders
       WHERE ${whereQuery}
-      GROUP BY DATE(created_at)
-      ORDER BY DATE(created_at) ASC
+      GROUP BY ${dateTrunc}
+      ORDER BY ${dateTrunc} ASC
     `;
 
     return result;
