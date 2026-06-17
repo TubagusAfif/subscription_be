@@ -41,13 +41,15 @@ export class CoinOrderRepository {
     });
   }
 
-  async getOrderStats() {
+  async getOrderStats(startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
     const [totalCoinOrders, paidCoinOrders] = await Promise.all([
       this.prisma.coinOrder.count({
-        where: { deleted_at: null },
+        where: { deleted_at: null, ...dateFilter },
       }),
       this.prisma.coinOrder.count({
-        where: { deleted_at: null, status: 'PAID' },
+        where: { deleted_at: null, status: 'PAID', ...dateFilter },
       }),
     ]);
 
@@ -57,9 +59,11 @@ export class CoinOrderRepository {
     };
   }
 
-  async getRecentOrdersWithUsers(limit: number) {
+  async getRecentOrdersWithUsers(limit: number, startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
     return this.prisma.coinOrder.findMany({
-      where: { deleted_at: null },
+      where: { deleted_at: null, ...dateFilter },
       orderBy: { created_at: 'desc' },
       take: limit,
       include: {

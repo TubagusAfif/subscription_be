@@ -28,7 +28,22 @@ export class AdminDashboardService {
     this.planSwitchRepo = deps.planSwitchRepository;
   }
 
-  async getDashboard() {
+  async getDashboard(month?: number, year?: number, limit: number = 10) {
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (month || year) {
+      const currentYear = new Date().getFullYear();
+      const y = year || currentYear;
+      if (month) {
+        startDate = new Date(Date.UTC(y, month - 1, 1));
+        endDate = new Date(Date.UTC(y, month, 1));
+      } else {
+        startDate = new Date(Date.UTC(y, 0, 1));
+        endDate = new Date(Date.UTC(y + 1, 0, 1));
+      }
+    }
+
     const [
       userStats,
       subscriptionStats,
@@ -39,14 +54,14 @@ export class AdminDashboardService {
       recentCoinOrders,
       planSwitchStats,
     ] = await Promise.all([
-      this.userRepository.getUserStats(),
-      this.subscriptionRepo.getSubscriptionStats(),
-      this.transactionRepo.getRevenueStats(),
-      this.orderRepo.getOrderStats(),
-      this.subscriptionRepo.getPlanDistribution(),
-      this.subscriptionRepo.getRecentSubscriptions(10),
-      this.orderRepo.getRecentOrdersWithUsers(10),
-      this.planSwitchRepo.getPlanSwitchStats(),
+      this.userRepository.getUserStats(startDate, endDate),
+      this.subscriptionRepo.getSubscriptionStats(startDate, endDate),
+      this.transactionRepo.getRevenueStats(startDate, endDate),
+      this.orderRepo.getOrderStats(startDate, endDate),
+      this.subscriptionRepo.getPlanDistribution(startDate, endDate),
+      this.subscriptionRepo.getRecentSubscriptions(limit, startDate, endDate),
+      this.orderRepo.getRecentOrdersWithUsers(limit, startDate, endDate),
+      this.planSwitchRepo.getPlanSwitchStats(startDate, endDate),
     ]);
 
     return AdminDashboardMapper.toResponse({

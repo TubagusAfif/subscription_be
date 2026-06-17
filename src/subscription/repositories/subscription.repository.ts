@@ -3,22 +3,25 @@ import { PrismaClient } from '@prisma/client';
 export class AdminSubscriptionRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async getSubscriptionStats() {
+  async getSubscriptionStats(startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
     const [total, active, cancelled, expired] = await Promise.all([
       this.prisma.subscription.count({
-        where: { deleted_at: null },
+        where: { deleted_at: null, ...dateFilter },
       }),
       this.prisma.subscription.count({
         where: {
           deleted_at: null,
           status: { in: ['ACTIVE', 'RENEWED'] },
+          ...dateFilter,
         },
       }),
       this.prisma.subscription.count({
-        where: { deleted_at: null, status: 'CANCELLED' },
+        where: { deleted_at: null, status: 'CANCELLED', ...dateFilter },
       }),
       this.prisma.subscription.count({
-        where: { deleted_at: null, status: 'EXPIRED' },
+        where: { deleted_at: null, status: 'EXPIRED', ...dateFilter },
       }),
     ]);
 
@@ -30,11 +33,14 @@ export class AdminSubscriptionRepository {
     };
   }
 
-  async getPlanDistribution() {
+  async getPlanDistribution(startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
     const activeSubs = await this.prisma.subscription.findMany({
       where: {
         deleted_at: null,
         status: { in: ['ACTIVE', 'RENEWED'] },
+        ...dateFilter,
       },
       select: {
         sku_id: true,
@@ -68,9 +74,11 @@ export class AdminSubscriptionRepository {
     return Array.from(distributionMap.values());
   }
 
-  async getRecentSubscriptions(limit: number) {
+  async getRecentSubscriptions(limit: number, startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
     return this.prisma.subscription.findMany({
-      where: { deleted_at: null },
+      where: { deleted_at: null, ...dateFilter },
       orderBy: { created_at: 'desc' },
       take: limit,
       include: {

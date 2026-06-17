@@ -27,15 +27,17 @@ export class CoinTransactionRepository {
     });
   }
 
-  async getRevenueStats() {
+  async getRevenueStats(startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
     const [topupAgg, spendAgg] = await Promise.all([
       this.prisma.coinTransaction.aggregate({
         _sum: { amount: true },
-        where: { deleted_at: null, type: 'TOPUP' },
+        where: { deleted_at: null, type: 'TOPUP', ...dateFilter },
       }),
       this.prisma.coinTransaction.aggregate({
         _sum: { amount: true },
-        where: { deleted_at: null, type: 'SPEND' },
+        where: { deleted_at: null, type: 'SPEND', ...dateFilter },
       }),
     ]);
 

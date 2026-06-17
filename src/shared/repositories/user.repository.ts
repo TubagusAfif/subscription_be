@@ -29,21 +29,27 @@ export class UserRepository {
     });
   }
 
-  async getUserStats() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  async getUserStats(startDate?: Date, endDate?: Date) {
+    const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
+
+    let newUsersFilter: any = dateFilter;
+    if (!startDate && !endDate) {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      newUsersFilter = { created_at: { gte: startOfMonth } };
+    }
 
     const [totalUsers, activeUsers, newUsersThisMonth] = await Promise.all([
       this.prisma.user.count({
-        where: { deleted_at: null },
+        where: { deleted_at: null, ...dateFilter },
       }),
       this.prisma.user.count({
-        where: { deleted_at: null, is_active: true },
+        where: { deleted_at: null, is_active: true, ...dateFilter },
       }),
       this.prisma.user.count({
         where: {
           deleted_at: null,
-          created_at: { gte: startOfMonth },
+          ...newUsersFilter,
         },
       }),
     ]);
