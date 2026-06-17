@@ -90,23 +90,54 @@ export class ReportService {
 
     const status = filters.status || 'PAID';
 
+    // Dynamic interval bucketing
+    let interval: 'day' | 'week' | 'month' = 'day';
+    if (startDate && endDate) {
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 90) {
+        interval = 'month';
+      } else if (diffDays > 30) {
+        interval = 'week';
+      }
+    }
+
     const rawData = await this.coinOrderRepository.getChartReport({
       startDate,
       endDate,
       paymentMethodId: filters.paymentMethodId,
       status,
+      interval,
     });
 
-    const formattedData = rawData.map(row => ({
-      date: row.date.toISOString().split('T')[0],
-      total_orders: Number(row.total_orders),
-      total_coin_price: Number(row.total_coin_price || 0),
-      total_tax_amount: Number(row.total_tax_amount || 0),
-      total_gateway_fee: Number(row.total_gateway_fee || 0),
-      total_price_paid: Number(row.total_price_paid || 0),
-    }));
+    const formattedData = rawData.map(row => {
+      const rowDate = row.date instanceof Date ? row.date : new Date(row.date);
+      let dateString = rowDate.toISOString().split('T')[0];
 
-    return formattedData;
+      if (interval === 'month') {
+        // Return YYYY-MM format
+        dateString = dateString.substring(0, 7);
+      } else if (interval === 'week') {
+        // Return YYYY-MM-DD representing the start of that week
+        // Could also format as YYYY-Wxx, but standard ISO date is easier to parse in FE
+        dateString = dateString;
+      }
+
+      return {
+        date: dateString,
+        total_orders: Number(row.total_orders),
+        total_coin_price: Number(row.total_coin_price || 0),
+        total_tax_amount: Number(row.total_tax_amount || 0),
+        total_gateway_fee: Number(row.total_gateway_fee || 0),
+        total_price_paid: Number(row.total_price_paid || 0),
+      };
+    });
+
+    return {
+      interval,
+      results: formattedData
+    };
   }
 
   generateCSV(reportRows: FormattedReportRow[]): string {
