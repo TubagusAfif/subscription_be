@@ -9,6 +9,7 @@ import { SharedPlanService } from '../services/plan.service';
 import { WebhookOutboxService } from '../services/webhook-outbox.service';
 import { InternalService } from '../services/internal.service';
 import { TaxService } from '../services/tax.service';
+import { PaymentMethodService } from '../services/payment-method.service';
 
 // --- Client Services ---
 import { WebhookProcessorService } from '../../megabank/services/webhook-processor.service';
@@ -28,6 +29,7 @@ import { CurrencyService } from '../../subscription/services/currency.service';
 import { BundleService } from '../../subscription/services/bundle.service';
 import { DentalAdService } from '../../subscription/services/dental-ad.service';
 import { AdminDashboardService } from '../../subscription/services/dashboard.service';
+import { ReportService } from '../../subscription/services/report.service';
 import { ClientDashboardService } from '../../client/services/dashboard.service';
 
 /**
@@ -123,6 +125,7 @@ export class ServicesContainer {
         coinTransactionRepository: this.repositories.coinTransactionRepository,
         bundleRepository: this.repositories.bundleRepository,
         currencyRepository: this.repositories.currencyRepository,
+        paymentMethodRepository: this.repositories.paymentMethodRepository,
         prisma: this.repositories.prisma,
       });
     }
@@ -197,6 +200,22 @@ export class ServicesContainer {
       this._taxService = new TaxService(this.repositories.taxRepository);
     }
     return this._taxService;
+  }
+
+  private _paymentMethodService: PaymentMethodService | undefined;
+  get paymentMethodService(): PaymentMethodService {
+    if (!this._paymentMethodService) {
+      this._paymentMethodService = new PaymentMethodService(this.repositories.paymentMethodRepository);
+    }
+    return this._paymentMethodService;
+  }
+
+  private _reportService: ReportService | undefined;
+  get reportService(): ReportService {
+    if (!this._reportService) {
+      this._reportService = new ReportService(this.repositories.coinOrderRepository);
+    }
+    return this._reportService;
   }
 
   // ===========================================================================

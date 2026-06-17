@@ -163,28 +163,44 @@ const spec = {
           }
         }
       },
-      "CoinOrderRequest": {
+      "CreateBundleCoinOrderRequest": {
         "type": "object",
         "required": [
-          "bundle_id"
+          "bundle_id",
+          "nominal",
+          "payment_source"
         ],
         "properties": {
           "bundle_id": {
             "type": "integer",
             "example": 2
           },
-          "user_name": {
-            "type": "string",
-            "example": "Dr. Ahmad"
+          "nominal": {
+            "type": "number",
+            "example": 75000
           },
-          "user_email": {
+          "payment_source": {
             "type": "string",
-            "format": "email",
-            "example": "owner@clinic.com"
+            "enum": ["va", "qris"],
+            "example": "va"
+          }
+        }
+      },
+      "CreateCoinOrderRequest": {
+        "type": "object",
+        "required": [
+          "coin_amount",
+          "nominal",
+          "payment_source"
+        ],
+        "properties": {
+          "coin_amount": {
+            "type": "integer",
+            "example": 500
           },
-          "user_phone": {
-            "type": "string",
-            "example": "082114017471"
+          "nominal": {
+            "type": "number",
+            "example": 75000
           },
           "payment_source": {
             "type": "string",
@@ -839,7 +855,7 @@ const spec = {
         }
       }
     },
-    "/client/coin-orders": {
+    "/client/coin-orders/bundle": {
       "post": {
         "tags": [
           "Coin Orders"
@@ -850,7 +866,7 @@ const spec = {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CoinOrderRequest"
+                "$ref": "#/components/schemas/CreateBundleCoinOrderRequest"
               }
             }
           }
@@ -868,6 +884,58 @@ const spec = {
                       "user_id": 1,
                       "bundle_id": 2,
                       "is_custom_qty": false,
+                      "coin_amount": 500,
+                      "currency_id": 1,
+                      "price_paid": 75000,
+                      "tax_amount": 8250,
+                      "discount_id": null,
+                      "status": "PENDING",
+                      "checkout_url": "https://pgcheckoutdev.bankmega.com/...",
+                      "pg_order_id": "COIN-1-1234567890-abc123",
+                      "pg_response_id": "a60daf2b-1fd9-42ab-8235-41a264811025",
+                      "created_at": "2025-01-01T00:00:00.000Z",
+                      "updated_at": "2025-01-01T00:00:00.000Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/client/coin-orders": {
+      "post": {
+        "tags": [
+          "Coin Orders"
+        ],
+        "summary": "Create a custom coin order (initiates payment)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCoinOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created with payment URL",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "order": {
+                      "id": 1,
+                      "user_id": 1,
+                      "bundle_id": null,
+                      "is_custom_qty": true,
                       "coin_amount": 500,
                       "currency_id": 1,
                       "price_paid": 75000,
@@ -1615,6 +1683,37 @@ const spec = {
         "responses": {
           "200": {
             "description": "Permission assigned"
+          }
+        }
+      }
+    },
+    "/client/payment-methods/active": {
+      "get": {
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "List active payment methods",
+        "responses": {
+          "200": {
+            "description": "List of active payment methods",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "paymentMethods": [
+                      {
+                        "id": 1,
+                        "method_name": "Credit Card",
+                        "method_code": "credit_card",
+                        "method_type": "card",
+                        "is_active": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }

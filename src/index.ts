@@ -32,6 +32,7 @@ const clientRouter = createClientRouter(
   container.controllers.sharedBundleController,
   container.controllers.sharedCurrencyController,
   container.controllers.sharedTaxController,
+  container.controllers.sharedPaymentMethodController,
   authenticate,
 );
 
@@ -45,6 +46,8 @@ const subscriptionRouter = createSubscriptionRouter(
   container.controllers.sharedTaxController,
   container.controllers.dentalAdController,
   container.controllers.adminDashboardController,
+  container.controllers.paymentMethodController,
+  container.controllers.reportController,
   authenticate,
 );
 

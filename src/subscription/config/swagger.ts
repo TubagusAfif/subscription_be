@@ -757,6 +757,167 @@ const spec = {
         }
       }
     },
+    "/subscription/reports/transactions/chart": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get transaction report data for line charts grouped by date",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_date",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Start date for the report"
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "End date for the report"
+          },
+          {
+            "in": "query",
+            "name": "payment_method_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by payment method ID"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by order status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Line chart data",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "date": "2026-06-15",
+                      "total_orders": 5,
+                      "total_coin_price": 375000,
+                      "total_tax_amount": 41250,
+                      "total_gateway_fee": 7500,
+                      "total_price_paid": 423750
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscription/reports/transactions": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Get transaction report",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "start_date",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Start date for the report"
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "End date for the report"
+          },
+          {
+            "in": "query",
+            "name": "payment_method_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by payment method ID"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by order status"
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "csv"]
+            },
+            "description": "Format of the report (default json)"
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number (ignored if format is csv)"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Items per page (ignored if format is csv)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report data or CSV file",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [],
+                  "meta": {
+                    "total": 0,
+                    "page": 1,
+                    "last_page": 1
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/subscription/plans": {
       "post": {
         "tags": [
@@ -2072,9 +2233,22 @@ const spec = {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "method_name": {
+                  "name": {
                     "type": "string",
-                    "example": "Bank Transfer"
+                    "example": "Virtual Account"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "va"
+                  },
+                  "fee_type": {
+                    "type": "string",
+                    "enum": ["FIXED", "PERCENTAGE"],
+                    "example": "FIXED"
+                  },
+                  "fee_value": {
+                    "type": "number",
+                    "example": 4000
                   },
                   "is_active": {
                     "type": "boolean",
@@ -2107,9 +2281,44 @@ const spec = {
                     "paymentMethods": [
                       {
                         "id": 1,
-                        "method_name": "Credit Card",
-                        "method_code": "credit_card",
-                        "method_type": "card",
+                        "name": "Virtual Account",
+                        "code": "va",
+                        "fee_type": "FIXED",
+                        "fee_value": 4000,
+                        "image_path": "/public/uploads/payment-methods/image.png",
+                        "is_active": true
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/subscription/payment-methods/active": {
+      "get": {
+        "tags": [
+          "Payment Methods"
+        ],
+        "summary": "List active payment methods",
+        "responses": {
+          "200": {
+            "description": "List of active payment methods",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "paymentMethods": [
+                      {
+                        "id": 1,
+                        "name": "Virtual Account",
+                        "code": "va",
+                        "fee_type": "FIXED",
+                        "fee_value": 4000,
+                        "image_path": "/public/uploads/payment-methods/image.png",
                         "is_active": true
                       }
                     ]
@@ -2163,7 +2372,29 @@ const spec = {
           "content": {
             "application/json": {
               "schema": {
-                "type": "object"
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Virtual Account"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "va"
+                  },
+                  "fee_type": {
+                    "type": "string",
+                    "enum": ["FIXED", "PERCENTAGE"],
+                    "example": "FIXED"
+                  },
+                  "fee_value": {
+                    "type": "number",
+                    "example": 4000
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  }
+                }
               }
             }
           }

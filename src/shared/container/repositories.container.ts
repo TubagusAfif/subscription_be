@@ -11,6 +11,7 @@ import { PlanSwitchRepository } from '../repositories/plan-switch.repository';
 import { WebhookOutboxRepository } from '../repositories/webhook-outbox.repository';
 import { InternalRepository } from '../repositories/internal.repository';
 import { TaxRepository } from '../repositories/tax.repository';
+import { PaymentMethodRepository } from '../repositories/payment-method.repository';
 
 // --- Client Repositories ---
 import { CoinOrderRepository } from '../../client/repositories/coin-order.repository';
@@ -121,6 +122,14 @@ export class RepositoriesContainer {
       this._taxRepository = new TaxRepository(this.prisma);
     }
     return this._taxRepository;
+  }
+
+  private _paymentMethodRepository: PaymentMethodRepository | undefined;
+  get paymentMethodRepository(): PaymentMethodRepository {
+    if (!this._paymentMethodRepository) {
+      this._paymentMethodRepository = new PaymentMethodRepository(this.prisma);
+    }
+    return this._paymentMethodRepository;
   }
 
   // ===========================================================================

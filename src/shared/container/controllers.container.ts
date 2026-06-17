@@ -11,6 +11,7 @@ import { SharedBundleController } from '../controllers/bundle.controller';
 import { SharedCurrencyController } from '../controllers/currency.controller';
 import { InternalController } from '../controllers/internal.controller';
 import { SharedTaxController } from '../controllers/tax.controller';
+import { SharedPaymentMethodController } from '../controllers/payment-method.controller';
 
 // --- Client Controllers ---
 import { ClientAuthController } from '../../client/controllers/auth.controller';
@@ -25,8 +26,10 @@ import { PlanController } from '../../subscription/controllers/plan.controller';
 import { CurrencyController } from '../../subscription/controllers/currency.controller';
 import { BundleController } from '../../subscription/controllers/bundle.controller';
 import { TaxController } from '../../subscription/controllers/tax.controller';
+import { PaymentMethodController } from '../../subscription/controllers/payment-method.controller';
 import { DentalAdController } from '../../subscription/controllers/dental-ad.controller';
 import { AdminDashboardController } from '../../subscription/controllers/dashboard.controller';
+import { ReportController } from '../../subscription/controllers/report.controller';
 import { ClientDashboardController } from '../../client/controllers/dashboard.controller';
 
 /**
@@ -101,6 +104,16 @@ export class ControllersContainer {
       });
     }
     return this._sharedTaxController;
+  }
+
+  private _sharedPaymentMethodController: SharedPaymentMethodController | undefined;
+  get sharedPaymentMethodController(): SharedPaymentMethodController {
+    if (!this._sharedPaymentMethodController) {
+      this._sharedPaymentMethodController = new SharedPaymentMethodController({
+        paymentMethodService: this.services.paymentMethodService,
+      });
+    }
+    return this._sharedPaymentMethodController;
   }
 
   // ===========================================================================
@@ -265,6 +278,16 @@ export class ControllersContainer {
     return this._taxController;
   }
 
+  private _paymentMethodController: PaymentMethodController | undefined;
+  get paymentMethodController(): PaymentMethodController {
+    if (!this._paymentMethodController) {
+      this._paymentMethodController = new PaymentMethodController({
+        paymentMethodService: this.services.paymentMethodService,
+      });
+    }
+    return this._paymentMethodController;
+  }
+
   private _dentalAdController: DentalAdController | undefined;
   get dentalAdController(): DentalAdController {
     if (!this._dentalAdController) {
@@ -283,6 +306,16 @@ export class ControllersContainer {
       });
     }
     return this._adminDashboardController;
+  }
+
+  private _reportController: ReportController | undefined;
+  get reportController(): ReportController {
+    if (!this._reportController) {
+      this._reportController = new ReportController({
+        reportService: this.services.reportService,
+      });
+    }
+    return this._reportController;
   }
 
 
@@ -308,8 +341,11 @@ export class ControllersContainer {
     this._bundleController = undefined;
     this._sharedTaxController = undefined;
     this._taxController = undefined;
+    this._sharedPaymentMethodController = undefined;
+    this._paymentMethodController = undefined;
     this._dentalAdController = undefined;
     this._adminDashboardController = undefined;
+    this._reportController = undefined;
     this._internalController = undefined;
   }
 }

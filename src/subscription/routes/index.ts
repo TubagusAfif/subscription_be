@@ -15,6 +15,10 @@ import { DentalAdController } from '../controllers/dental-ad.controller';
 import { createDentalAdRouter } from './dental-ad.routes';
 import { AdminDashboardController } from '../controllers/dashboard.controller';
 import { createDashboardRouter } from './dashboard.routes';
+import { PaymentMethodController } from '../controllers/payment-method.controller';
+import { createPaymentMethodRouter } from './payment-method.routes';
+import { ReportController } from '../controllers/report.controller';
+import { createReportRouter } from './report.routes';
 
 export const createSubscriptionRouter = (
   authController: SubscriptionAuthController,
@@ -26,6 +30,8 @@ export const createSubscriptionRouter = (
   sharedTaxController: SharedTaxController,
   dentalAdController: DentalAdController,
   dashboardController: AdminDashboardController,
+  paymentMethodController: PaymentMethodController,
+  reportController: ReportController,
   authenticate: RequestHandler,
 ): Router => {
   const router = Router();
@@ -35,6 +41,8 @@ export const createSubscriptionRouter = (
   router.use('/currencies', createCurrencyRouter(currencyController, authenticate));
   router.use('/bundles', createBundleRouter(bundleController, authenticate));
   router.use('/taxes', createTaxRouter(taxController, sharedTaxController, authenticate));
+  router.use('/payment-methods', createPaymentMethodRouter(paymentMethodController, authenticate));
+  router.use('/reports', createReportRouter(reportController, authenticate));
   router.use('/dental-ads', createDentalAdRouter(dentalAdController, authenticate));
   router.use('/dashboard', createDashboardRouter(dashboardController, authenticate));
 
