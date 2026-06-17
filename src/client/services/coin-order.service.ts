@@ -46,16 +46,16 @@ export class CoinOrderService {
     Returns checkout_url for the client to redirect the customer.
   ---------------------------------------------------------------
   **/
-  async prepareBundleOrder(userId: number, bundleId: number, paymentSource: string) {
+  async prepareBundleOrder(userId: number, bundleId: number, paymentMethodId: number) {
     const bundle = await this.bundleRepo.findById(bundleId);
 
     if (!bundle) {
       throw new AppError('BUNDLE_NOT_FOUND', `Coin bundle with ID ${bundleId} not found.`, 404);
     }
 
-    const paymentMethod = await this.paymentMethodRepo.findByCode(paymentSource);
+    const paymentMethod = await this.paymentMethodRepo.findById(paymentMethodId);
     if (!paymentMethod || !paymentMethod.is_active) {
-      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method ${paymentSource} is not available.`, 400);
+      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method is not available or inactive.`, 400);
     }
 
     const basePrice = bundle.discounted_price ? Number(bundle.discounted_price) : Number(bundle.price);
@@ -78,20 +78,28 @@ export class CoinOrderService {
     return { bundle, basePrice, taxAmount, gatewayFee, totalPrice, paymentMethod, pgOrderId, referenceUrl };
   }
 
-  async prepareCustomOrder(userId: number, coinAmount: number, taxRate: number, paymentSource: string) {
+  async prepareCustomOrder(userId: number, coinAmount: number, activeTax: any, paymentMethodId: number) {
     const activeCurrency = await this.currencyRepo.findActive();
 
     if(!activeCurrency) {
       throw new AppError("INACTIVE_CURRENCY", "There's no active currency", 404);
     }
 
-    const paymentMethod = await this.paymentMethodRepo.findByCode(paymentSource);
+    const paymentMethod = await this.paymentMethodRepo.findById(paymentMethodId);
     if (!paymentMethod || !paymentMethod.is_active) {
-      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method ${paymentSource} is not available.`, 400);
+      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method is not available or inactive.`, 400);
     }
 
     const basePrice = Math.round(coinAmount * Number(activeCurrency.conversion_rate));
-    const taxAmount = basePrice * (Number(taxRate) / 100);
+    
+    let taxAmount = 0;
+    if (activeTax) {
+      if (activeTax.tax_type === 'PERCENTAGE') {
+        taxAmount = basePrice * (Number(activeTax.tax_value) / 100);
+      } else {
+        taxAmount = Number(activeTax.tax_value);
+      }
+    }
 
     // Calculate gateway fee
     let gatewayFee = 0;

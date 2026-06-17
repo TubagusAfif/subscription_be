@@ -36,15 +36,13 @@ export class CoinOrderController {
 
   createCoinOrder = async (req: AuthenticatedRequest<CreateCoinOrderBody>, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { coin_amount, payment_source, nominal } = req.body;
+      const { coin_amount, payment_method_id, nominal } = req.body;
       const userId = Number(req.user.sub);
 
       const activeTax = await this.taxService.getActiveTax();
 
-      const taxRate = activeTax ? Number(activeTax.rate_percent) : 0;
-
       const { pgOrderId, referenceUrl, basePrice, taxAmount, gatewayFee, totalPrice, activeCurrency, paymentMethod } =
-        await this.coinOrderService.prepareCustomOrder(userId, coin_amount, taxRate, payment_source);
+        await this.coinOrderService.prepareCustomOrder(userId, coin_amount, activeTax, payment_method_id);
 
       if (nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
@@ -75,7 +73,7 @@ export class CoinOrderController {
           email: userData.email,
           phoneNumber: '085640555866',
         },
-        paymentSource: payment_source || 'va',
+        paymentSource: paymentMethod.code || 'va',
       });
 
       logger.info(`[Inquiry Result] : ${JSON.stringify(inquiryResult)}`)
@@ -99,11 +97,11 @@ export class CoinOrderController {
 
   createBundleOrder = async (req: AuthenticatedRequest<CreateBundleCoinOrderBody>, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { bundle_id, payment_source, nominal } = req.body;
+      const { bundle_id, payment_method_id, nominal } = req.body;
       const userId = Number(req.user.sub);
 
       const { bundle, basePrice, taxAmount, gatewayFee, totalPrice, paymentMethod, pgOrderId, referenceUrl } =
-        await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_source);
+        await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_method_id);
 
       if(nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
@@ -134,7 +132,7 @@ export class CoinOrderController {
           email: userData.email,
           phoneNumber: '085640555866',
         },
-        paymentSource: payment_source || 'va',
+        paymentSource: paymentMethod.code || 'va',
       });
 
       logger.info(`[Inquiry Result]: ${JSON.stringify(inquiryResult)}`)
