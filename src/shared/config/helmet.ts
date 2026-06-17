@@ -21,4 +21,5 @@ export const helmetConfig = helmet({
     ? { maxAge: 31536000, includeSubDomains: true, preload: true }
     : false, // Disabled in dev — no HTTPS on localhost
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 });
