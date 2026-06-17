@@ -29,7 +29,7 @@ export const errorHandler = (
   }
 
   // Log the full error internally — never expose to client
-  logger.error('Unhandled Exception:', { error: err.message, stack: err.stack });
+  logger.error(err);
   Sentry.captureException(err);
 
   return res

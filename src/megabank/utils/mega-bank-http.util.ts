@@ -62,8 +62,6 @@ export class MegaBankHttpUtil {
 
         const response = await fetchWithTimeout(requestUrl, { method, headers, ...(requestBody ? { body: requestBody } : {}), timeoutMs: REQUEST_TIMEOUT_MS });
 
-        logger.info('[MegaBankHttpUtil] API request completed', { path, status: response.status, attempt });
-
         if (!response.ok) {
           const errorBody = await response.text();
           logger.error('[MegaBankHttpUtil] API request failed', { path, status: response.status, attempt, errorBody, payload });
@@ -81,7 +79,9 @@ export class MegaBankHttpUtil {
           });
         }
 
-        return (await response.json()) as T;
+        const responseData = (await response.json()) as T;
+        logger.info('[MegaBankHttpUtil] API request completed', { path, status: response.status, attempt, response: responseData });
+        return responseData;
       } catch (error) {
         if (error instanceof AppError) throw error;
         logger.error('[MegaBankHttpUtil] Unexpected request error', { path, attempt, error: error instanceof Error ? error.message : String(error) });
