@@ -26,7 +26,7 @@ const createStorage = (destination: string): StorageEngine =>
 
 /** 
 ---------------------------------------------------------------
-  Multer instance for handling image uploads (JPEG, PNG, WebP).
+  Multer instance for handling image uploads (JPEG, PNG, WebP, SVG).
   Files saved to: public/uploads/images/
   Max file size: 5MB.
 ---------------------------------------------------------------
@@ -35,11 +35,11 @@ export const uploadImage = multer({
   storage: createStorage(IMAGE_DIR),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (_req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
     if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
+      cb(new Error('Only JPEG, PNG, WebP, and SVG images are allowed'));
     }
   },
 });
