@@ -296,40 +296,43 @@ model CoinBundle {
 // Tax and Payment Gateway Management (Master Data)
 // --------------------------------------------------------------------------
 
+enum FeeType {
+  FIXED
+  PERCENTAGE
+}
+
 model TaxConfig {
-  id           Int       @id @default(autoincrement())
-  tax_name     String
-  rate_percent Decimal   @db.Decimal(5, 2)
-  region       String
-  is_active    Boolean   @default(true)
-  created_at   DateTime  @default(now())
-  created_by   Int?
-  updated_at   DateTime  @updatedAt
-  updated_by   Int?
-  deleted_at   DateTime?
-  deleted_by   Int?
+  id         Int       @id @default(autoincrement())
+  tax_name   String
+  tax_value  Decimal   @db.Decimal(15, 2)
+  tax_type   FeeType
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  created_by Int?
+  updated_at DateTime  @updatedAt
+  updated_by Int?
+  deleted_at DateTime?
+  deleted_by Int?
 
   @@map("tax_config")
 }
 
-
-
 model PaymentMethod {
-  id           Int         @id @default(autoincrement())
-  name         String      // e.g., Virtual Account Bank Mega, Credit Card, GoPay
-  code         String      @unique // e.g., va_bankmega, credit_card, gopay
-  fee_type     String      // FIXED or PERCENTAGE
-  fee_value    Decimal     @db.Decimal(15, 2)
-  image_path   String?
-  is_active    Boolean     @default(true)
-  created_at   DateTime    @default(now())
-  created_by   Int?
-  updated_at   DateTime    @updatedAt
-  updated_by   Int?
-  deleted_at   DateTime?
-  deleted_by   Int?
+  id         Int       @id @default(autoincrement())
+  name       String // e.g., Virtual Account Bank Mega, Credit Card, GoPay
+  code       String    @unique // e.g., va_bankmega, credit_card, gopay
+  fee_type   FeeType // FIXED or PERCENTAGE
+  fee_value  Decimal   @db.Decimal(15, 2)
+  image_path String?
+  is_active  Boolean   @default(true)
+  created_at DateTime  @default(now())
+  created_by Int?
+  updated_at DateTime  @updatedAt
+  updated_by Int?
+  deleted_at DateTime?
+  deleted_by Int?
 
-  coin_orders  CoinOrder[]
+  coin_orders CoinOrder[]
 
   @@map("payment_methods")
 }

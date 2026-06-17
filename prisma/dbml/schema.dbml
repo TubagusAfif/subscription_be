@@ -182,8 +182,8 @@ Table coin_bundles {
 Table tax_config {
   id Int [pk, increment]
   tax_name String [not null]
-  rate_percent Decimal [not null]
-  region String [not null]
+  tax_value Decimal [not null]
+  tax_type FeeType [not null]
   is_active Boolean [not null, default: true]
   created_at DateTime [default: `now()`, not null]
   created_by Int
@@ -197,7 +197,7 @@ Table payment_methods {
   id Int [pk, increment]
   name String [not null]
   code String [unique, not null]
-  fee_type String [not null]
+  fee_type FeeType [not null]
   fee_value Decimal [not null]
   image_path String
   is_active Boolean [not null, default: true]
@@ -517,6 +517,11 @@ Enum PackageTier {
   MEDIUM
   PRO
   ENTERPRISE
+}
+
+Enum FeeType {
+  FIXED
+  PERCENTAGE
 }
 
 Enum WebhookOutboxStatus {
