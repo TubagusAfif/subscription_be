@@ -4,6 +4,7 @@ import { CoinWalletRepository } from '../repositories/coin-wallet.repository';
 import { CoinTransactionRepository } from '../repositories/coin-transaction.repository';
 import { BundleRepository } from '../../subscription/repositories/bundle.repository';
 import { CurrencyRepository } from '../../subscription/repositories/currency.repository';
+import { PaymentMethodRepository } from '../../shared/repositories/payment-method.repository';
 import { PrismaClient, CoinOrder } from '@prisma/client';
 import crypto from 'crypto';
 import { env } from '../../shared/config/env';
@@ -14,6 +15,7 @@ export interface CoinOrderServiceDeps {
   coinTransactionRepository: CoinTransactionRepository;
   bundleRepository: BundleRepository;
   currencyRepository: CurrencyRepository;
+  paymentMethodRepository: PaymentMethodRepository;
   prisma: PrismaClient;
 }
 
@@ -28,12 +30,14 @@ export class CoinOrderService {
   private readonly bundleRepo: BundleRepository;
   private readonly prisma: PrismaClient;
   private readonly currencyRepo: CurrencyRepository;
+  private readonly paymentMethodRepo: PaymentMethodRepository;
 
   constructor(deps: CoinOrderServiceDeps) {
     this.coinOrderRepo = deps.coinOrderRepository;
     this.bundleRepo = deps.bundleRepository;
     this.prisma = deps.prisma;
     this.currencyRepo = deps.currencyRepository;
+    this.paymentMethodRepo = deps.paymentMethodRepository;
   }
 
   /** 
@@ -42,45 +46,79 @@ export class CoinOrderService {
     Returns checkout_url for the client to redirect the customer.
   ---------------------------------------------------------------
   **/
-  async prepareBundleOrder(userId: number, bundleId: number) {
+  async prepareBundleOrder(userId: number, bundleId: number, paymentSource: string) {
     const bundle = await this.bundleRepo.findById(bundleId);
 
     if (!bundle) {
       throw new AppError('BUNDLE_NOT_FOUND', `Coin bundle with ID ${bundleId} not found.`, 404);
     }
 
-    const price = bundle.discounted_price ? Number(bundle.discounted_price) : Number(bundle.price);
-    const taxAmount = price * (Number(bundle.tax_rate) / 100);
-    const totalPrice = Math.round(price + taxAmount);
+    const paymentMethod = await this.paymentMethodRepo.findByCode(paymentSource);
+    if (!paymentMethod || !paymentMethod.is_active) {
+      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method ${paymentSource} is not available.`, 400);
+    }
+
+    const basePrice = bundle.discounted_price ? Number(bundle.discounted_price) : Number(bundle.price);
+    const taxAmount = basePrice * (Number(bundle.tax_rate) / 100);
+
+    // Calculate gateway fee
+    let gatewayFee = 0;
+    if (paymentMethod.fee_type === 'PERCENTAGE') {
+      gatewayFee = (basePrice + taxAmount) * (Number(paymentMethod.fee_value) / 100);
+    } else {
+      gatewayFee = Number(paymentMethod.fee_value);
+    }
+    gatewayFee = Math.round(gatewayFee);
+
+    const totalPrice = Math.round(basePrice + taxAmount + gatewayFee);
 
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const referenceUrl = `${env.BASE_URL}/api/v1/client/coin-orders/status?order_id=${pgOrderId}`;
 
-    return { bundle, totalPrice, taxAmount, pgOrderId, referenceUrl };
+    return { bundle, basePrice, taxAmount, gatewayFee, totalPrice, paymentMethod, pgOrderId, referenceUrl };
   }
 
-  async prepareCustomOrder(userId: number, coinAmount: number, taxRate: number) {
+  async prepareCustomOrder(userId: number, coinAmount: number, taxRate: number, paymentSource: string) {
     const activeCurrency = await this.currencyRepo.findActive();
 
     if(!activeCurrency) {
       throw new AppError("INACTIVE_CURRENCY", "There's no active currency", 404);
     }
 
-    const totalPrice = Math.round(coinAmount * Number(activeCurrency.conversion_rate));
-    const taxAmount = totalPrice * (Number(taxRate) / 100);
+    const paymentMethod = await this.paymentMethodRepo.findByCode(paymentSource);
+    if (!paymentMethod || !paymentMethod.is_active) {
+      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method ${paymentSource} is not available.`, 400);
+    }
 
+    const basePrice = Math.round(coinAmount * Number(activeCurrency.conversion_rate));
+    const taxAmount = basePrice * (Number(taxRate) / 100);
+
+    // Calculate gateway fee
+    let gatewayFee = 0;
+    if (paymentMethod.fee_type === 'PERCENTAGE') {
+      gatewayFee = (basePrice + taxAmount) * (Number(paymentMethod.fee_value) / 100);
+    } else {
+      gatewayFee = Number(paymentMethod.fee_value);
+    }
+    gatewayFee = Math.round(gatewayFee);
+
+    const totalPrice = Math.round(basePrice + taxAmount + gatewayFee);
 
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    const referenceUrl = `${env.CLIENT_APP_URL}/payment/status?order_id=${pgOrderId}`;
-    return { pgOrderId, referenceUrl, totalPrice, taxAmount, activeCurrency };
+    const referenceUrl = `${env.BASE_URL}/payment/status?order_id=${pgOrderId}`;
+    
+    return { pgOrderId, referenceUrl, basePrice, taxAmount, gatewayFee, totalPrice, activeCurrency, paymentMethod };
   }
 
   async saveCustomOrder(
     userId: number,
     coinAmount: number,
     currencyId: number,
-    totalPrice: number,
+    basePrice: number,
     taxAmount: number,
+    gatewayFee: number,
+    totalPrice: number,
+    paymentMethodId: number,
     pgOrderId: string
   ): Promise<{ order: CoinOrder }> {
     const order = await this.coinOrderRepo.create({
@@ -88,8 +126,11 @@ export class CoinOrderService {
       is_custom_qty: true,
       coin_amount: coinAmount,
       currency_id: currencyId,
-      price_paid: totalPrice,
+      coin_price: basePrice,
       tax_amount: taxAmount,
+      gateway_fee: gatewayFee,
+      price_paid: totalPrice,
+      payment_method_id: paymentMethodId,
       status: 'PENDING',
       pg_order_id: pgOrderId,
       created_by: userId,
@@ -103,8 +144,11 @@ export class CoinOrderService {
     userId: number,
     bundleId: number,
     bundle: any,
-    totalPrice: number,
+    basePrice: number,
     taxAmount: number,
+    gatewayFee: number,
+    totalPrice: number,
+    paymentMethodId: number,
     pgOrderId: string
   ): Promise<{ order: CoinOrder }> {
     const order = await this.coinOrderRepo.create({
@@ -113,8 +157,11 @@ export class CoinOrderService {
       is_custom_qty: false,
       coin_amount: bundle.coin_amount,
       currency_id: bundle.currency_id,
-      price_paid: totalPrice,
+      coin_price: basePrice,
       tax_amount: taxAmount,
+      gateway_fee: gatewayFee,
+      price_paid: totalPrice,
+      payment_method_id: paymentMethodId,
       status: 'PENDING',
       pg_order_id: pgOrderId,
       created_by: userId,

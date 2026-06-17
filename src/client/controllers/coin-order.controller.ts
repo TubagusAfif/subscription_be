@@ -43,10 +43,11 @@ export class CoinOrderController {
 
       const taxRate = activeTax ? Number(activeTax.rate_percent) : 0;
 
-      const { pgOrderId, referenceUrl, totalPrice, taxAmount, activeCurrency } =
-        await this.coinOrderService.prepareCustomOrder(userId, coin_amount, taxRate);
+      const { pgOrderId, referenceUrl, basePrice, taxAmount, gatewayFee, totalPrice, activeCurrency, paymentMethod } =
+        await this.coinOrderService.prepareCustomOrder(userId, coin_amount, taxRate, payment_source);
 
       if (nominal !== totalPrice) {
+        logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
         throw new AppError('INVALID_NOMINAL', 'Nominal does not match the total price.', 400);
       }
 
@@ -56,8 +57,11 @@ export class CoinOrderController {
         userId,
         coin_amount,
         activeCurrency.id,
-        totalPrice,
+        basePrice,
         taxAmount,
+        gatewayFee,
+        totalPrice,
+        paymentMethod.id,
         pgOrderId
       );
 
@@ -73,6 +77,8 @@ export class CoinOrderController {
         },
         paymentSource: payment_source || 'va',
       });
+
+      logger.info(`[Inquiry Result] : ${JSON.stringify(inquiryResult)}`)
 
       await this.coinOrderService.updateOrderPaymentInfo(
         result.order.id,
@@ -96,8 +102,8 @@ export class CoinOrderController {
       const { bundle_id, payment_source, nominal } = req.body;
       const userId = Number(req.user.sub);
 
-      const { bundle, totalPrice, taxAmount, pgOrderId, referenceUrl } =
-        await this.coinOrderService.prepareBundleOrder(userId, bundle_id);
+      const { bundle, basePrice, taxAmount, gatewayFee, totalPrice, paymentMethod, pgOrderId, referenceUrl } =
+        await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_source);
 
       if(nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
@@ -110,8 +116,11 @@ export class CoinOrderController {
         Number(req.user.sub),
         bundle_id,
         bundle,
-        totalPrice,
+        basePrice,
         taxAmount,
+        gatewayFee,
+        totalPrice,
+        paymentMethod.id,
         pgOrderId
       );
 

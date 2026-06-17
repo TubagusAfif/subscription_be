@@ -1,7 +1,11 @@
-import { CoinOrder } from '@prisma/client';
+import { CoinOrder, PaymentMethod } from '@prisma/client';
+
+export type CoinOrderWithPaymentMethod = CoinOrder & {
+  payment_method?: PaymentMethod | null;
+};
 
 export class CoinOrderMapper {
-  static toResponse(order: CoinOrder) {
+  static toResponse(order: CoinOrderWithPaymentMethod) {
     return {
       id: order.id,
       user_id: order.user_id,
@@ -9,8 +13,16 @@ export class CoinOrderMapper {
       is_custom_qty: order.is_custom_qty,
       coin_amount: order.coin_amount,
       currency_id: order.currency_id,
-      price_paid: Number(order.price_paid),
+      coin_price: Number(order.coin_price),
       tax_amount: Number(order.tax_amount),
+      gateway_fee: Number(order.gateway_fee),
+      price_paid: Number(order.price_paid),
+      payment_method_id: order.payment_method_id,
+      payment_method: order.payment_method ? {
+        id: order.payment_method.id,
+        name: order.payment_method.name,
+        code: order.payment_method.code,
+      } : null,
       status: order.status,
       checkout_url: order.redirect_url,
       pg_order_id: order.pg_order_id,

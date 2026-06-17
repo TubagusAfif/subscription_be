@@ -57,8 +57,11 @@ describe('Coin Order API Routes', () => {
     it('should create a bundle order successfully when authenticated as OWNER', async () => {
       mockCoinOrderService.prepareBundleOrder.mockResolvedValue({
         bundle: { id: 1, coin_amount: 100, currency_id: 1 },
-        totalPrice: 100000,
+        basePrice: 89000,
         taxAmount: 11000,
+        gatewayFee: 0,
+        totalPrice: 100000,
+        paymentMethod: { id: 1, name: 'VA', code: 'va' },
         pgOrderId: 'COIN-1-123',
         referenceUrl: 'https://reference'
       } as any);

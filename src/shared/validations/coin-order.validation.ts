@@ -12,15 +12,15 @@ export const createBundleCoinOrderSchema = z.object({
   body: z.object({
     bundle_id: z.number().int().positive('Bundle ID is required'),
     nominal: z.number().positive('Nominal is required'),
-    payment_source: z.enum(['va', 'megaqris']),
+    payment_source: z.string().min(1, 'Payment source is required'),
   }),
 });
 
 export const createCoinOrderSchema = z.object({
   body: z.object({
-    coin_amount: z.number().int().positive('Coin Amount ID is required'),
+    coin_amount: z.number().int().positive('Coin Amount is required'),
     nominal: z.number().positive('Nominal is required'),
-    payment_source: z.enum(['va', 'megaqris']),
+    payment_source: z.string().min(1, 'Payment source is required'),
   }),
 });
 
