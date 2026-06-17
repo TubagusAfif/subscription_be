@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, FeeType } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 
@@ -79,10 +79,10 @@ async function main() {
 
   // Seed default payment methods
   const paymentMethods = [
-    { name: 'Credit Card', code: 'credit_card', fee_type: 'PERCENTAGE', fee_value: 2.9 },
-    { name: 'GoPay', code: 'gopay', fee_type: 'PERCENTAGE', fee_value: 2.0 },
-    { name: 'QRIS', code: 'megaqris', fee_type: 'PERCENTAGE', fee_value: 0 },
-    { name: 'Virtual Account', code: 'va', fee_type: 'FIXED', fee_value: 4000.0 },
+    { name: 'Credit Card', code: 'credit_card', fee_type: FeeType.PERCENTAGE, fee_value: 2.9 },
+    { name: 'GoPay', code: 'gopay', fee_type: FeeType.PERCENTAGE, fee_value: 2.0 },
+    { name: 'QRIS', code: 'megaqris', fee_type: FeeType.PERCENTAGE, fee_value: 0 },
+    { name: 'Virtual Account', code: 'va', fee_type: FeeType.FIXED, fee_value: 4000.0 },
   ];
 
   for (const pm of paymentMethods) {
