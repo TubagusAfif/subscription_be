@@ -19,7 +19,7 @@ export const createTaxRouter = (
   const router = Router();
 
   // All tax master data endpoints require ADMIN or OWNER roles
-  router.use(authenticate, authorize(['ADMIN', 'OWNER']));
+  router.use(authenticate, authorize(['SUPERADMIN']));
 
   router.post('/', validate(createTaxSchema), taxController.createTax);
   router.get('/', taxController.getAllTaxes);
@@ -28,7 +28,7 @@ export const createTaxRouter = (
   router.put('/:id', validate(updateTaxSchema), taxController.updateTax);
   
   // Only OWNER can delete
-  router.delete('/:id', authorize(['OWNER']), validate(deleteTaxSchema), taxController.removeTax);
+  router.delete('/:id', validate(deleteTaxSchema), taxController.removeTax);
   
   router.patch('/:id/activate', validate(activateTaxSchema), taxController.activateTax);
 
