@@ -2,26 +2,19 @@ import { Request, Response, NextFunction } from 'express';
 import { DentalAdService } from '../services/dental-ad.service';
 import { AuthenticatedRequest } from '../../shared/types/typed-request';
 import { successResponse } from '../../shared/utils/response.util';
+import { DentalAdMapper } from '../mappers/dental-ad.mapper';
 
 export class DentalAdController {
   constructor(private readonly dentalAdService: DentalAdService) {}
 
-  private formatAdWithBaseUrl(ad: any, req: Request) {
-    if (!ad || !ad.image_path) return ad;
-    if (ad.image_path.startsWith('http')) return ad;
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    return {
-      ...ad,
-      image_path: `${baseUrl}${ad.image_path.startsWith('/') ? '' : '/'}${ad.image_path}`
-    };
-  }
+
 
   create = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data = req.body;
       const ad = await this.dentalAdService.create(data, Number(req.user.sub));
 
-      res.status(201).json(successResponse(this.formatAdWithBaseUrl(ad, req)));
+      res.status(201).json(successResponse(DentalAdMapper.toResponse(ad)));
     } catch (error) {
       next(error);
     }
@@ -36,7 +29,7 @@ export class DentalAdController {
         limit ? parseInt(limit as string, 10) : 10,
       );
 
-      const formattedData = data.map(ad => this.formatAdWithBaseUrl(ad, req));
+      const formattedData = data.map(ad => DentalAdMapper.toResponse(ad));
       res.status(200).json(successResponse(formattedData, meta));
     } catch (error) {
       next(error);
@@ -48,7 +41,7 @@ export class DentalAdController {
       const id = parseInt(req.params.id as string, 10);
       const ad = await this.dentalAdService.findById(id);
 
-      res.status(200).json(successResponse(this.formatAdWithBaseUrl(ad, req)));
+      res.status(200).json(successResponse(DentalAdMapper.toResponse(ad as any)));
     } catch (error) {
       next(error);
     }
@@ -60,7 +53,7 @@ export class DentalAdController {
       const data = req.body;
       const ad = await this.dentalAdService.update(id, data, Number(req.user.sub));
 
-      res.status(200).json(successResponse(this.formatAdWithBaseUrl(ad, req)));
+      res.status(200).json(successResponse(DentalAdMapper.toResponse(ad as any)));
     } catch (error) {
       next(error);
     }
