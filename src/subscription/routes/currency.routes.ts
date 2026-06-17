@@ -14,7 +14,7 @@ export const createCurrencyRouter = (currencyController: CurrencyController, aut
   const router = Router();
 
   // All currency master data endpoints require ADMIN or OWNER roles
-  router.use(authenticate, authorize(['ADMIN']));
+  router.use(authenticate, authorize(['SUPERADMIN']));
 
   router.post('/', validate(createCurrencySchema), currencyController.createCurrency);
   router.get('/', currencyController.getAllCurrencies);
