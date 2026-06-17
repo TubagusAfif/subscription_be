@@ -45,7 +45,7 @@ export class BundleController {
 
       const payload = {
         ...body,
-        tax_rate: tax?.rate_percent || 0,
+        tax_rate: tax?.tax_value || 0,
         price: calculatedPrice,
         currency: { connect: { id: body.currency_id } },
       };
@@ -94,7 +94,7 @@ export class BundleController {
       let coinAmount = existingBundle.coin_amount;
 
       if (tax) {
-        taxRate = tax.rate_percent;
+        taxRate = tax.tax_value;
       }
 
       if (payload.currency_id !== undefined) {

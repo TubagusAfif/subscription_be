@@ -34,7 +34,6 @@ export class TaxRepository {
         ? {
             OR: [
               { tax_name: { contains: search, mode: 'insensitive' as const } },
-              { region: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {}),

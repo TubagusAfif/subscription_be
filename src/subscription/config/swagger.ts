@@ -326,21 +326,22 @@ const spec = {
         "type": "object",
         "required": [
           "tax_name",
-          "rate_percent",
-          "region"
+          "tax_value",
+          "tax_type"
         ],
         "properties": {
           "tax_name": {
             "type": "string",
             "example": "PPN"
           },
-          "rate_percent": {
+          "tax_value": {
             "type": "number",
             "example": 11
           },
-          "region": {
+          "tax_type": {
             "type": "string",
-            "example": "ID"
+            "enum": ["PERCENTAGE", "FIXED"],
+            "example": "PERCENTAGE"
           },
           "is_active": {
             "type": "boolean",

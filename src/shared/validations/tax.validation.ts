@@ -15,8 +15,8 @@ const idParamSchema = z.object({
 export const createTaxSchema = z.object({
   body: z.object({
     tax_name: z.string().min(2).max(100),
-    rate_percent: z.number().nonnegative(),
-    region: z.string().min(2).max(100),
+    tax_value: z.number().nonnegative(),
+    tax_type: z.enum(['PERCENTAGE', 'FIXED']),
     is_active: z.boolean().default(true),
   }),
 });
@@ -25,8 +25,8 @@ export const updateTaxSchema = z.object({
   params: idParamSchema,
   body: z.object({
     tax_name: z.string().min(2).max(100).optional(),
-    rate_percent: z.number().nonnegative().optional(),
-    region: z.string().min(2).max(100).optional(),
+    tax_value: z.number().nonnegative().optional(),
+    tax_type: z.enum(['PERCENTAGE', 'FIXED']).optional(),
     is_active: z.boolean().optional(),
   }),
 });
