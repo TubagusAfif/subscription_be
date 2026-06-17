@@ -22,7 +22,6 @@ Table users {
   deleted_by Int
   refresh_tokens refresh_tokens [not null]
   profile users_profile
-  payment_methods user_payment_methods [not null]
   coin_orders coin_orders [not null]
   wallet coin_wallet
   coin_transactions coin_transactions [not null]
@@ -194,20 +193,20 @@ Table tax_config {
   deleted_by Int
 }
 
-Table user_payment_methods {
+Table payment_methods {
   id Int [pk, increment]
-  user_id Int [not null]
-  type String [not null]
-  masked_number String
-  token_ref String
-  is_default Boolean [not null, default: false]
+  name String [not null]
+  code String [unique, not null]
+  fee_type String [not null]
+  fee_value Decimal [not null]
+  image_path String
+  is_active Boolean [not null, default: true]
   created_at DateTime [default: `now()`, not null]
   created_by Int
   updated_at DateTime [not null]
   updated_by Int
   deleted_at DateTime
   deleted_by Int
-  user users [not null]
   coin_orders coin_orders [not null]
 }
 
@@ -219,8 +218,10 @@ Table coin_orders {
   coin_amount Int [not null]
   payment_method_id Int
   currency_id Int [not null]
-  price_paid Decimal [not null]
+  coin_price Decimal [not null, default: 0]
   tax_amount Decimal [not null, default: 0]
+  gateway_fee Decimal [not null, default: 0]
+  price_paid Decimal [not null]
   status CoinOrderStatus [not null, default: 'PENDING']
   snap_token String
   redirect_url String
@@ -234,7 +235,7 @@ Table coin_orders {
   deleted_by Int
   user users [not null]
   bundle coin_bundles
-  payment_method user_payment_methods
+  payment_method payment_methods
   currency coin_currencies [not null]
 }
 
@@ -537,13 +538,11 @@ Ref: sku_addons.sku_id > sku_base.id
 
 Ref: coin_bundles.currency_id > coin_currencies.id
 
-Ref: user_payment_methods.user_id > users.id
-
 Ref: coin_orders.user_id > users.id
 
 Ref: coin_orders.bundle_id > coin_bundles.id
 
-Ref: coin_orders.payment_method_id > user_payment_methods.id
+Ref: coin_orders.payment_method_id > payment_methods.id
 
 Ref: coin_orders.currency_id > coin_currencies.id
 

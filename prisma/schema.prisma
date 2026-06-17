@@ -83,7 +83,6 @@ model User {
 
   refresh_tokens      RefreshToken[]
   profile             UserProfile?
-  payment_methods     UserPaymentMethod[]
   coin_orders         CoinOrder[]
   wallet              CoinWallet?
   coin_transactions   CoinTransaction[]
@@ -313,28 +312,26 @@ model TaxConfig {
   @@map("tax_config")
 }
 
-// --------------------------------------------------------------------------
-// User Payment Methods
-// --------------------------------------------------------------------------
 
-model UserPaymentMethod {
-  id            Int       @id @default(autoincrement())
-  user_id       Int
-  type          String // e.g., credit_card, bank_transfer
-  masked_number String?
-  token_ref     String?
-  is_default    Boolean   @default(false)
-  created_at    DateTime  @default(now())
-  created_by    Int?
-  updated_at    DateTime  @updatedAt
-  updated_by    Int?
-  deleted_at    DateTime?
-  deleted_by    Int?
 
-  user        User        @relation(fields: [user_id], references: [id])
-  coin_orders CoinOrder[]
+model PaymentMethod {
+  id           Int         @id @default(autoincrement())
+  name         String      // e.g., Virtual Account Bank Mega, Credit Card, GoPay
+  code         String      @unique // e.g., va_bankmega, credit_card, gopay
+  fee_type     String      // FIXED or PERCENTAGE
+  fee_value    Decimal     @db.Decimal(15, 2)
+  image_path   String?
+  is_active    Boolean     @default(true)
+  created_at   DateTime    @default(now())
+  created_by   Int?
+  updated_at   DateTime    @updatedAt
+  updated_by   Int?
+  deleted_at   DateTime?
+  deleted_by   Int?
 
-  @@map("user_payment_methods")
+  coin_orders  CoinOrder[]
+
+  @@map("payment_methods")
 }
 
 // --------------------------------------------------------------------------
@@ -349,8 +346,10 @@ model CoinOrder {
   coin_amount       Int
   payment_method_id Int?
   currency_id       Int
-  price_paid        Decimal         @db.Decimal(15, 2)
+  coin_price        Decimal         @default(0) @db.Decimal(15, 2)
   tax_amount        Decimal         @default(0) @db.Decimal(15, 2)
+  gateway_fee       Decimal         @default(0) @db.Decimal(15, 2)
+  price_paid        Decimal         @db.Decimal(15, 2)
   status            CoinOrderStatus @default(PENDING)
   snap_token        String?
   redirect_url      String?
@@ -363,10 +362,10 @@ model CoinOrder {
   deleted_at        DateTime?
   deleted_by        Int?
 
-  user           User               @relation(fields: [user_id], references: [id])
-  bundle         CoinBundle?        @relation(fields: [bundle_id], references: [id])
-  payment_method UserPaymentMethod? @relation(fields: [payment_method_id], references: [id])
-  currency       CoinCurrency       @relation(fields: [currency_id], references: [id])
+  user           User           @relation(fields: [user_id], references: [id])
+  bundle         CoinBundle?    @relation(fields: [bundle_id], references: [id])
+  payment_method PaymentMethod? @relation(fields: [payment_method_id], references: [id])
+  currency       CoinCurrency   @relation(fields: [currency_id], references: [id])
 
   @@map("coin_orders")
 }
