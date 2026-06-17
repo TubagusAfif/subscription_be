@@ -11,13 +11,30 @@ async function main() {
   const adminPassword = process.env.ADMIN_PASSWORD || 'secret123';
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
+  const superAdminEmail = 'superadmin@superadmin.com';
+
+  const superAdmin = await prisma.user.upsert({
+    where: { email: superAdminEmail },
+    update: {},
+    create: {
+      name: 'Super Admin',
+      email: superAdminEmail,
+      phone: '00000000001',
+      role: 'SUPERADMIN',
+      password_hash: hashedPassword,
+      is_active: true,
+    },
+  });
+
+  console.log(`Super Admin user created/verified: ${superAdmin.email}`);
+
   const adminEmail = 'admin@admin.com';
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
     create: {
-      name: 'Super Admin',
+      name: 'Admin',
       email: adminEmail,
       phone: '00000000000',
       role: 'ADMIN',
