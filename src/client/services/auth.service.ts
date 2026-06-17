@@ -5,6 +5,7 @@ import { UserRepository } from '../../shared/repositories/user.repository';
 import { MailService } from '../../shared/services/mail.service';
 import { AppError } from '../../shared/middlewares/error.middleware';
 import { env } from '../../shared/config/env';
+import { logger } from '../../shared/config/logger';
 
 export interface ClientAuthServiceDeps {
   userRepository: UserRepository;
@@ -184,11 +185,13 @@ export class ClientAuthService {
     Generates a password reset token and sends an email. 
   ---------------------------------------------------------------
   **/
-  async forgotPassword(data: { email: string }): Promise<{ message: string }> {
+  async forgotPassword(data: any): Promise<{ message: string }> {
+    logger.info(`[AuthService] forgotPassword initiated for email: ${data.email}`);
     const user = await this.userRepository.findByEmail(data.email);
 
     // If no user is found, silently succeed. This prevents email enumeration.
     if (!user) {
+      logger.warn(`[AuthService] forgotPassword: No user found with email ${data.email}`);
       return { message: 'If an account exists for this email, a password reset link has been sent.' };
     }
 
@@ -196,15 +199,24 @@ export class ClientAuthService {
     const resetTokenExpiresAt = new Date();
     resetTokenExpiresAt.setHours(resetTokenExpiresAt.getHours() + 1); // 1-hour expiry
 
+    logger.info(`[AuthService] forgotPassword: User found (ID: ${user.id}), generating token.`);
+
     await this.userRepository.update(user.id, {
       reset_token: resetToken,
       reset_token_expires_at: resetTokenExpiresAt,
     });
 
-    await this.mailService.sendPasswordResetEmail(
-      { name: user.name, email: user.email },
-      resetToken,
-    );
+    try {
+      await this.mailService.sendPasswordResetEmail(
+        { name: user.name, email: user.email },
+        resetToken,
+      );
+      logger.info(`[AuthService] forgotPassword: Email sent successfully to ${user.email}`);
+    } catch (error) {
+      logger.error(`[AuthService] forgotPassword: Failed to send email to ${user.email}`, { error });
+      // We throw an error so the controller can catch it and the client knows the email failed to send
+      throw new AppError('EMAIL_SEND_FAILED', 'Failed to send password reset email. Please try again later.', 500);
+    }
 
     return { message: 'If an account exists for this email, a password reset link has been sent.' };
   }
