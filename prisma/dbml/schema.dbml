@@ -450,6 +450,7 @@ Table webhook_outbox {
 }
 
 Enum Role {
+  SUPERADMIN
   ADMIN
   OWNER
 }
