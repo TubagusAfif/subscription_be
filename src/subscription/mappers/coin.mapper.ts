@@ -1,4 +1,4 @@
-import { CoinCurrency, PaymentMethod } from '@prisma/client';
+import { CoinCurrency } from '@prisma/client';
 import { CoinBundleWithRelations } from '../repositories/bundle.repository';
 
 /** 
@@ -33,17 +33,5 @@ export class CoinMapper {
     };
   }
 
-  static toPaymentMethodResponse(pm: PaymentMethod) {
-    return {
-      id: pm.id,
-      name: pm.name,
-      code: pm.code,
-      fee_type: pm.fee_type,
-      fee_value: pm.fee_value,
-      image_path: pm.image_path,
-      is_active: pm.is_active,
-      created_at: pm.created_at,
-      updated_at: pm.updated_at,
-    };
-  }
+
 }

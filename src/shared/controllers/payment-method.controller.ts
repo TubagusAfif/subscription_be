@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { PaymentMethodService } from '../services/payment-method.service';
+import { PaymentMethodMapper } from '../mappers/payment-method.mapper';
 import { successResponse } from '../utils/response.util';
 import type { AuthenticatedRequest } from '../types/typed-request';
 
@@ -17,19 +18,7 @@ export class SharedPaymentMethodController {
   getActivePaymentMethods = async (_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data = await this.paymentMethodService.getActivePaymentMethods();
-      res
-        .status(200)
-        .json(
-          successResponse(
-            data.map((pm) => ({
-              id: pm.id,
-              name: pm.name,
-              code: pm.code,
-              fee_type: pm.fee_type,
-              fee_value: pm.fee_value,
-            })),
-          ),
-        );
+      res.status(200).json(successResponse(data.map((pm) => PaymentMethodMapper.toResponse(pm))));
     } catch (error) {
       next(error);
     }

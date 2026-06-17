@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { PaymentMethodService } from '../../shared/services/payment-method.service';
-import { CoinMapper } from '../mappers/coin.mapper';
+import { PaymentMethodMapper } from '../../shared/mappers/payment-method.mapper';
 import { successResponse } from '../../shared/utils/response.util';
 import { stripUndefined } from '../../shared/utils/strip-undefined.util';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
@@ -27,7 +27,7 @@ export class PaymentMethodController {
         stripUndefined(req.body),
         Number(req.user.sub),
       );
-      res.status(201).json(successResponse(CoinMapper.toPaymentMethodResponse(pm)));
+      res.status(201).json(successResponse(PaymentMethodMapper.toResponse(pm)));
     } catch (error) {
       next(error);
     }
@@ -46,7 +46,7 @@ export class PaymentMethodController {
       const { data, meta } = await this.paymentMethodService.getAllPaymentMethods(search, page, limit);
       res.status(200).json(
         successResponse(
-          data.map((pm) => CoinMapper.toPaymentMethodResponse(pm)),
+          data.map((pm) => PaymentMethodMapper.toResponse(pm)),
           meta,
         ),
       );
@@ -63,7 +63,7 @@ export class PaymentMethodController {
     try {
       const data = await this.paymentMethodService.getActivePaymentMethods();
       res.status(200).json(
-        successResponse(data.map((pm) => CoinMapper.toPaymentMethodResponse(pm))),
+        successResponse(data.map((pm) => PaymentMethodMapper.toResponse(pm))),
       );
     } catch (error) {
       next(error);
@@ -77,7 +77,7 @@ export class PaymentMethodController {
   ): Promise<void> => {
     try {
       const pm = await this.paymentMethodService.getPaymentMethodById(Number(req.params.id));
-      res.status(200).json(successResponse(CoinMapper.toPaymentMethodResponse(pm)));
+      res.status(200).json(successResponse(PaymentMethodMapper.toResponse(pm)));
     } catch (error) {
       next(error);
     }
@@ -94,7 +94,7 @@ export class PaymentMethodController {
         stripUndefined(req.body),
         Number(req.user.sub),
       );
-      res.status(200).json(successResponse(CoinMapper.toPaymentMethodResponse(pm)));
+      res.status(200).json(successResponse(PaymentMethodMapper.toResponse(pm)));
     } catch (error) {
       next(error);
     }
