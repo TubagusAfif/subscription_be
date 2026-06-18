@@ -26,7 +26,7 @@ export class SubscriptionAuthService {
       throw new AppError('ACCOUNT_INACTIVE', 'This account has been deactivated', 403);
     }
 
-    if (user.role !== 'ADMIN') {
+    if (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN') {
       throw new AppError('FORBIDDEN', 'Access denied. Administrator privileges required.', 403);
     }
 
