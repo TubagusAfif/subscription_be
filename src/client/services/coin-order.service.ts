@@ -47,6 +47,11 @@ export class CoinOrderService {
   ---------------------------------------------------------------
   **/
   async prepareBundleOrder(userId: number, bundleId: number, paymentMethodId: number) {
+    const pendingOrder = await this.coinOrderRepo.findPendingByUserId(userId);
+    if (pendingOrder) {
+      throw new AppError('PENDING_ORDER_EXISTS', 'You have a pending transaction. Please finish or cancel it before creating a new one.', 422);
+    }
+
     const bundle = await this.bundleRepo.findById(bundleId);
 
     if (!bundle) {
@@ -79,6 +84,11 @@ export class CoinOrderService {
   }
 
   async prepareCustomOrder(userId: number, coinAmount: number, activeTax: any, paymentMethodId: number) {
+    const pendingOrder = await this.coinOrderRepo.findPendingByUserId(userId);
+    if (pendingOrder) {
+      throw new AppError('PENDING_ORDER_EXISTS', 'You have a pending transaction. Please finish or cancel it before creating a new one.', 422);
+    }
+
     const activeCurrency = await this.currencyRepo.findActive();
 
     if(!activeCurrency) {

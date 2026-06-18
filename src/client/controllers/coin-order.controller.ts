@@ -71,7 +71,7 @@ export class CoinOrderController {
         customer: {
           name: userData.name,
           email: userData.email,
-          phoneNumber: '085640555866',
+          phoneNumber: userData.phone || '',
         },
         paymentSource: paymentMethod.code || 'va',
       });
@@ -100,10 +100,18 @@ export class CoinOrderController {
       const { bundle_id, payment_method_id, nominal } = req.body;
       const userId = Number(req.user.sub);
 
-      const { bundle, basePrice, taxAmount, gatewayFee, totalPrice, paymentMethod, pgOrderId, referenceUrl } =
-        await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_method_id);
+      const {
+        bundle,
+        basePrice,
+        taxAmount,
+        gatewayFee,
+        totalPrice,
+        paymentMethod,
+        pgOrderId,
+        referenceUrl,
+      } = await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_method_id);
 
-      if(nominal !== totalPrice) {
+      if (nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
         throw new AppError('INVALID_NOMINAL', 'Nominal does not match the total price.', 400);
       }
@@ -119,7 +127,7 @@ export class CoinOrderController {
         gatewayFee,
         totalPrice,
         paymentMethod.id,
-        pgOrderId
+        pgOrderId,
       );
 
       const inquiryResult = await this.megaBankPaymentService.createInquiry({
@@ -130,23 +138,23 @@ export class CoinOrderController {
         customer: {
           name: userData.name,
           email: userData.email,
-          phoneNumber: '085640555866',
+          phoneNumber: userData.phone || '',
         },
         paymentSource: paymentMethod.code || 'va',
       });
 
-      logger.info(`[Inquiry Result]: ${JSON.stringify(inquiryResult)}`)
+      logger.info(`[Inquiry Result]: ${JSON.stringify(inquiryResult)}`);
 
       await this.coinOrderService.updateOrderPaymentInfo(
         result.order.id,
         inquiryResult.id,
-        inquiryResult.urls.checkout || ""
+        inquiryResult.urls.checkout || '',
       );
 
       res.status(201).json(
         successResponse({
           ...CoinOrderMapper.toResponse(result.order),
-          checkout_url: inquiryResult.urls.checkout || "",
+          checkout_url: inquiryResult.urls.checkout || '',
         }),
       );
     } catch (error) {

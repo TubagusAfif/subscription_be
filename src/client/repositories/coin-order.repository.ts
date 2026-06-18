@@ -41,6 +41,16 @@ export class CoinOrderRepository {
     });
   }
 
+  async findPendingByUserId(userId: number): Promise<CoinOrder | null> {
+    return this.prisma.coinOrder.findFirst({
+      where: {
+        user_id: userId,
+        status: 'PENDING',
+        deleted_at: null,
+      },
+    });
+  }
+
   async getOrderStats(startDate?: Date, endDate?: Date) {
     const dateFilter = startDate && endDate ? { created_at: { gte: startDate, lt: endDate } } : {};
 
