@@ -60,6 +60,7 @@ const sharedRouter = createSharedRouter(
 
 const megaBankRouter = createMegaBankRouter(
   container.controllers.megaBankWebhookController,
+  container.services.webhookProcessorService,
 );
 
 const internalRouter = createInternalRouter(

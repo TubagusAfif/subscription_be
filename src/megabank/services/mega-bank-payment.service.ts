@@ -2,6 +2,9 @@ import { MegaBankInquiryRequest, MegaBankInquiryResponse } from '../types/inquir
 import { MegaBankHttpUtil, MegaBankApiError } from '../utils/mega-bank-http.util';
 import { MegaBankSignerUtil } from '../utils/mega-bank-signer.util';
 import { MegaBankTokenUtil } from '../utils/mega-bank-token.util';
+import { env } from '../../shared/config/env';
+import { logger } from '../../shared/config/logger';
+import crypto from 'crypto';
 
 const PAYMENT_SUCCESS_STATUSES = ['captured', 'authorized'] as const;
 const PAYMENT_SUCCESS_CODE = '00';
@@ -24,11 +27,40 @@ export class MegaBankPaymentService {
   /**
    * Creates a new payment inquiry via the Bank Mega IPG API.
    *
+   * When MPG_MOCK_MODE is enabled, returns a dummy response without
+   * making any HTTP calls to Bank Mega.
+   *
    * @param payload - Inquiry request containing amount, customer, and order details.
    * @returns The inquiry response with payment URLs and reference information.
    * @throws {AppError} `MEGA_BANK_INQUIRY_ERROR` (502) on failure.
    */
   public async createInquiry(payload: MegaBankInquiryRequest): Promise<MegaBankInquiryResponse> {
+    // ── Mock Mode: return dummy response instantly ──
+    if (env.MPG_MOCK_MODE) {
+      logger.warn('[MegaBankPaymentService] MOCK MODE — returning dummy inquiry response', {
+        orderId: payload.order.id,
+        amount: payload.amount,
+      });
+
+      return {
+        id: crypto.randomUUID(),
+        createdTime: new Date().toISOString(),
+        referenceId: payload.order.id,
+        status: 'unpaid',
+        amount: payload.amount,
+        currency: payload.currency,
+        paymentSources: [payload.paymentSource],
+        paymentSourceMethod: payload.paymentSourceMethod || '',
+        urls: {
+          selections: `${env.BASE_URL}${env.API_PREFIX}/megabank/dev/simulate?order_id=${payload.order.id}`,
+          checkout: `${env.BASE_URL}${env.API_PREFIX}/megabank/dev/simulate?order_id=${payload.order.id}`,
+        },
+        accountRef: `MOCK-${Date.now()}`,
+        responseCode: '0',
+        responseDesc: 'Success (Mock)',
+      };
+    }
+
     return MegaBankHttpUtil.sendRequest<MegaBankInquiryResponse>(
       'POST',
       '/openapi/v1.0/ipg/inquiries',
@@ -38,10 +70,12 @@ export class MegaBankPaymentService {
   }
 
   public verifyWebhookSignature(rawBody: string, signatureHeader: string): boolean {
+    if (env.MPG_MOCK_MODE) return true;
     return MegaBankSignerUtil.verifyWebhookSignature(rawBody, signatureHeader);
   }
 
   public generateValidateSignature(signatureHeader: string): string {
+    if (env.MPG_MOCK_MODE) return 'mock-validate-signature';
     return MegaBankSignerUtil.generateValidateSignature(signatureHeader);
   }
 

@@ -15,7 +15,7 @@ const EXTERNAL_ID_MAX_LENGTH = 36;
 const REPLAY_WINDOW_MS = 5 * 60 * 1_000;
 
 export class MegaBankSignerUtil {
-  private static readonly privateKeyPem = formatPrivateKey(env.MPG_SECRET_KEY);
+  private static readonly privateKeyPem = formatPrivateKey(env.MPG_SECRET_KEY || '');
   private static readonly clientId = env.MPG_CLIENT_ID;
   private static readonly clientSecret = env.MPG_CLIENT_SECRET;
 

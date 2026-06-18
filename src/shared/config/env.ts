@@ -12,13 +12,14 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  MPG_MOCK_MODE: z.coerce.boolean().default(false),
   MPG_BASE_URL: z.string().url().default('https://developer.bankmega.app'),
-  MPG_PARTNER_ID: z.string().min(1),
+  MPG_PARTNER_ID: z.string().default(''),
   MPG_CHANNEL_ID: z.string().min(1).default('95221'),
   MPG_SECRET_KEY: z.string().optional(),
   MPG_SECRET_KEY_PATH: z.string().optional().default('./mpg_secret.key'),
-  MPG_CLIENT_ID: z.string().min(1),
-  MPG_CLIENT_SECRET: z.string().min(1),
+  MPG_CLIENT_ID: z.string().default(''),
+  MPG_CLIENT_SECRET: z.string().default(''),
   SMTP_HOST: z.string().min(1),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SERVICE: z.string().min(1),
@@ -45,7 +46,7 @@ if (!_env.success) {
 // Read the MPG secret key from environment variable directly or fallback to file path
 let mpgSecretKey = _env.data.MPG_SECRET_KEY;
 
-if (!mpgSecretKey) {
+if (!mpgSecretKey && !_env.data.MPG_MOCK_MODE) {
   const secretKeyPath = path.resolve(_env.data.MPG_SECRET_KEY_PATH);
   try {
     mpgSecretKey = fs.readFileSync(secretKeyPath, 'utf-8').trim();
