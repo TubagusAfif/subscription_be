@@ -9,7 +9,7 @@ export const createDashboardRouter = (
   const router = Router();
 
   // Dashboard endpoints require ADMIN role
-  router.use(authenticate, authorize(['ADMIN']));
+  router.use(authenticate, authorize(['ADMIN', 'SUPERADMIN']));
 
   router.get('/', dashboardController.getDashboard);
 

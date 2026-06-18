@@ -9,7 +9,7 @@ export const createDentalAdRouter = (
   const router = Router();
 
   // All dental ad endpoints require authentication and ADMIN or OWNER roles for now
-  router.use(authenticate, authorize(['ADMIN', 'OWNER']));
+  router.use(authenticate, authorize(['ADMIN', 'SUPERADMIN', 'OWNER']));
 
   router.post('/', dentalAdController.create);
   router.get('/', dentalAdController.findAll);

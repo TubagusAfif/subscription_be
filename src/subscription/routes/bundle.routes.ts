@@ -13,7 +13,7 @@ export const createBundleRouter = (bundleController: BundleController, authentic
   const router = Router();
 
   // All bundle master data endpoints require ADMIN or OWNER roles
-  router.use(authenticate, authorize(['ADMIN']));
+  router.use(authenticate, authorize(['ADMIN', 'SUPERADMIN']));
 
   router.post('/', validate(createBundleSchema), bundleController.createBundle);
   router.get('/', bundleController.getAllBundles);

@@ -9,7 +9,7 @@ export const createReportRouter = (
   const router = Router();
 
   // Report endpoints require ADMIN or OWNER roles
-  router.use(authenticate, authorize(['ADMIN', 'OWNER']));
+  router.use(authenticate, authorize(['ADMIN', 'SUPERADMIN', 'OWNER']));
 
   router.get('/transactions/chart', reportController.getChartReport);
   router.get('/transactions', reportController.getTransactionReport);

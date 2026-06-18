@@ -16,7 +16,7 @@ export const createPlanRouter = (
   const router = Router();
 
   // All plan endpoints require at least ADMIN role
-  router.use(authenticate, authorize(['ADMIN']));
+  router.use(authenticate, authorize(['ADMIN', 'SUPERADMIN']));
 
   router.post('/', validate(upsertPlanSchema), planController.upsertPlan);
   router.get('/', sharedPlanController.getAllPlans);
