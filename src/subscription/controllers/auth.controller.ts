@@ -33,9 +33,7 @@ export class SubscriptionAuthController {
   login = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = await this.authService.login(req.body);
-      if (user.role !== 'ADMIN') {
-        throw new AppError('FORBIDDEN', 'Access denied. Only admins can log in here.', 403);
-      }
+
       const tokens = await this.tokenService.generateTokens(user.id, user.role);
       
       res.cookie('refreshToken_subscription', tokens.refreshToken, {
