@@ -105,7 +105,8 @@ describe('CoinOrderService', () => {
       const mockPaymentMethod = {
         id: 1,
         name: 'Virtual Account',
-        code: 'va',
+        bank_mega_code: 'va',
+        midtrans_code: 'va',
         fee_type: 'FIXED',
         fee_value: 4000.00,
         is_active: true,
@@ -144,7 +145,8 @@ describe('CoinOrderService', () => {
       const mockPaymentMethod = {
         id: 2,
         name: 'Credit Card',
-        code: 'credit_card',
+        bank_mega_code: null,
+        midtrans_code: 'credit_card',
         fee_type: 'PERCENTAGE',
         fee_value: 2.9,
         is_active: true,
@@ -174,7 +176,8 @@ describe('CoinOrderService', () => {
       const mockPaymentMethod = {
         id: 1,
         name: 'Virtual Account',
-        code: 'va',
+        bank_mega_code: 'va',
+        midtrans_code: 'va',
         fee_type: 'FIXED',
         fee_value: 4000.00,
         is_active: true,

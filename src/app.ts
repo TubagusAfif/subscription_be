@@ -19,6 +19,7 @@ export const createApp = (
   subscriptionRouter: express.Router,
   sharedRouter: express.Router,
   megaBankRouter: express.Router,
+  midtransRouter: express.Router,
   internalRouter: express.Router,
 ): Express => {
   const app = express();
@@ -39,6 +40,9 @@ export const createApp = (
 
   // Mount megabank router BEFORE express.json() — webhook handler uses captureRawBody middleware
   app.use(`${env.API_PREFIX}/megabank`, megaBankRouter);
+
+  // Mount midtrans router BEFORE express.json() — webhook handler uses captureRawBody middleware
+  app.use(`${env.API_PREFIX}/midtrans`, midtransRouter);
 
   // Body & Cookie Parsers
   app.use(express.json({ limit: '1mb' }));

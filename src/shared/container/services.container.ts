@@ -3,6 +3,10 @@ import { RepositoriesContainer } from './repositories.container';
 // --- Shared Services ---
 import { TokenService } from '../services/token.service';
 import { MegaBankPaymentService } from '../../megabank/services/mega-bank-payment.service';
+import { MidtransPaymentService } from '../../midtrans/services/midtrans-payment.service';
+import { MidtransWebhookProcessorService } from '../../midtrans/services/midtrans-webhook-processor.service';
+import type { PaymentGateway } from '../payment/payment-gateway.interface';
+import { env } from '../config/env';
 import { AccountService } from '../services/account.service';
 import { MailService } from '../services/mail.service';
 import { SharedPlanService } from '../services/plan.service';
@@ -71,6 +75,36 @@ export class ServicesContainer {
       this._megaBankPaymentService = new MegaBankPaymentService();
     }
     return this._megaBankPaymentService;
+  }
+
+  private _midtransPaymentService: MidtransPaymentService | undefined;
+  get midtransPaymentService(): MidtransPaymentService {
+    if (!this._midtransPaymentService) {
+      this._midtransPaymentService = new MidtransPaymentService();
+    }
+    return this._midtransPaymentService;
+  }
+
+  private _midtransWebhookProcessorService: MidtransWebhookProcessorService | undefined;
+  get midtransWebhookProcessorService(): MidtransWebhookProcessorService {
+    if (!this._midtransWebhookProcessorService) {
+      this._midtransWebhookProcessorService = new MidtransWebhookProcessorService({
+        coinOrderService: this.coinOrderService,
+        midtransPaymentService: this.midtransPaymentService,
+      });
+    }
+    return this._midtransWebhookProcessorService;
+  }
+
+  /**
+   * The active checkout gateway, selected by PAYMENT_GATEWAY. Midtrans is the
+   * primary; 'megabank' is the manual backup. The coin-order controller depends
+   * on this rather than a concrete gateway.
+   */
+  get paymentGateway(): PaymentGateway {
+    return env.PAYMENT_GATEWAY === 'megabank'
+      ? this.megaBankPaymentService
+      : this.midtransPaymentService;
   }
 
   private _accountService: AccountService | undefined;
@@ -213,7 +247,10 @@ export class ServicesContainer {
   private _reportService: ReportService | undefined;
   get reportService(): ReportService {
     if (!this._reportService) {
-      this._reportService = new ReportService(this.repositories.coinOrderRepository);
+      this._reportService = new ReportService(
+        this.repositories.coinOrderRepository,
+        this.repositories.coinTransactionRepository,
+      );
     }
     return this._reportService;
   }
@@ -320,6 +357,8 @@ export class ServicesContainer {
   reset(): void {
     this._tokenService = undefined;
     this._megaBankPaymentService = undefined;
+    this._midtransPaymentService = undefined;
+    this._midtransWebhookProcessorService = undefined;
     this._accountService = undefined;
     this._mailService = undefined;
     this._clientAuthService = undefined;

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import crypto from 'crypto';
 import { env } from '../config/env';
+import { verifyWebhookSignature } from '../utils/crypto.util';
 
 /**
  * Webhook Authentication Middleware
@@ -72,14 +72,7 @@ export const webhookAuthMiddleware = (req: Request, res: Response, next: NextFun
       });
     }
 
-    const expectedSignature = 'sha256=' + crypto.createHmac('sha256', env.WEBHOOK_SHARED_SECRET)
-      .update(rawBody)
-      .digest('hex');
-
-    const sigBuf = Buffer.from(signatureHeader);
-    const expBuf = Buffer.from(expectedSignature);
-
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    if (!verifyWebhookSignature(rawBody, signatureHeader, env.WEBHOOK_SHARED_SECRET)) {
       return res.status(401).json({
         success: false,
         message: 'Invalid webhook signature',

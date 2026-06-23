@@ -1,7 +1,19 @@
 import { PrismaClient, Prisma, PaymentMethod } from '@prisma/client';
+import { env } from '../config/env';
 
 export class PaymentMethodRepository {
   constructor(private readonly prisma: PrismaClient) {}
+
+  /**
+   * Builds the "supported on the active gateway" filter: the gateway-specific
+   * code for env.PAYMENT_GATEWAY must be set (non-null). A method with no code
+   * for the active gateway cannot be charged there, so it is hidden.
+   */
+  private activeGatewayWhere(): Prisma.PaymentMethodWhereInput {
+    return env.PAYMENT_GATEWAY === 'megabank'
+      ? { bank_mega_code: { not: null } }
+      : { midtrans_code: { not: null } };
+  }
 
   async create(data: Prisma.PaymentMethodCreateInput): Promise<PaymentMethod> {
     return this.prisma.paymentMethod.create({
@@ -22,7 +34,8 @@ export class PaymentMethodRepository {
         ? {
             OR: [
               { name: { contains: search, mode: 'insensitive' } },
-              { code: { contains: search, mode: 'insensitive' } },
+              { bank_mega_code: { contains: search, mode: 'insensitive' } },
+              { midtrans_code: { contains: search, mode: 'insensitive' } },
             ],
           }
         : {}),
@@ -46,6 +59,8 @@ export class PaymentMethodRepository {
       where: {
         is_active: true,
         deleted_at: null,
+        // Only methods supported by the gateway configured in PAYMENT_GATEWAY.
+        ...this.activeGatewayWhere(),
       },
       orderBy: { name: 'asc' },
     });
@@ -57,9 +72,15 @@ export class PaymentMethodRepository {
     });
   }
 
+  /** Look up a method by its code for the currently active gateway. */
   async findByCode(code: string): Promise<PaymentMethod | null> {
-    return this.prisma.paymentMethod.findUnique({
-      where: { code, deleted_at: null },
+    return this.prisma.paymentMethod.findFirst({
+      where: {
+        deleted_at: null,
+        ...(env.PAYMENT_GATEWAY === 'megabank'
+          ? { bank_mega_code: code }
+          : { midtrans_code: code }),
+      },
     });
   }
 

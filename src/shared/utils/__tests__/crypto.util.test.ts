@@ -6,6 +6,8 @@ import {
   rsaSha256Sign,
   timingSafeHexEqual,
   md5Hex,
+  signWebhookPayload,
+  verifyWebhookSignature,
 } from '../crypto.util';
 
 describe('Crypto Utility', () => {
@@ -75,6 +77,40 @@ describe('Crypto Utility', () => {
       const input = 'hello world';
       const expected = crypto.createHash('md5').update(input).digest('hex').toLowerCase();
       expect(md5Hex(input)).toBe(expected);
+    });
+  });
+
+  describe('signWebhookPayload', () => {
+    it('should return a sha256= prefixed HMAC of the raw body', () => {
+      const rawBody = '{"event":"addon.expired"}';
+      const secret = 'shared_secret';
+      const expected =
+        'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+      expect(signWebhookPayload(rawBody, secret)).toBe(expected);
+    });
+  });
+
+  describe('verifyWebhookSignature', () => {
+    const secret = 'shared_secret';
+    const rawBody = '{"event":"addon.expired"}';
+
+    it('should return true for a signature produced by signWebhookPayload', () => {
+      const sig = signWebhookPayload(rawBody, secret);
+      expect(verifyWebhookSignature(rawBody, sig, secret)).toBe(true);
+    });
+
+    it('should return false when the body is tampered', () => {
+      const sig = signWebhookPayload(rawBody, secret);
+      expect(verifyWebhookSignature('{"event":"tampered"}', sig, secret)).toBe(false);
+    });
+
+    it('should return false for a wrong secret', () => {
+      const sig = signWebhookPayload(rawBody, secret);
+      expect(verifyWebhookSignature(rawBody, sig, 'wrong_secret')).toBe(false);
+    });
+
+    it('should return false for a malformed signature instead of throwing', () => {
+      expect(verifyWebhookSignature(rawBody, 'not-a-real-signature', secret)).toBe(false);
     });
   });
 });

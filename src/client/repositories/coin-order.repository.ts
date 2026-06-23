@@ -99,12 +99,32 @@ export class CoinOrderRepository {
     });
   }
 
-  async updatePaymentInfo(id: number, pgResponseId: string, redirectUrl: string): Promise<CoinOrder> {
+  /**
+   * Atomic check-and-set: marks the order FAILED only if it is still PENDING.
+   * Returns the number of rows updated (0 if it was already resolved).
+   */
+  async markFailedIfPending(id: number): Promise<number> {
+    const result = await this.prisma.coinOrder.updateMany({
+      where: { id, status: 'PENDING' },
+      data: { status: 'FAILED' },
+    });
+    return result.count;
+  }
+
+  async updatePaymentInfo(
+    id: number,
+    pgResponseId: string,
+    redirectUrl: string,
+    paymentGateway: string,
+    snapToken?: string,
+  ): Promise<CoinOrder> {
     return this.prisma.coinOrder.update({
       where: { id },
       data: {
         pg_response_id: pgResponseId,
         redirect_url: redirectUrl,
+        payment_gateway: paymentGateway,
+        ...(snapToken ? { snap_token: snapToken } : {}),
       },
     });
   }

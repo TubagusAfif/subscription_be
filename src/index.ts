@@ -15,6 +15,7 @@ import { createClientRouter } from './client/routes';
 import { createSubscriptionRouter } from './subscription/routes';
 import { createSharedRouter } from './shared/routes';
 import { createMegaBankRouter } from './megabank/routes';
+import { createMidtransRouter } from './midtrans/routes';
 import { createInternalRouter } from './shared/routes/internal.routes';
 
 // Initialize Middlewares
@@ -63,11 +64,15 @@ const megaBankRouter = createMegaBankRouter(
   container.services.webhookProcessorService,
 );
 
+const midtransRouter = createMidtransRouter(
+  container.controllers.midtransWebhookController,
+);
+
 const internalRouter = createInternalRouter(
   container.controllers.internalController,
 );
 
-const app = createApp(clientRouter, subscriptionRouter, sharedRouter, megaBankRouter, internalRouter);
+const app = createApp(clientRouter, subscriptionRouter, sharedRouter, megaBankRouter, midtransRouter, internalRouter);
 
 async function bootstrap() {
   try {

@@ -5,6 +5,7 @@ import { ServicesContainer } from './services.container';
 import { SharedAuthController } from '../controllers/auth.controller';
 import { UploadController } from '../controllers/upload.controller';
 import { WebhookController as MegaBankWebhookController } from '../../megabank/controllers/webhook.controller';
+import { MidtransWebhookController } from '../../midtrans/controllers/midtrans-webhook.controller';
 import { AccountController } from '../controllers/account.controller';
 import { SharedPlanController } from '../controllers/plan.controller';
 import { SharedBundleController } from '../controllers/bundle.controller';
@@ -76,6 +77,17 @@ export class ControllersContainer {
       });
     }
     return this._megaBankWebhookController;
+  }
+
+  private _midtransWebhookController: MidtransWebhookController | undefined;
+  get midtransWebhookController(): MidtransWebhookController {
+    if (!this._midtransWebhookController) {
+      this._midtransWebhookController = new MidtransWebhookController({
+        midtransWebhookProcessorService: this.services.midtransWebhookProcessorService,
+        midtransPaymentService: this.services.midtransPaymentService,
+      });
+    }
+    return this._midtransWebhookController;
   }
 
   private _accountController: AccountController | undefined;
@@ -167,7 +179,7 @@ export class ControllersContainer {
       this._coinOrderController = new CoinOrderController({
         coinOrderService: this.services.coinOrderService,
         accountService: this.services.accountService,
-        megaBankPaymentService: this.services.megaBankPaymentService,
+        paymentGateway: this.services.paymentGateway,
         taxService: this.services.taxService,
       });
     }
@@ -328,6 +340,7 @@ export class ControllersContainer {
     this._sharedAuthController = undefined;
     this._uploadController = undefined;
     this._megaBankWebhookController = undefined;
+    this._midtransWebhookController = undefined;
     this._accountController = undefined;
     this._clientAuthController = undefined;
     this._coinOrderController = undefined;

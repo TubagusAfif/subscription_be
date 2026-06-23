@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CoinOrderService } from '../services/coin-order.service';
 import { AccountService } from '../../shared/services/account.service'
 import { CoinOrderMapper } from '../mappers/coin-order.mapper';
-import { MegaBankPaymentService } from '../../megabank/services/mega-bank-payment.service';
+import type { PaymentGateway, CheckoutResult } from '../../shared/payment/payment-gateway.interface';
 import { TaxService} from '../../shared/services/tax.service';
 import { successResponse } from '../../shared/utils/response.util';
 import { AppError } from '../../shared/middlewares/error.middleware';
@@ -12,24 +12,35 @@ import type {
   CreateCoinOrderBody,
 } from '../../shared/validations/coin-order.validation';
 import { logger } from '../../shared/config/logger';
+import { env } from '../../shared/config/env';
+import type { PaymentMethod } from '@prisma/client';
+
+/**
+ * The payment-source code to hand the active gateway. Uses the method's code
+ * for whichever gateway PAYMENT_GATEWAY selects, falling back to 'va'.
+ */
+const gatewayCodeFor = (paymentMethod: PaymentMethod): string =>
+  (env.PAYMENT_GATEWAY === 'megabank'
+    ? paymentMethod.bank_mega_code
+    : paymentMethod.midtrans_code) || 'va';
 
 
 export interface CoinOrderControllerDeps {
   coinOrderService: CoinOrderService;
   accountService: AccountService;
-  megaBankPaymentService: MegaBankPaymentService;
+  paymentGateway: PaymentGateway;
   taxService: TaxService;
 }
 
 export class CoinOrderController {
   private readonly coinOrderService: CoinOrderService;
-  private readonly megaBankPaymentService: MegaBankPaymentService;
+  private readonly paymentGateway: PaymentGateway;
   private readonly accountService: AccountService;
   private readonly taxService: TaxService;
 
   constructor(deps: CoinOrderControllerDeps) {
     this.coinOrderService = deps.coinOrderService;
-    this.megaBankPaymentService = deps.megaBankPaymentService;
+    this.paymentGateway = deps.paymentGateway;
     this.accountService = deps.accountService;
     this.taxService = deps.taxService;
   }
@@ -63,31 +74,44 @@ export class CoinOrderController {
         pgOrderId
       );
 
-      const inquiryResult = await this.megaBankPaymentService.createInquiry({
-        amount: totalPrice,
-        currency: 'IDR',
-        referenceUrl,
-        order: { id: pgOrderId },
-        customer: {
-          name: userData.name,
-          email: userData.email,
-          phoneNumber: userData.phone || '',
-        },
-        paymentSource: paymentMethod.code || 'va',
-      });
+      let checkoutResult: CheckoutResult;
+      try {
+        checkoutResult = await this.paymentGateway.createCheckout({
+          pgOrderId,
+          amount: totalPrice,
+          currency: 'IDR',
+          referenceUrl,
+          customer: {
+            name: userData.name,
+            email: userData.email,
+            phoneNumber: userData.phone || '',
+          },
+          paymentSource: gatewayCodeFor(paymentMethod),
+          itemName: `Coin purchase: ${coin_amount} coins`,
+        });
+      } catch (inquiryError) {
+        // The order was already persisted as PENDING; if the checkout fails
+        // mark it FAILED so it does not lock the user out of retrying.
+        await this.coinOrderService.failOrder(result.order.id);
+        throw inquiryError;
+      }
 
-      logger.info(`[Inquiry Result] : ${JSON.stringify(inquiryResult)}`)
+      logger.info(`[Checkout Result] : ${JSON.stringify(checkoutResult)}`)
 
       await this.coinOrderService.updateOrderPaymentInfo(
         result.order.id,
-        inquiryResult.id,
-        inquiryResult.urls.checkout || ""
+        checkoutResult.pgResponseId,
+        checkoutResult.checkoutUrl || "",
+        this.paymentGateway.name,
+        checkoutResult.snapToken
       );
 
       res.status(201).json(
         successResponse({
           ...CoinOrderMapper.toResponse(result.order),
-          checkout_url: inquiryResult.urls.checkout,
+          payment_gateway: this.paymentGateway.name,
+          checkout_url: checkoutResult.checkoutUrl,
+          snap_token: checkoutResult.snapToken ?? null,
         }),
       );
     } catch (error) {
@@ -130,31 +154,44 @@ export class CoinOrderController {
         pgOrderId,
       );
 
-      const inquiryResult = await this.megaBankPaymentService.createInquiry({
-        amount: totalPrice,
-        currency: 'IDR',
-        referenceUrl,
-        order: { id: pgOrderId },
-        customer: {
-          name: userData.name,
-          email: userData.email,
-          phoneNumber: userData.phone || '',
-        },
-        paymentSource: paymentMethod.code || 'va',
-      });
+      let checkoutResult: CheckoutResult;
+      try {
+        checkoutResult = await this.paymentGateway.createCheckout({
+          pgOrderId,
+          amount: totalPrice,
+          currency: 'IDR',
+          referenceUrl,
+          customer: {
+            name: userData.name,
+            email: userData.email,
+            phoneNumber: userData.phone || '',
+          },
+          paymentSource: gatewayCodeFor(paymentMethod),
+          itemName: bundle.bundle_name || 'Coin bundle',
+        });
+      } catch (inquiryError) {
+        // The order was already persisted as PENDING; if the checkout fails
+        // mark it FAILED so it does not lock the user out of retrying.
+        await this.coinOrderService.failOrder(result.order.id);
+        throw inquiryError;
+      }
 
-      logger.info(`[Inquiry Result]: ${JSON.stringify(inquiryResult)}`);
+      logger.info(`[Checkout Result]: ${JSON.stringify(checkoutResult)}`);
 
       await this.coinOrderService.updateOrderPaymentInfo(
         result.order.id,
-        inquiryResult.id,
-        inquiryResult.urls.checkout || '',
+        checkoutResult.pgResponseId,
+        checkoutResult.checkoutUrl || '',
+        this.paymentGateway.name,
+        checkoutResult.snapToken,
       );
 
       res.status(201).json(
         successResponse({
           ...CoinOrderMapper.toResponse(result.order),
-          checkout_url: inquiryResult.urls.checkout || '',
+          payment_gateway: this.paymentGateway.name,
+          checkout_url: checkoutResult.checkoutUrl || '',
+          snap_token: checkoutResult.snapToken ?? null,
         }),
       );
     } catch (error) {

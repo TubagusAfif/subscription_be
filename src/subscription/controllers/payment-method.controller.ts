@@ -63,7 +63,7 @@ export class PaymentMethodController {
     try {
       const data = await this.paymentMethodService.getActivePaymentMethods();
       res.status(200).json(
-        successResponse(data.map((pm) => PaymentMethodMapper.toResponse(pm))),
+        successResponse(PaymentMethodMapper.toListResponse(data)),
       );
     } catch (error) {
       next(error);

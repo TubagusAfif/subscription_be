@@ -18,7 +18,7 @@ export class SharedPaymentMethodController {
   getActivePaymentMethods = async (_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data = await this.paymentMethodService.getActivePaymentMethods();
-      res.status(200).json(successResponse(data.map((pm) => PaymentMethodMapper.toResponse(pm))));
+      res.status(200).json(successResponse(PaymentMethodMapper.toListResponse(data)));
     } catch (error) {
       next(error);
     }

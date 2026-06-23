@@ -53,15 +53,15 @@ export class InternalRepository {
     return tx.addonSlotMap.create({ data });
   }
 
-  async findAddonSlotMap(subscriptionId: number, refId: number, refType?: string, tx?: Prisma.TransactionClient) {
+  async findAddonSlotMap(subscriptionId: number, refId: number, refType?: string | string[], tx?: Prisma.TransactionClient) {
     const db = tx || this.prisma;
-    const slotMapWhere: any = {
+    const slotMapWhere: Prisma.AddonSlotMapWhereInput = {
       addon_subscription_id: subscriptionId,
       ref_id: refId,
       deleted_at: null,
     };
     if (refType) {
-      slotMapWhere.ref_type = refType;
+      slotMapWhere.ref_type = Array.isArray(refType) ? { in: refType } : refType;
     }
     return db.addonSlotMap.findFirst({
       where: slotMapWhere,

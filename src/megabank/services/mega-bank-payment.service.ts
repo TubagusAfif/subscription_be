@@ -5,6 +5,12 @@ import { MegaBankTokenUtil } from '../utils/mega-bank-token.util';
 import { env } from '../../shared/config/env';
 import { logger } from '../../shared/config/logger';
 import crypto from 'crypto';
+import type {
+  PaymentGateway,
+  PaymentGatewayName,
+  CreateCheckoutParams,
+  CheckoutResult,
+} from '../../shared/payment/payment-gateway.interface';
 
 const PAYMENT_SUCCESS_STATUSES = ['captured', 'authorized'] as const;
 const PAYMENT_SUCCESS_CODE = '00';
@@ -23,7 +29,33 @@ export function isInquiryPaid(status: string): boolean {
   return status === 'paid';
 }
 
-export class MegaBankPaymentService {
+export class MegaBankPaymentService implements PaymentGateway {
+  public readonly name: PaymentGatewayName = 'MEGABANK';
+
+  /**
+   * Gateway-agnostic checkout entry point. Wraps the Bank Mega inquiry and maps
+   * its response onto the shared CheckoutResult shape.
+   */
+  public async createCheckout(params: CreateCheckoutParams): Promise<CheckoutResult> {
+    const inquiry = await this.createInquiry({
+      amount: params.amount,
+      currency: params.currency,
+      referenceUrl: params.referenceUrl,
+      order: { id: params.pgOrderId },
+      customer: {
+        name: params.customer.name,
+        email: params.customer.email,
+        phoneNumber: params.customer.phoneNumber,
+      },
+      paymentSource: params.paymentSource || 'va',
+    });
+
+    return {
+      pgResponseId: inquiry.id,
+      checkoutUrl: inquiry.urls.checkout || '',
+    };
+  }
+
   /**
    * Creates a new payment inquiry via the Bank Mega IPG API.
    *

@@ -30,13 +30,13 @@ app.use(express.json());
 
 const mockAccountService = { getAccount: jest.fn() };
 const mockTaxService = { getActiveTax: jest.fn() };
-const mockMegaBankPaymentService = { createInquiry: jest.fn() };
+const mockPaymentGateway = { name: 'MEGABANK', createCheckout: jest.fn() };
 
 const coinOrderController = new CoinOrderController({
   coinOrderService: mockCoinOrderService,
   accountService: mockAccountService,
   taxService: mockTaxService,
-  megaBankPaymentService: mockMegaBankPaymentService,
+  paymentGateway: mockPaymentGateway,
 } as any);
 const coinOrderRouter = createCoinOrderRouter(coinOrderController, mockAuthenticate);
 
@@ -61,7 +61,7 @@ describe('Coin Order API Routes', () => {
         taxAmount: 11000,
         gatewayFee: 0,
         totalPrice: 100000,
-        paymentMethod: { id: 1, name: 'VA', code: 'va' },
+        paymentMethod: { id: 1, name: 'VA', bank_mega_code: 'va', midtrans_code: 'va' },
         pgOrderId: 'COIN-1-123',
         referenceUrl: 'https://reference'
       } as any);
@@ -71,9 +71,9 @@ describe('Coin Order API Routes', () => {
         email: 'user1@example.com'
       });
 
-      mockMegaBankPaymentService.createInquiry.mockResolvedValue({
-        id: 'inq-123',
-        urls: { checkout: 'https://pgcheckoutdev.bankmega.com/test123' }
+      mockPaymentGateway.createCheckout.mockResolvedValue({
+        pgResponseId: 'inq-123',
+        checkoutUrl: 'https://pgcheckoutdev.bankmega.com/test123',
       } as any);
 
       mockCoinOrderService.saveOrder.mockResolvedValue({
@@ -83,7 +83,7 @@ describe('Coin Order API Routes', () => {
       const response = await request(app)
         .post('/api/v1/client/coin-orders/bundle')
         .set('Authorization', `Bearer ${ownerToken}`)
-        .send({ bundle_id: 1, nominal: 100000, payment_source: 'va' });
+        .send({ bundle_id: 1, nominal: 100000, payment_method_id: 1 });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);

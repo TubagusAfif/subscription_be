@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 /**
- * Normalises a raw private key string into a properly formatted PEM.
+ * Normalizes a raw private key string into a properly formatted PEM.
  *
  * Strips any existing PEM headers / footers and whitespace, then re-wraps
  * the Base-64 payload at 64-character lines with the correct headers.
@@ -28,6 +28,14 @@ export function formatPrivateKey(raw: string): string {
  */
 export function sha256Hex(input: string): string {
   return crypto.createHash('sha256').update(input, 'utf8').digest('hex').toLowerCase();
+}
+
+/**
+ * Returns the lower-case hex-encoded SHA-512 digest of the input string.
+ * Used for Midtrans webhook signature verification.
+ */
+export function sha512Hex(input: string): string {
+  return crypto.createHash('sha512').update(input, 'utf8').digest('hex').toLowerCase();
 }
 
 /**
@@ -120,4 +128,29 @@ export function timingSafeBase64Equal(a: string, b: string): boolean {
  */
 export function randomHex(bytes: number): string {
   return crypto.randomBytes(bytes).toString('hex');
+}
+
+/**
+ * Signs a webhook raw body with HMAC-SHA256 and returns the
+ * `sha256=<hex>` formatted signature used for Domain 1 ↔ Domain 2 traffic.
+ *
+ * IMPORTANT: `rawBody` must be the exact string sent over the wire.
+ * Re-stringifying a parsed object can change whitespace and break the signature.
+ */
+export function signWebhookPayload(rawBody: string, secret: string): string {
+  return 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+}
+
+/**
+ * Constant-time verification of a webhook signature against the raw body.
+ * Returns false on length mismatch or malformed input (never throws).
+ */
+export function verifyWebhookSignature(rawBody: string, signature: string, secret: string): boolean {
+  const expected = signWebhookPayload(rawBody, secret);
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(sigBuf, expBuf);
 }

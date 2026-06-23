@@ -35,9 +35,17 @@ export class WebhookProcessorService {
     const transactionStatus = notification.transaction?.status;
     const statusCode = notification.transaction?.statusCode;
 
+    // Amount the gateway reports as actually charged/locked for this order.
+    // Passed to handlePaymentSuccess to assert it matches the stored order total.
+    const paidAmount = notification.transaction?.amount ?? notification.inquiry?.amount;
+
     // ── Process payment based on transaction status ──
     if (this.megaBankPaymentService.isPaymentSuccess(transactionStatus, statusCode)) {
-      await this.coinOrderService.handlePaymentSuccess(orderId);
+      await this.coinOrderService.handlePaymentSuccess(
+        orderId,
+        paidAmount,
+        notification.transaction?.paymentSource,
+      );
       logger.info('[WebhookProcessorService] Payment success processed', { orderId });
     } else if (this.megaBankPaymentService.isPaymentFailure(transactionStatus)) {
       await this.coinOrderService.handlePaymentFailure(orderId);

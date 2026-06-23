@@ -33,6 +33,7 @@ export class TokenService {
   **/
   generateAccessToken(userId: number, role: Role): string {
     return jwt.sign({ sub: userId, role }, env.JWT_SECRET, {
+      algorithm: 'HS256',
       expiresIn: env.JWT_ACCESS_EXPIRES_IN as StringValue,
     });
   }
@@ -84,7 +85,9 @@ export class TokenService {
   **/
   verifyAccessToken(token: string): JWTPayload {
     try {
-      return jwt.verify(token, env.JWT_SECRET) as unknown as JWTPayload;
+      return jwt.verify(token, env.JWT_SECRET, {
+        algorithms: ['HS256'],
+      }) as unknown as JWTPayload;
     } catch (err) {
       throw new AppError('UNAUTHORIZED', 'Invalid or expired access token', 401);
     }

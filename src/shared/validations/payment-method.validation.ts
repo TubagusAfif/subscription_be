@@ -7,7 +7,8 @@ const idParamSchema = z.object({
 export const createPaymentMethodSchema = z.object({
   body: z.object({
     name: z.string().min(2).max(100),
-    code: z.string().min(2).max(50),
+    bank_mega_code: z.string().min(2).max(50).optional(),
+    midtrans_code: z.string().min(2).max(50).optional(),
     fee_type: z.enum(['FIXED', 'PERCENTAGE']),
     fee_value: z.number().nonnegative(),
     image_path: z.string().url().or(z.string().startsWith('/')).optional(),
@@ -19,7 +20,8 @@ export const updatePaymentMethodSchema = z.object({
   params: idParamSchema,
   body: z.object({
     name: z.string().min(2).max(100).optional(),
-    code: z.string().min(2).max(50).optional(),
+    bank_mega_code: z.string().min(2).max(50).optional(),
+    midtrans_code: z.string().min(2).max(50).optional(),
     fee_type: z.enum(['FIXED', 'PERCENTAGE']).optional(),
     fee_value: z.number().nonnegative().optional(),
     image_path: z.string().url().or(z.string().startsWith('/')).optional(),
