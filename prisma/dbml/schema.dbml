@@ -196,7 +196,8 @@ Table tax_config {
 Table payment_methods {
   id Int [pk, increment]
   name String [not null]
-  code String [unique, not null]
+  bank_mega_code String [unique]
+  midtrans_code String [unique]
   fee_type FeeType [not null]
   fee_value Decimal [not null]
   image_path String
@@ -208,6 +209,7 @@ Table payment_methods {
   deleted_at DateTime
   deleted_by Int
   coin_orders coin_orders [not null]
+  coin_transactions coin_transactions [not null]
 }
 
 Table coin_orders {
@@ -223,6 +225,7 @@ Table coin_orders {
   gateway_fee Decimal [not null, default: 0]
   price_paid Decimal [not null]
   status CoinOrderStatus [not null, default: 'PENDING']
+  payment_gateway String
   snap_token String
   redirect_url String
   pg_order_id String [unique]
@@ -265,6 +268,8 @@ Table coin_transactions {
   currency_id Int [not null]
   conversion_rate_snapshot Decimal [not null, default: 1]
   ref_id Int
+  payment_method_id Int
+  payment_channel String
   description String
   created_at DateTime [default: `now()`, not null]
   created_by Int
@@ -275,6 +280,7 @@ Table coin_transactions {
   wallet coin_wallet [not null]
   user users [not null]
   currency coin_currencies [not null]
+  payment_method payment_methods
 }
 
 Table subscriptions {
@@ -561,6 +567,8 @@ Ref: coin_transactions.wallet_id > coin_wallet.id
 Ref: coin_transactions.user_id > users.id
 
 Ref: coin_transactions.currency_id > coin_currencies.id
+
+Ref: coin_transactions.payment_method_id > payment_methods.id
 
 Ref: subscriptions.user_id > users.id
 

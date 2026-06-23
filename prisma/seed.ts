@@ -96,23 +96,25 @@ async function main() {
 
   // Seed default payment methods
   const paymentMethods = [
-    { name: 'Credit Card', code: 'credit_card', fee_type: FeeType.PERCENTAGE, fee_value: 2.9 },
-    { name: 'GoPay', code: 'gopay', fee_type: FeeType.PERCENTAGE, fee_value: 2.0 },
-    { name: 'QRIS', code: 'megaqris', fee_type: FeeType.PERCENTAGE, fee_value: 0 },
-    { name: 'Virtual Account', code: 'va', fee_type: FeeType.FIXED, fee_value: 4000.0 },
+    { name: 'Credit Card', bank_mega_code: null, midtrans_code: 'credit_card', fee_type: FeeType.PERCENTAGE, fee_value: 2.9 },
+    { name: 'GoPay', bank_mega_code: null, midtrans_code: 'gopay', fee_type: FeeType.PERCENTAGE, fee_value: 2.0 },
+    { name: 'QRIS', bank_mega_code: 'megaqris', midtrans_code: 'megaqris', fee_type: FeeType.PERCENTAGE, fee_value: 0 },
+    { name: 'Virtual Account', bank_mega_code: 'va', midtrans_code: 'va', fee_type: FeeType.FIXED, fee_value: 4000.0 },
   ];
 
   for (const pm of paymentMethods) {
     await prisma.paymentMethod.upsert({
-      where: { code: pm.code },
+      where: { midtrans_code: pm.midtrans_code },
       update: {
         name: pm.name,
+        bank_mega_code: pm.bank_mega_code,
         fee_type: pm.fee_type,
         fee_value: pm.fee_value,
       },
       create: {
         name: pm.name,
-        code: pm.code,
+        bank_mega_code: pm.bank_mega_code,
+        midtrans_code: pm.midtrans_code,
         fee_type: pm.fee_type,
         fee_value: pm.fee_value,
         is_active: true,

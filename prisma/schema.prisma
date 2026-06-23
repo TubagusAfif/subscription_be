@@ -319,13 +319,17 @@ model TaxConfig {
 }
 
 model PaymentMethod {
-  id         Int       @id @default(autoincrement())
-  name       String // e.g., Virtual Account Bank Mega, Credit Card, GoPay
-  code       String    @unique // e.g., va_bankmega, credit_card, gopay
-  fee_type   FeeType // FIXED or PERCENTAGE
-  fee_value  Decimal   @db.Decimal(15, 2)
-  image_path String?
-  is_active  Boolean   @default(true)
+  id             Int     @id @default(autoincrement())
+  name           String // e.g., Virtual Account Bank Mega, Credit Card, GoPay
+  // Gateway-specific codes. A method is offered for a given gateway only when
+  // its code for that gateway is set (non-null). e.g. bank_mega_code=megaqris,
+  // midtrans_code=qris. Either may be null when a method is unsupported there.
+  bank_mega_code String? @unique
+  midtrans_code  String? @unique
+  fee_type       FeeType // FIXED or PERCENTAGE
+  fee_value      Decimal @db.Decimal(15, 2)
+  image_path     String?
+  is_active      Boolean @default(true)
   created_at DateTime  @default(now())
   created_by Int?
   updated_at DateTime  @updatedAt
@@ -333,7 +337,8 @@ model PaymentMethod {
   deleted_at DateTime?
   deleted_by Int?
 
-  coin_orders CoinOrder[]
+  coin_orders       CoinOrder[]
+  coin_transactions CoinTransaction[]
 
   @@map("payment_methods")
 }
@@ -355,6 +360,7 @@ model CoinOrder {
   gateway_fee       Decimal         @default(0) @db.Decimal(15, 2)
   price_paid        Decimal         @db.Decimal(15, 2)
   status            CoinOrderStatus @default(PENDING)
+  payment_gateway   String?
   snap_token        String?
   redirect_url      String?
   pg_order_id       String?         @unique
@@ -403,6 +409,8 @@ model CoinTransaction {
   currency_id              Int
   conversion_rate_snapshot Decimal             @default(1) @db.Decimal(10, 4)
   ref_id                   Int?
+  payment_method_id        Int?
+  payment_channel          String? // raw gateway channel (e.g. bca_va, qris) for audit
   description              String?             @db.Text
   created_at               DateTime            @default(now())
   created_by               Int?
@@ -411,9 +419,10 @@ model CoinTransaction {
   deleted_at               DateTime?
   deleted_by               Int?
 
-  wallet   CoinWallet   @relation(fields: [wallet_id], references: [id])
-  user     User         @relation(fields: [user_id], references: [id])
-  currency CoinCurrency @relation(fields: [currency_id], references: [id])
+  wallet         CoinWallet     @relation(fields: [wallet_id], references: [id])
+  user           User           @relation(fields: [user_id], references: [id])
+  currency       CoinCurrency   @relation(fields: [currency_id], references: [id])
+  payment_method PaymentMethod? @relation(fields: [payment_method_id], references: [id])
 
   @@map("coin_transactions")
 }
