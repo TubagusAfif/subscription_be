@@ -28,6 +28,7 @@ describe('OutboxWorker', () => {
 
   beforeEach(() => {
     mockRepository = {
+      recoverStaleProcessing: jest.fn().mockResolvedValue(0),
       fetchPending: jest.fn(),
       markProcessing: jest.fn(),
       markCompleted: jest.fn(),
@@ -92,6 +93,16 @@ describe('OutboxWorker', () => {
       })
     );
     expect(mockRepository.markCompleted).toHaveBeenCalledWith(1);
+  });
+
+  it('should reclaim stale PROCESSING events before fetching pending ones', async () => {
+    mockRepository.recoverStaleProcessing.mockResolvedValue(2);
+    mockRepository.fetchPending.mockResolvedValue([]);
+
+    await (worker as any).poll();
+
+    expect(mockRepository.recoverStaleProcessing).toHaveBeenCalled();
+    expect(mockRepository.fetchPending).toHaveBeenCalled();
   });
 
   it('should not process event if already locked (markProcessing returns false)', async () => {

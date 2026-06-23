@@ -100,5 +100,9 @@ export const MAX_RETRY_ATTEMPTS = 6;
 // Outbox worker poll interval in milliseconds
 export const OUTBOX_POLL_INTERVAL_MS = 30_000; // 30 seconds
 
+// If a row sits in PROCESSING longer than this (e.g. the worker crashed mid-delivery),
+// it is reclaimed back to PENDING on the next poll. Must exceed the HTTP timeout (30s).
+export const OUTBOX_PROCESSING_TIMEOUT_MS = 120_000; // 2 minutes
+
 // Maximum events to process per poll cycle
 export const OUTBOX_BATCH_SIZE = 50;

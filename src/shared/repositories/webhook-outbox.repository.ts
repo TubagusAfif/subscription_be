@@ -49,6 +49,26 @@ export class WebhookOutboxRepository {
   }
 
   /**
+   * Reclaim events stuck in PROCESSING (e.g. the worker crashed mid-delivery).
+   * Any row in PROCESSING whose updated_at is older than the cutoff is reverted
+   * to PENDING so the next poll cycle retries it. Returns the number reclaimed.
+   */
+  async recoverStaleProcessing(timeoutMs: number): Promise<number> {
+    const cutoff = new Date(Date.now() - timeoutMs);
+    const { count } = await this.prisma.webhookOutbox.updateMany({
+      where: {
+        status: 'PROCESSING',
+        updated_at: { lt: cutoff },
+      },
+      data: {
+        status: 'PENDING',
+        next_attempt_at: new Date(),
+      },
+    });
+    return count;
+  }
+
+  /**
    * Mark an event as PROCESSING to prevent duplicate processing by concurrent workers.
    * Returns the updated record, or null if it was already picked up (status != PENDING).
    */

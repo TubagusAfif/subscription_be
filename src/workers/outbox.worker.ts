@@ -1,5 +1,5 @@
 import { WebhookOutboxRepository } from '../shared/repositories/webhook-outbox.repository';
-import { signWebhookPayload } from '../shared/utils/webhook-signer.util';
+import { signWebhookPayload } from '../shared/utils/crypto.util';
 import { env } from '../shared/config/env';
 import { logger } from '../shared/config/logger';
 import {
@@ -7,6 +7,7 @@ import {
   MAX_RETRY_ATTEMPTS,
   OUTBOX_POLL_INTERVAL_MS,
   OUTBOX_BATCH_SIZE,
+  OUTBOX_PROCESSING_TIMEOUT_MS,
 } from '../shared/constants/webhook.constants';
 import { WebhookOutbox } from '@prisma/client';
 
@@ -55,6 +56,14 @@ export class OutboxWorker {
     this.isProcessing = true;
 
     try {
+      // Reclaim any events stranded in PROCESSING by a previous crash before fetching.
+      const reclaimed = await this.webhookOutboxRepository.recoverStaleProcessing(
+        OUTBOX_PROCESSING_TIMEOUT_MS,
+      );
+      if (reclaimed > 0) {
+        logger.warn(`[OutboxWorker] Reclaimed ${reclaimed} stale PROCESSING events`);
+      }
+
       const events = await this.webhookOutboxRepository.fetchPending(OUTBOX_BATCH_SIZE);
 
       if (events.length === 0) {
