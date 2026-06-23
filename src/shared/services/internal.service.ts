@@ -20,18 +20,20 @@ export class InternalService {
       const quotaResourceType = payload.resource_type.toLowerCase();
       const quotaRows = await this.internalRepo.getQuotaWithLock(subscription.id, quotaResourceType, tx);
 
-      let quotaRemaining: number | undefined;
-
-      if (quotaRows.length > 0) {
-        const quota = quotaRows[0]!;
-
-        if (quota.used_quota >= quota.total_quota) {
-          throw new AppError('QUOTA_EXCEEDED', `Quota ${payload.resource_type} habis. Owner harus upgrade tier atau beli addon.`, 409);
-        }
-
-        await this.internalRepo.incrementQuotaUsed(quota.id, tx);
-        quotaRemaining = quota.total_quota - quota.used_quota - 1;
+      // Fail closed: without a configured quota row we cannot grant a slot,
+      // otherwise assignment would be unbounded and bypass enforcement.
+      if (quotaRows.length === 0) {
+        throw new AppError('QUOTA_EXCEEDED', `Quota ${payload.resource_type} belum dikonfigurasi untuk subscription ini.`, 409);
       }
+
+      const quota = quotaRows[0]!;
+
+      if (quota.used_quota >= quota.total_quota) {
+        throw new AppError('QUOTA_EXCEEDED', `Quota ${payload.resource_type} habis. Owner harus upgrade tier atau beli addon.`, 409);
+      }
+
+      await this.internalRepo.incrementQuotaUsed(quota.id, tx);
+      const quotaRemaining = quota.total_quota - quota.used_quota - 1;
 
       const slotMap = await this.internalRepo.createAddonSlotMap({
         addon_subscription_id: subscription.id,
@@ -53,8 +55,10 @@ export class InternalService {
         return { quota_remaining: 0, note: 'subscription not found, treated as already released' };
       }
 
-      const refType = payload.resource_type === 'CLINIC' ? 'clinic' : undefined;
-      const slotMap = await this.internalRepo.findAddonSlotMap(subscription.id, payload.ref_id, refType, tx);
+      // Constrain the lookup to ref_types valid for this resource so a USER release
+      // can never match a CLINIC slot that happens to share the same ref_id.
+      const refTypes = payload.resource_type === 'CLINIC' ? ['clinic'] : ['staff', 'doctor'];
+      const slotMap = await this.internalRepo.findAddonSlotMap(subscription.id, payload.ref_id, refTypes, tx);
 
       const quotaResourceType = payload.resource_type.toLowerCase();
 
@@ -130,9 +134,27 @@ export class InternalService {
       throw new AppError('SUBSCRIPTION_NOT_FOUND', 'Subscription with this external_subscription_id not found', 404);
     }
 
-    const returnUrl = new URL(payload.return_url);
-    if (!returnUrl.hostname.endsWith('idental.com') && !returnUrl.hostname.includes('localhost')) {
+    let returnUrl: URL;
+    try {
+      returnUrl = new URL(payload.return_url);
+    } catch {
+      throw new AppError('INVALID_RETURN_URL', 'return_url is not a valid URL', 400);
+    }
+
+    // Exact-match allowlist. Using endsWith('idental.com') / includes('localhost')
+    // would also match attacker-controlled hosts such as "evilidental.com" or
+    // "localhost.attacker.com", leaking the signed renewal token off-domain.
+    const host = returnUrl.hostname.toLowerCase();
+    const isIdental = host === 'idental.com' || host.endsWith('.idental.com');
+    const isLocalhost = host === 'localhost' || host === '127.0.0.1';
+
+    if (!isIdental && !isLocalhost) {
       throw new AppError('INVALID_RETURN_URL', 'return_url domain is not in the allowlist', 400);
+    }
+
+    // Require https for real domains so the token is never sent over plaintext.
+    if (isIdental && returnUrl.protocol !== 'https:') {
+      throw new AppError('INVALID_RETURN_URL', 'return_url must use https', 400);
     }
 
     const token = jwt.sign(
@@ -142,7 +164,7 @@ export class InternalService {
         action: 'renewal',
       },
       env.JWT_SECRET,
-      { expiresIn: '30m' }
+      { algorithm: 'HS256', expiresIn: '30m' }
     );
 
     const frontendUrl = env.CLIENT_APP_URL || 'http://localhost:3000';

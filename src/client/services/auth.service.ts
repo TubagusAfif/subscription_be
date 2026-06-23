@@ -180,9 +180,20 @@ export class ClientAuthService {
     return { message: 'Activation email has been resent. Please check your inbox.' };
   }
 
-  /** 
+  /**
   ---------------------------------------------------------------
-    Generates a password reset token and sends an email. 
+    Hashes a password-reset token for storage/lookup. The plaintext
+    token is only ever sent to the user via email; the database stores
+    and is queried by this hash.
+  ---------------------------------------------------------------
+  **/
+  private hashResetToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  /**
+  ---------------------------------------------------------------
+    Generates a password reset token and sends an email.
   ---------------------------------------------------------------
   **/
   async forgotPassword(data: any): Promise<{ message: string }> {
@@ -201,8 +212,10 @@ export class ClientAuthService {
 
     logger.info(`[AuthService] forgotPassword: User found (ID: ${user.id}), generating token.`);
 
+    // Store only a SHA-256 hash of the token. A DB read (leak/backup/SQLi)
+    // then yields no usable reset tokens; the plaintext lives only in the email.
     await this.userRepository.update(user.id, {
-      reset_token: resetToken,
+      reset_token: this.hashResetToken(resetToken),
       reset_token_expires_at: resetTokenExpiresAt,
     });
 
@@ -227,7 +240,7 @@ export class ClientAuthService {
   ---------------------------------------------------------------
   **/
   async resetPassword(data: any): Promise<{ message: string }> {
-    const user = await this.userRepository.findByResetToken(data.token);
+    const user = await this.userRepository.findByResetToken(this.hashResetToken(data.token));
 
     if (!user) {
       throw new AppError('INVALID_TOKEN', 'Invalid or expired password reset token', 400);
