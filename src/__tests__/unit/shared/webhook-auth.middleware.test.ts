@@ -77,9 +77,11 @@ describe('webhookAuthMiddleware', () => {
     webhookAuthMiddleware(req as Request, res as Response, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Webhook timestamp drift exceeded 5 minutes',
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Webhook timestamp drift exceeded 5 minutes',
+      }),
+    );
   });
 
   it('should return 500 if req.body is already parsed (not Buffer or string)', () => {
@@ -94,9 +96,11 @@ describe('webhookAuthMiddleware', () => {
     webhookAuthMiddleware(req as Request, res as Response, next);
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Internal error: webhook route must use express.raw() middleware',
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Internal error: webhook route must use express.raw() middleware',
+      }),
+    );
   });
 
   it('should return 401 if signature is invalid', () => {
@@ -110,9 +114,11 @@ describe('webhookAuthMiddleware', () => {
     webhookAuthMiddleware(req as Request, res as Response, next);
 
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Invalid webhook signature',
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Invalid webhook signature',
+      }),
+    );
   });
 
   it('should return 422 if body is invalid JSON', () => {
@@ -129,10 +135,12 @@ describe('webhookAuthMiddleware', () => {
     webhookAuthMiddleware(req as Request, res as Response, next);
 
     expect(res.status).toHaveBeenCalledWith(422);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Invalid JSON payload',
-      error_code: 'UNPROCESSABLE_ENTITY',
-    }));
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Invalid JSON payload',
+        error_code: 'UNPROCESSABLE_ENTITY',
+      }),
+    );
   });
 
   it('should call next and parse body if everything is valid (Buffer body)', () => {

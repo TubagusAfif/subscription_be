@@ -117,10 +117,13 @@ describe('ClientAccountService', () => {
 
       await accountService.updateAccount(1, updateData as any);
 
-      expect(mockAccountRepository.upsertProfile).toHaveBeenCalledWith(1, expect.objectContaining({
-        city: 'Jakarta',
-        country: 'ID',
-      }));
+      expect(mockAccountRepository.upsertProfile).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          city: 'Jakarta',
+          country: 'ID',
+        }),
+      );
     });
   });
 
@@ -129,7 +132,10 @@ describe('ClientAccountService', () => {
       mockAccountRepository.findByIdWithProfile.mockResolvedValue(mockUserWithProfile as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       (bcrypt.hash as jest.Mock).mockResolvedValue('newHashedPassword');
-      mockAccountRepository.updatePasswordHash.mockResolvedValue({ ...mockUser, password_hash: 'newHashedPassword' } as any);
+      mockAccountRepository.updatePasswordHash.mockResolvedValue({
+        ...mockUser,
+        password_hash: 'newHashedPassword',
+      } as any);
 
       await accountService.changePassword(1, {
         currentPassword: 'oldpassword',
@@ -145,10 +151,12 @@ describe('ClientAccountService', () => {
       mockAccountRepository.findByIdWithProfile.mockResolvedValue(mockUserWithProfile as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      await expect(accountService.changePassword(1, {
-        currentPassword: 'samepassword',
-        newPassword: 'samepassword',
-      })).rejects.toThrow(AppError);
+      await expect(
+        accountService.changePassword(1, {
+          currentPassword: 'samepassword',
+          newPassword: 'samepassword',
+        }),
+      ).rejects.toThrow(AppError);
 
       expect(bcrypt.hash).not.toHaveBeenCalled();
     });
@@ -157,10 +165,12 @@ describe('ClientAccountService', () => {
       mockAccountRepository.findByIdWithProfile.mockResolvedValue(mockUserWithProfile as any);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(accountService.changePassword(1, {
-        currentPassword: 'wrongpassword',
-        newPassword: 'newpassword123',
-      })).rejects.toThrow(AppError);
+      await expect(
+        accountService.changePassword(1, {
+          currentPassword: 'wrongpassword',
+          newPassword: 'newpassword123',
+        }),
+      ).rejects.toThrow(AppError);
 
       expect(bcrypt.hash).not.toHaveBeenCalled();
       expect(mockAccountRepository.updatePasswordHash).not.toHaveBeenCalled();

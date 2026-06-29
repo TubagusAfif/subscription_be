@@ -5,8 +5,15 @@ import { TokenService } from '../../../shared/services/token.service';
 import { AppError } from '../../../shared/middlewares/error.middleware';
 
 // --------------------------------------------------------------------------
-// Mock jsonwebtoken so we don't need real secret validation beyond our stubs
+// Mock env and jsonwebtoken
 // --------------------------------------------------------------------------
+jest.mock('../../../shared/config/env', () => ({
+  env: {
+    JWT_SECRET: 'test-secret',
+    JWT_ACCESS_EXPIRES_IN: '15m',
+    JWT_REFRESH_EXPIRES_IN: '7d',
+  },
+}));
 jest.mock('jsonwebtoken');
 const mockJwt = jest.mocked(jwt);
 
@@ -53,7 +60,7 @@ describe('TokenService', () => {
       expect(mockJwt.sign).toHaveBeenCalledWith(
         { sub: MOCK_USER_ID, role: MOCK_ROLE },
         expect.any(String),
-        { expiresIn: '15m' },
+        { algorithm: 'HS256', expiresIn: '15m' },
       );
       expect(token).toBe('mocked.access.token');
     });
@@ -114,7 +121,9 @@ describe('TokenService', () => {
 
       const result = service.verifyAccessToken('valid.token.here');
 
-      expect(mockJwt.verify).toHaveBeenCalledWith('valid.token.here', MOCK_SECRET);
+      expect(mockJwt.verify).toHaveBeenCalledWith('valid.token.here', 'test-secret', {
+        algorithms: ['HS256'],
+      });
       expect(result).toEqual(payload);
     });
 

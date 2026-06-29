@@ -24,7 +24,9 @@ describe('HTTP Utility', () => {
         });
       });
 
-      await expect(fetchWithTimeout('http://example.com', { timeoutMs: 50 })).rejects.toThrow('AbortError');
+      await expect(fetchWithTimeout('http://example.com', { timeoutMs: 50 })).rejects.toThrow(
+        'AbortError',
+      );
     });
   });
 
@@ -37,11 +39,12 @@ describe('HTTP Utility', () => {
     });
 
     it('should retry on failure and eventually succeed', async () => {
-      const operation = jest.fn()
+      const operation = jest
+        .fn()
         .mockRejectedValueOnce(new Error('fail 1'))
         .mockRejectedValueOnce(new Error('fail 2'))
         .mockResolvedValue('success');
-      
+
       const result = await withRetry(operation, { baseDelayMs: 10 });
       expect(result).toBe('success');
       expect(operation).toHaveBeenCalledTimes(3);
@@ -49,8 +52,10 @@ describe('HTTP Utility', () => {
 
     it('should throw if max retries exceeded', async () => {
       const operation = jest.fn().mockRejectedValue(new Error('always fail'));
-      
-      await expect(withRetry(operation, { maxRetries: 2, baseDelayMs: 10 })).rejects.toThrow('always fail');
+
+      await expect(withRetry(operation, { maxRetries: 2, baseDelayMs: 10 })).rejects.toThrow(
+        'always fail',
+      );
       expect(operation).toHaveBeenCalledTimes(2); // 1 initial + 1 retry if maxRetries is 2
     });
   });

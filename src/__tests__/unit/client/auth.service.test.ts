@@ -297,7 +297,10 @@ describe('ClientAuthService', () => {
       (mockBcrypt.hash as jest.Mock).mockResolvedValue('new_hashed_password');
       mockUserUpdate.mockResolvedValue(makeUser());
 
-      const result = await service.resetPassword({ token: 'valid-reset-token', password: 'new-password' });
+      const result = await service.resetPassword({
+        token: 'valid-reset-token',
+        password: 'new-password',
+      });
 
       expect(mockBcrypt.hash).toHaveBeenCalledWith('new-password', 10);
       expect(mockUserUpdate).toHaveBeenCalledWith(
@@ -316,7 +319,9 @@ describe('ClientAuthService', () => {
     it('should throw INVALID_TOKEN (400) if reset token is invalid', async () => {
       mockUserRepository.findByResetToken = jest.fn().mockResolvedValue(null);
 
-      await expect(service.resetPassword({ token: 'invalid', password: 'new' })).rejects.toMatchObject({
+      await expect(
+        service.resetPassword({ token: 'invalid', password: 'new' }),
+      ).rejects.toMatchObject({
         code: 'INVALID_TOKEN',
         statusCode: 400,
       });
@@ -333,7 +338,9 @@ describe('ClientAuthService', () => {
         }),
       );
 
-      await expect(service.resetPassword({ token: 'expired-token', password: 'new' })).rejects.toMatchObject({
+      await expect(
+        service.resetPassword({ token: 'expired-token', password: 'new' }),
+      ).rejects.toMatchObject({
         code: 'TOKEN_EXPIRED',
         statusCode: 400,
       });

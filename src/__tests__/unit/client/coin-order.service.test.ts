@@ -4,15 +4,15 @@ import { AppError } from '../../../shared/middlewares/error.middleware';
 describe('CoinOrderService', () => {
   let coinOrderService: CoinOrderService;
 
-  // Mocks
   const mockCoinOrderRepo = {
     create: jest.fn(),
     findById: jest.fn(),
     findByPgOrderId: jest.fn(),
-    findByPgResponseId: jest.fn(),
     findByUserId: jest.fn(),
     updateStatus: jest.fn(),
     updatePaymentInfo: jest.fn(),
+    findPendingByUserId: jest.fn(),
+    markFailedIfPending: jest.fn(),
   };
 
   const mockCoinWalletRepo = {
@@ -43,20 +43,20 @@ describe('CoinOrderService', () => {
   };
 
   const mockTx = {
-    coinOrder: { update: jest.fn(), findUnique: jest.fn() },
+    coinOrder: { updateMany: jest.fn(), update: jest.fn(), findUnique: jest.fn() },
     coinWallet: { findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
     coinTransaction: { create: jest.fn() },
   };
 
   const mockPrisma = {
-    $transaction: jest.fn(async (callback) => {
-      return callback(mockTx);
-    }),
-    coinOrder: { update: jest.fn() },
+    $transaction: jest.fn(async (callback) => callback(mockTx)),
+    coinOrder: { updateMany: jest.fn() },
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: user has no active pending order.
+    mockCoinOrderRepo.findPendingByUserId.mockResolvedValue(null);
 
     coinOrderService = new CoinOrderService({
       coinOrderRepository: mockCoinOrderRepo as any,
@@ -69,31 +69,57 @@ describe('CoinOrderService', () => {
     });
   });
 
+  describe('assertNoActivePendingOrder (via prepareBundleOrder)', () => {
+    it('should throw PENDING_ORDER_EXISTS when a recent pending order exists', async () => {
+      mockCoinOrderRepo.findPendingByUserId.mockResolvedValue({
+        id: 5,
+        created_at: new Date(), // fresh → not stale
+      });
+
+      await expect(coinOrderService.prepareBundleOrder(1, 1, 1)).rejects.toMatchObject({
+        statusCode: 422,
+        code: 'PENDING_ORDER_EXISTS',
+      });
+      expect(mockBundleRepo.findById).not.toHaveBeenCalled();
+    });
+
+    it('should expire a stale pending order and continue', async () => {
+      mockCoinOrderRepo.findPendingByUserId.mockResolvedValue({
+        id: 5,
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2h old → stale
+      });
+      mockBundleRepo.findById.mockResolvedValue(null); // will then 404, that's fine
+
+      await expect(coinOrderService.prepareBundleOrder(1, 999, 1)).rejects.toMatchObject({
+        code: 'BUNDLE_NOT_FOUND',
+      });
+      expect(mockCoinOrderRepo.updateStatus).toHaveBeenCalledWith(5, 'EXPIRED');
+    });
+  });
+
   describe('prepareBundleOrder', () => {
     it('should throw BUNDLE_NOT_FOUND if bundle does not exist', async () => {
       mockBundleRepo.findById.mockResolvedValue(null);
 
-      await expect(
-        coinOrderService.prepareBundleOrder(1, 999, 'va'),
-      ).rejects.toThrow(AppError);
-
-      await expect(
-        coinOrderService.prepareBundleOrder(1, 999, 'va'),
-      ).rejects.toMatchObject({ statusCode: 404, message: 'Coin bundle with ID 999 not found.' });
+      await expect(coinOrderService.prepareBundleOrder(1, 999, 1)).rejects.toThrow(AppError);
+      await expect(coinOrderService.prepareBundleOrder(1, 999, 1)).rejects.toMatchObject({
+        statusCode: 404,
+        message: 'Coin bundle with ID 999 not found.',
+      });
     });
 
     it('should throw INVALID_PAYMENT_METHOD if payment method does not exist or is inactive', async () => {
-      const mockBundle = { id: 1, price: '100000', tax_rate: '11' };
-      mockBundleRepo.findById.mockResolvedValue(mockBundle);
-      mockPaymentMethodRepo.findByCode.mockResolvedValue(null);
+      mockBundleRepo.findById.mockResolvedValue({ id: 1, price: '100000', tax_rate: '11' });
+      mockPaymentMethodRepo.findById.mockResolvedValue(null);
 
-      await expect(
-        coinOrderService.prepareBundleOrder(1, 1, 'invalid_pm'),
-      ).rejects.toThrow(AppError);
+      await expect(coinOrderService.prepareBundleOrder(1, 1, 99)).rejects.toMatchObject({
+        statusCode: 400,
+        code: 'INVALID_PAYMENT_METHOD',
+      });
     });
 
-    it('should prepare an order and calculate price, tax, and fixed gateway fee correctly', async () => {
-      const mockBundle = {
+    it('should calculate price, tax, and a FIXED gateway fee correctly', async () => {
+      mockBundleRepo.findById.mockResolvedValue({
         id: 1,
         bundle_name: '100 Coins',
         coin_amount: 100,
@@ -101,97 +127,75 @@ describe('CoinOrderService', () => {
         price: '100000',
         discounted_price: '90000',
         tax_rate: '11',
-      };
-      const mockPaymentMethod = {
+      });
+      mockPaymentMethodRepo.findById.mockResolvedValue({
         id: 1,
-        name: 'Virtual Account',
-        bank_mega_code: 'va',
-        midtrans_code: 'va',
         fee_type: 'FIXED',
-        fee_value: 4000.00,
+        fee_value: 4000,
         is_active: true,
-      };
+      });
 
-      const expectedBasePrice = 90000;
-      const expectedTaxAmount = 90000 * 0.11; // 9900
-      const expectedGatewayFee = 4000;
-      const expectedTotalPrice = expectedBasePrice + expectedTaxAmount + expectedGatewayFee; // 103900
-
-      mockBundleRepo.findById.mockResolvedValue(mockBundle);
-      mockPaymentMethodRepo.findByCode.mockResolvedValue(mockPaymentMethod);
-
-      const result = await coinOrderService.prepareBundleOrder(1, 1, 'va');
+      const result = await coinOrderService.prepareBundleOrder(1, 1, 1);
 
       expect(mockBundleRepo.findById).toHaveBeenCalledWith(1);
-      expect(mockPaymentMethodRepo.findByCode).toHaveBeenCalledWith('va');
-      expect(result.bundle).toEqual(mockBundle);
-      expect(result.basePrice).toBe(expectedBasePrice);
-      expect(result.taxAmount).toBe(expectedTaxAmount);
-      expect(result.gatewayFee).toBe(expectedGatewayFee);
-      expect(result.totalPrice).toBe(expectedTotalPrice);
+      expect(mockPaymentMethodRepo.findById).toHaveBeenCalledWith(1);
+      expect(result.basePrice).toBe(90000);
+      expect(result.taxAmount).toBe(9900);
+      expect(result.gatewayFee).toBe(4000);
+      expect(result.totalPrice).toBe(103900);
       expect(result.pgOrderId).toContain('COIN-1-');
     });
 
-    it('should prepare an order and calculate price, tax, and percentage gateway fee correctly', async () => {
-      const mockBundle = {
+    it('should calculate a PERCENTAGE gateway fee correctly', async () => {
+      mockBundleRepo.findById.mockResolvedValue({
         id: 1,
-        bundle_name: '100 Coins',
         coin_amount: 100,
         currency_id: 1,
         price: '100000',
         discounted_price: '90000',
         tax_rate: '11',
-      };
-      const mockPaymentMethod = {
+      });
+      mockPaymentMethodRepo.findById.mockResolvedValue({
         id: 2,
-        name: 'Credit Card',
-        bank_mega_code: null,
-        midtrans_code: 'credit_card',
         fee_type: 'PERCENTAGE',
         fee_value: 2.9,
         is_active: true,
-      };
+      });
 
-      const expectedBasePrice = 90000;
-      const expectedTaxAmount = 90000 * 0.11; // 9900
-      const expectedGatewayFee = Math.round((expectedBasePrice + expectedTaxAmount) * 0.029); // Math.round(99900 * 0.029) = 2897
-      const expectedTotalPrice = expectedBasePrice + expectedTaxAmount + expectedGatewayFee;
+      const result = await coinOrderService.prepareBundleOrder(1, 1, 2);
 
-      mockBundleRepo.findById.mockResolvedValue(mockBundle);
-      mockPaymentMethodRepo.findByCode.mockResolvedValue(mockPaymentMethod);
-
-      const result = await coinOrderService.prepareBundleOrder(1, 1, 'credit_card');
-
-      expect(result.gatewayFee).toBe(expectedGatewayFee);
-      expect(result.totalPrice).toBe(expectedTotalPrice);
+      const expectedFee = Math.round((90000 + 9900) * 0.029); // 2897
+      expect(result.gatewayFee).toBe(expectedFee);
+      expect(result.totalPrice).toBe(90000 + 9900 + expectedFee);
     });
   });
 
   describe('prepareCustomOrder', () => {
-    it('should prepare a custom order and calculate price, tax, and gateway fee correctly', async () => {
-      const mockCurrency = {
+    it('should calculate price, tax, and gateway fee for a custom order', async () => {
+      mockCurrencyRepo.findActive.mockResolvedValue({ id: 1, conversion_rate: 1000 });
+      mockPaymentMethodRepo.findById.mockResolvedValue({
         id: 1,
-        conversion_rate: 1000,
-      };
-      const mockPaymentMethod = {
-        id: 1,
-        name: 'Virtual Account',
-        bank_mega_code: 'va',
-        midtrans_code: 'va',
         fee_type: 'FIXED',
-        fee_value: 4000.00,
+        fee_value: 4000,
         is_active: true,
-      };
+      });
 
-      mockCurrencyRepo.findActive.mockResolvedValue(mockCurrency);
-      mockPaymentMethodRepo.findByCode.mockResolvedValue(mockPaymentMethod);
-
-      const result = await coinOrderService.prepareCustomOrder(1, 100, 11, 'va');
+      const activeTax = { tax_type: 'PERCENTAGE', tax_value: 11 };
+      const result = await coinOrderService.prepareCustomOrder(1, 100, activeTax, 1);
 
       expect(result.basePrice).toBe(100000);
       expect(result.taxAmount).toBe(11000);
       expect(result.gatewayFee).toBe(4000);
       expect(result.totalPrice).toBe(115000);
+    });
+
+    it('should throw INACTIVE_CURRENCY when there is no active currency', async () => {
+      mockCurrencyRepo.findActive.mockResolvedValue(null);
+
+      await expect(coinOrderService.prepareCustomOrder(1, 100, null, 1)).rejects.toMatchObject({
+        statusCode: 404,
+        code: 'INACTIVE_CURRENCY',
+      });
     });
   });
 
@@ -202,41 +206,39 @@ describe('CoinOrderService', () => {
       await expect(coinOrderService.handlePaymentSuccess('invalid-id')).rejects.toThrow(AppError);
     });
 
-    it('should skip if order is already PAID', async () => {
-      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({ id: 10, status: 'PAID' });
-      mockTx.coinOrder.findUnique.mockResolvedValue({ id: 10, status: 'PAID' });
+    it('should skip crediting when the atomic PENDING->PAID flip matches no row', async () => {
+      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({ id: 10, user_id: 1, status: 'PAID' });
+      mockTx.coinOrder.updateMany.mockResolvedValue({ count: 0 });
 
       await coinOrderService.handlePaymentSuccess('already-paid-id');
 
       expect(mockTx.coinWallet.update).not.toHaveBeenCalled();
+      expect(mockTx.coinTransaction.create).not.toHaveBeenCalled();
     });
 
-    it('should credit wallet and create transaction for successful payment', async () => {
+    it('should credit the wallet and log a TOPUP transaction on success', async () => {
       const mockOrder = {
         id: 201,
         user_id: 1,
         currency_id: 1,
         coin_amount: 100,
+        payment_method_id: 3,
+        price_paid: '103900',
         status: 'PENDING',
       };
-      const mockWallet = { id: 11, user_id: 1, balance: 50 };
-
       mockCoinOrderRepo.findByPgOrderId.mockResolvedValue(mockOrder);
-      mockTx.coinOrder.findUnique.mockResolvedValue(mockOrder);
-      mockTx.coinWallet.findUnique.mockResolvedValue(mockWallet);
+      mockTx.coinOrder.updateMany.mockResolvedValue({ count: 1 });
+      mockTx.coinWallet.findUnique.mockResolvedValue({ id: 11, user_id: 1, balance: 50 });
 
-      await coinOrderService.handlePaymentSuccess('valid-pg-order-id');
+      await coinOrderService.handlePaymentSuccess('valid-pg-order-id', 103900, 'bank_transfer');
 
-      expect(mockTx.coinOrder.update).toHaveBeenCalledWith({
-        where: { id: 201 },
+      expect(mockTx.coinOrder.updateMany).toHaveBeenCalledWith({
+        where: { id: 201, status: 'PENDING' },
         data: { status: 'PAID' },
       });
       expect(mockTx.coinWallet.update).toHaveBeenCalledWith({
         where: { user_id: 1 },
-        data: {
-          balance: { increment: 100 },
-          last_updated: expect.any(Date),
-        },
+        data: { balance: { increment: 100 }, last_updated: expect.any(Date) },
       });
       expect(mockTx.coinTransaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -245,9 +247,46 @@ describe('CoinOrderService', () => {
             user_id: 1,
             type: 'TOPUP',
             amount: 100,
+            payment_channel: 'bank_transfer',
           }),
-        })
+        }),
       );
+    });
+
+    it('should throw AMOUNT_MISMATCH when the paid amount differs from the order total', async () => {
+      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({
+        id: 201,
+        user_id: 1,
+        price_paid: '103900',
+        status: 'PENDING',
+      });
+
+      await expect(
+        coinOrderService.handlePaymentSuccess('valid-pg-order-id', 50000),
+      ).rejects.toMatchObject({ statusCode: 400, code: 'AMOUNT_MISMATCH' });
+      expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handlePaymentFailure', () => {
+    it('should atomically flip a PENDING order to FAILED', async () => {
+      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({ id: 7, status: 'PENDING' });
+      mockPrisma.coinOrder.updateMany.mockResolvedValue({ count: 1 });
+
+      await coinOrderService.handlePaymentFailure('pg-7');
+
+      expect(mockPrisma.coinOrder.updateMany).toHaveBeenCalledWith({
+        where: { id: 7, status: 'PENDING' },
+        data: { status: 'FAILED' },
+      });
+    });
+
+    it('should do nothing when the order is not PENDING', async () => {
+      mockCoinOrderRepo.findByPgOrderId.mockResolvedValue({ id: 7, status: 'PAID' });
+
+      await coinOrderService.handlePaymentFailure('pg-7');
+
+      expect(mockPrisma.coinOrder.updateMany).not.toHaveBeenCalled();
     });
   });
 });

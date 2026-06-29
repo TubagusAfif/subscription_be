@@ -19,6 +19,10 @@ const mockPlanRepo = {
   findBenefitsBySkuId: jest.fn(),
 } as any;
 
+const mockOutboxService = {
+  insertEvent: jest.fn(),
+} as any;
+
 // --------------------------------------------------------------------------
 // Helpers
 // --------------------------------------------------------------------------
@@ -62,7 +66,8 @@ describe('ClientSubscriptionService - switchPlan', () => {
       subscriptionRepository: mockSubscriptionRepo,
       coinWalletService: mockWalletService,
       planRepository: mockPlanRepo,
-    });
+      webhookOutboxService: mockOutboxService,
+    } as any);
   });
 
   it('should successfully switch from a lower rank plan to a higher rank plan (UPGRADE)', async () => {
@@ -72,7 +77,7 @@ describe('ClientSubscriptionService - switchPlan', () => {
     const wallet = makeWallet({ balance: 500 });
     const newSubResult = makeSubscription({ id: 2, sku_id: 20 });
     const planSwitchResult = { id: 100 };
-    
+
     mockSubscriptionRepo.findById.mockResolvedValue(oldSub);
     mockPlanRepo.findById.mockResolvedValue(newSku);
     mockWalletService.getWallet.mockResolvedValue(wallet);
@@ -80,7 +85,6 @@ describe('ClientSubscriptionService - switchPlan', () => {
       newSubscription: newSubResult,
       planSwitch: planSwitchResult,
     });
-    mockWalletService.spend.mockResolvedValue(true);
 
     // Act
     const result = await service.switchPlan(1, 1, 20);
@@ -89,6 +93,8 @@ describe('ClientSubscriptionService - switchPlan', () => {
     expect(mockSubscriptionRepo.findById).toHaveBeenCalledWith(1);
     expect(mockPlanRepo.findById).toHaveBeenCalledWith(20);
     expect(mockWalletService.getWallet).toHaveBeenCalledWith(1);
+    // The coin deduction now happens INSIDE executePlanSwitchTransaction (atomic),
+    // so the wallet currency id is threaded in and spend() is no longer called.
     expect(mockSubscriptionRepo.executePlanSwitchTransaction).toHaveBeenCalledWith(
       1, // userId
       1, // subscriptionId
@@ -99,14 +105,17 @@ describe('ClientSubscriptionService - switchPlan', () => {
       expect.any(String), // purchaseToken
       expect.any(String), // orderNumber
       'UPGRADE', // switchType
-      [] // benefits
+      [], // benefits
+      1, // currencyId (wallet.currency_id)
     );
-    expect(mockWalletService.spend).toHaveBeenCalledWith(
-      1,
-      100,
-      'Plan Switch (UPGRADE): Pro Plan',
-      2,
-      1
+    expect(mockWalletService.spend).not.toHaveBeenCalled();
+    // An UPGRADE switch enqueues a subscription.upgraded webhook for Domain 2,
+    // keyed by the NEW subscription id for idempotency.
+    expect(mockOutboxService.insertEvent).toHaveBeenCalledWith(
+      'subscription.upgraded',
+      1, // companyId (userId)
+      expect.objectContaining({ event: 'subscription.upgraded' }),
+      'subscription.upgraded:2',
     );
     expect(result).toEqual(newSubResult);
   });

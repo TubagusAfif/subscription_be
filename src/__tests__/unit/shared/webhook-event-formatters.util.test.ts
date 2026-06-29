@@ -31,7 +31,11 @@ describe('Webhook Event Formatters', () => {
   });
 
   it('formats subscription.created correctly', () => {
-    const result = formatSubscriptionCreated(companyId, externalSubscriptionId, mockSubscriptionUpdate as Required<SubscriptionUpdate>);
+    const result = formatSubscriptionCreated(
+      companyId,
+      externalSubscriptionId,
+      mockSubscriptionUpdate as Required<SubscriptionUpdate>,
+    );
     expect(result.event).toBe('subscription.created');
     expect(result.data.company_id).toBe(companyId);
     expect(result.data.external_subscription_id).toBe(externalSubscriptionId);
@@ -41,19 +45,33 @@ describe('Webhook Event Formatters', () => {
   });
 
   it('formats subscription.sync correctly', () => {
-    const result = formatSubscriptionSync(companyId, externalSubscriptionId, mockSubscriptionUpdate as Required<SubscriptionUpdate>);
+    const result = formatSubscriptionSync(
+      companyId,
+      externalSubscriptionId,
+      mockSubscriptionUpdate as Required<SubscriptionUpdate>,
+    );
     expect(result.event).toBe('subscription.sync');
     expect(result.data.company_id).toBe(companyId);
   });
 
   it('formats subscription.renewed correctly (wasExpired: false)', () => {
-    const result = formatSubscriptionRenewed(companyId, externalSubscriptionId, mockSubscriptionUpdate, false);
+    const result = formatSubscriptionRenewed(
+      companyId,
+      externalSubscriptionId,
+      mockSubscriptionUpdate,
+      false,
+    );
     expect(result.event).toBe('subscription.renewed');
     expect(result.data.enforcement).toBeUndefined();
   });
 
   it('formats subscription.renewed correctly (wasExpired: true)', () => {
-    const result = formatSubscriptionRenewed(companyId, externalSubscriptionId, mockSubscriptionUpdate, true);
+    const result = formatSubscriptionRenewed(
+      companyId,
+      externalSubscriptionId,
+      mockSubscriptionUpdate,
+      true,
+    );
     expect(result.event).toBe('subscription.renewed');
     expect(result.data.enforcement).toEqual({
       type: 'full_reactivation',
@@ -63,7 +81,11 @@ describe('Webhook Event Formatters', () => {
   });
 
   it('formats subscription.upgraded correctly', () => {
-    const result = formatSubscriptionUpgraded(companyId, externalSubscriptionId, mockSubscriptionUpdate);
+    const result = formatSubscriptionUpgraded(
+      companyId,
+      externalSubscriptionId,
+      mockSubscriptionUpdate,
+    );
     expect(result.event).toBe('subscription.upgraded');
     expect(result.data.enforcement).toEqual({
       type: 'feature_upgrade',
@@ -74,7 +96,12 @@ describe('Webhook Event Formatters', () => {
 
   it('formats subscription.downgraded correctly', () => {
     const removedFeatures = ['feature_B'];
-    const result = formatSubscriptionDowngraded(companyId, externalSubscriptionId, mockSubscriptionUpdate, removedFeatures);
+    const result = formatSubscriptionDowngraded(
+      companyId,
+      externalSubscriptionId,
+      mockSubscriptionUpdate,
+      removedFeatures,
+    );
     expect(result.event).toBe('subscription.downgraded');
     expect(result.data.enforcement).toEqual({
       type: 'feature_downgrade',
