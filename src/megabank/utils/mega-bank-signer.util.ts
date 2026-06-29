@@ -5,7 +5,7 @@ import {
   hmacSha512Base64,
   rsaSha256Sign,
   timingSafeBase64Equal,
-  randomHex
+  randomHex,
 } from '../../shared/utils/crypto.util';
 import { env } from '../../shared/config/env';
 import { logger } from '../../shared/config/logger';
@@ -46,14 +46,14 @@ export class MegaBankSignerUtil {
   public static generateAsymmetricSignature(timestamp: string): string {
     const stringToSign = `${this.clientId}|${timestamp}`;
     const signature = rsaSha256Sign(stringToSign, this.privateKeyPem);
-    
+
     logger.info('[MegaBankSignerUtil] Asymmetric Signature Generation (Token)', {
       logic: 'rsaSha256Sign(clientId|timestamp, privateKey)',
       pattern: '{clientId}|{timestamp}',
       clientId: this.clientId,
       timestamp,
       stringToSign,
-      signature
+      signature,
     });
 
     return signature;
@@ -74,23 +74,23 @@ export class MegaBankSignerUtil {
 
     logger.info('[MegaBankSignerUtil] Symmetric Request Signature - Step 1: Minified Body', {
       logic: 'minifyBody(payload) -> Removes spaces and formatting',
-      minifiedBody_ForLogOnly: JSON.parse(minified)
+      minifiedBody_ForLogOnly: JSON.parse(minified),
     });
 
     logger.info('[MegaBankSignerUtil] Symmetric Request Signature - Step 2: Body Hash', {
       logic: 'sha256Hex(minifiedBody) -> Produces 64-character lowercase hex string',
-      bodyHashSha256: bodyHash
+      bodyHashSha256: bodyHash,
     });
 
     logger.info('[MegaBankSignerUtil] Symmetric Request Signature - Step 3: String To Sign', {
       logic: 'Pattern: {HTTPMethod}:{EndpointPathURL}:{AccessToken}:{BodyHash}:{Timestamp}',
-      stringToSign: stringToSign
+      stringToSign: stringToSign,
     });
 
     logger.info('[MegaBankSignerUtil] Symmetric Request Signature - Step 4: Final Signature', {
       logic: 'hmacSha512Base64(stringToSign, clientSecret) -> Final Base64 Encoded Signature',
       finalSignatureBase64: signature,
-      timestampUsed: timestamp
+      timestampUsed: timestamp,
     });
 
     return signature;
@@ -100,7 +100,9 @@ export class MegaBankSignerUtil {
     try {
       const parts = signatureHeader.split(';');
       if (parts.length < 2) {
-        logger.warn('[MegaBankSignerUtil] Invalid signature header format', { partsCount: parts.length });
+        logger.warn('[MegaBankSignerUtil] Invalid signature header format', {
+          partsCount: parts.length,
+        });
         return false;
       }
 
@@ -113,7 +115,8 @@ export class MegaBankSignerUtil {
 
       if (isNaN(timestampDate.getTime()) || diffMs > REPLAY_WINDOW_MS) {
         logger.warn('[MegaBankSignerUtil] Webhook timestamp outside replay window', {
-          diffMs, maxAgeMs: REPLAY_WINDOW_MS,
+          diffMs,
+          maxAgeMs: REPLAY_WINDOW_MS,
         });
         return false;
       }

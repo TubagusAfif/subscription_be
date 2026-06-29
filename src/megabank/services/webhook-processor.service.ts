@@ -23,7 +23,7 @@ export class WebhookProcessorService {
    */
   public async processWebhook(notification: MegaBankWebhookPayload): Promise<void> {
     const orderId = notification.inquiry?.order?.id;
-    
+
     if (!orderId) {
       logger.warn('[WebhookProcessorService] Bank Mega notification missing order ID', {
         type: notification.type,

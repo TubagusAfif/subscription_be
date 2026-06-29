@@ -19,7 +19,9 @@ export const createMegaBankRouter = (
   // and can credit coins without a real payment, so they must never exist in prod.
   // To remove: delete this block and the dev-simulate.routes.ts file
   if (env.MPG_MOCK_MODE && env.NODE_ENV !== 'production') {
-    logger.warn('[MegaBankRouter] MPG_MOCK_MODE is ON — registering dev simulate routes at /api/megabank/dev/*');
+    logger.warn(
+      '[MegaBankRouter] MPG_MOCK_MODE is ON — registering dev simulate routes at /api/config/dev/*',
+    );
     router.use('/dev', createDevSimulateRouter(webhookProcessorService));
   }
 

@@ -1,6 +1,7 @@
 import { MegaBankPaymentService } from '../mega-bank-payment.service';
 import * as httpUtil from '../../../shared/utils/http.util';
 import { MegaBankTokenUtil } from '../../utils/mega-bank-token.util';
+import { env } from '../../../shared/config/env';
 
 // Mock httpUtil and cryptoUtil
 jest.mock('../../../shared/utils/http.util');
@@ -60,6 +61,17 @@ describe('MegaBankPaymentService', () => {
   });
 
   describe('verifyWebhookSignature', () => {
+    // The service short-circuits to `true` in mock mode; disable it here so the
+    // real HMAC/timestamp verification path is exercised.
+    let originalMockMode: boolean;
+    beforeEach(() => {
+      originalMockMode = env.MPG_MOCK_MODE;
+      (env as any).MPG_MOCK_MODE = false;
+    });
+    afterEach(() => {
+      (env as any).MPG_MOCK_MODE = originalMockMode;
+    });
+
     it('should reject timestamps older than 5 minutes', () => {
       const oldTimestamp = new Date(Date.now() - 6 * 60 * 1000).toISOString();
       const signatureHeader = `dummy_sig;${oldTimestamp}`;

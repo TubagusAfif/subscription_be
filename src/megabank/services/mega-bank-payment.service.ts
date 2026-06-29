@@ -17,8 +17,10 @@ const PAYMENT_SUCCESS_CODE = '00';
 const PAYMENT_FAILURE_STATUSES = ['declined', 'failed'] as const;
 
 export function isPaymentSuccess(status: string, statusCode: string): boolean {
-  return (PAYMENT_SUCCESS_STATUSES as readonly string[]).includes(status)
-    && statusCode === PAYMENT_SUCCESS_CODE;
+  return (
+    (PAYMENT_SUCCESS_STATUSES as readonly string[]).includes(status) &&
+    statusCode === PAYMENT_SUCCESS_CODE
+  );
 }
 
 export function isPaymentFailure(status: string): boolean {

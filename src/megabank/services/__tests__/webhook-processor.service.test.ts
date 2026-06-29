@@ -27,25 +27,32 @@ describe('WebhookProcessorService', () => {
 
   const basePayload: MegaBankWebhookPayload = {
     type: 'TRANSACTION_STATUS_UPDATED',
-    inquiry: { order: { id: 'COIN-123' }, amount: 100, currency: 'IDR', id: 'inq_123', paymentSource: 'va' },
+    inquiry: {
+      order: { id: 'COIN-123' },
+      amount: 100,
+      currency: 'IDR',
+      id: 'inq_123',
+      paymentSource: 'va',
+    },
     transaction: { id: 'tx_123', status: 'pending', statusCode: '01', externalId: 'ext_123' },
   };
 
   it('should call handlePaymentSuccess when payment is successful', async () => {
     mockPaymentService.isPaymentSuccess.mockReturnValue(true);
-    
+
     await webhookProcessor.processWebhook(basePayload);
-    
-    expect(mockCoinOrderService.handlePaymentSuccess).toHaveBeenCalledWith('COIN-123');
+
+    // Processor now forwards the paid amount (inquiry.amount) and payment source.
+    expect(mockCoinOrderService.handlePaymentSuccess).toHaveBeenCalledWith('COIN-123', 100, undefined);
     expect(mockCoinOrderService.handlePaymentFailure).not.toHaveBeenCalled();
   });
 
   it('should call handlePaymentFailure when payment fails', async () => {
     mockPaymentService.isPaymentSuccess.mockReturnValue(false);
     mockPaymentService.isPaymentFailure.mockReturnValue(true);
-    
+
     await webhookProcessor.processWebhook(basePayload);
-    
+
     expect(mockCoinOrderService.handlePaymentFailure).toHaveBeenCalledWith('COIN-123');
     expect(mockCoinOrderService.handlePaymentSuccess).not.toHaveBeenCalled();
   });
@@ -53,9 +60,9 @@ describe('WebhookProcessorService', () => {
   it('should ignore pending or processing statuses without changing state', async () => {
     mockPaymentService.isPaymentSuccess.mockReturnValue(false);
     mockPaymentService.isPaymentFailure.mockReturnValue(false);
-    
+
     await webhookProcessor.processWebhook(basePayload);
-    
+
     expect(mockCoinOrderService.handlePaymentSuccess).not.toHaveBeenCalled();
     expect(mockCoinOrderService.handlePaymentFailure).not.toHaveBeenCalled();
   });

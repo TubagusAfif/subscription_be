@@ -25,7 +25,7 @@ export class WebhookController {
   }
 
   /**
-   * Handles POST /api/megabank/webhook/mpg
+   * Handles POST /api/config/webhook/mpg
    *
    * Receives `payment.received` webhook from Bank Mega, verifies the
    * signature, processes payment status, and responds with
@@ -46,17 +46,26 @@ export class WebhookController {
 
       // ── Guard: Signature header is mandatory ──
       if (!signatureHeader) {
-        logger.warn('[WebhookController] Bank Mega notification received without Signature header', {
-          ip: req.ip,
-          path: req.path,
-        });
+        logger.warn(
+          '[WebhookController] Bank Mega notification received without Signature header',
+          {
+            ip: req.ip,
+            path: req.path,
+          },
+        );
         throw new AppError('MISSING_SIGNATURE', 'Signature header is required.', 401);
       }
 
       // Use raw body for signature verification to avoid JSON re-serialization issues
       if (typeof req.rawBody !== 'string') {
-        logger.error('[WebhookController] rawBody missing. Ensure rawBody middleware is configured.');
-        throw new AppError('MISSING_RAW_BODY', 'Webhook raw body is required for signature verification.', 400);
+        logger.error(
+          '[WebhookController] rawBody missing. Ensure rawBody middleware is configured.',
+        );
+        throw new AppError(
+          'MISSING_RAW_BODY',
+          'Webhook raw body is required for signature verification.',
+          400,
+        );
       }
       const rawBody = req.rawBody;
       const notification = req.body as MegaBankWebhookPayload;
@@ -91,7 +100,8 @@ export class WebhookController {
       await this.webhookProcessorService.processWebhook(notification);
 
       // ── Generate validateSignature response ──
-      const validateSignature = this.megaBankPaymentService.generateValidateSignature(signatureHeader);
+      const validateSignature =
+        this.megaBankPaymentService.generateValidateSignature(signatureHeader);
 
       res.status(200).json({
         status: 'ok',
@@ -103,16 +113,12 @@ export class WebhookController {
   };
 
   /**
-   * Handles GET /api/megabank/webhook/redirect
+   * Handles GET /api/config/webhook/redirect
    *
    * Bridge endpoint for Bank Mega checkout callbacks.
    * Redirects the customer back to the frontend with payment status.
    */
-  handleMpgRedirect = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  handleMpgRedirect = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { order_id, status, status_code } = req.query;
 
