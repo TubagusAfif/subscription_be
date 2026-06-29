@@ -11,9 +11,10 @@ import { AccountService } from '../services/account.service';
 import { MailService } from '../services/mail.service';
 import { SharedPlanService } from '../services/plan.service';
 import { WebhookOutboxService } from '../services/webhook-outbox.service';
-import { InternalService } from '../services/internal.service';
+import { InternalService } from '../../internal/services/internal.service';
 import { TaxService } from '../services/tax.service';
 import { PaymentMethodService } from '../services/payment-method.service';
+import { DailyExpiryService } from '../../cron/services/daily-expiry.service';
 
 // --- Client Services ---
 import { WebhookProcessorService } from '../../megabank/services/webhook-processor.service';
@@ -173,6 +174,7 @@ export class ServicesContainer {
         subscriptionRepository: this.repositories.clientSubscriptionRepository,
         coinWalletService: this.coinWalletService,
         planRepository: this.repositories.sharedPlanRepository,
+        webhookOutboxService: this.webhookOutboxService,
         prisma: this.repositories.prisma,
       });
     }
@@ -197,12 +199,12 @@ export class ServicesContainer {
   private _clientAccountService: ClientAccountService | undefined;
   get clientAccountService(): ClientAccountService {
     if (!this._clientAccountService) {
-      this._clientAccountService = new ClientAccountService(this.repositories.clientAccountRepository);
+      this._clientAccountService = new ClientAccountService(
+        this.repositories.clientAccountRepository,
+      );
     }
     return this._clientAccountService;
   }
-
-
 
   private _sharedPlanService: SharedPlanService | undefined;
   get sharedPlanService(): SharedPlanService {
@@ -215,7 +217,9 @@ export class ServicesContainer {
   private _webhookOutboxService: WebhookOutboxService | undefined;
   get webhookOutboxService(): WebhookOutboxService {
     if (!this._webhookOutboxService) {
-      this._webhookOutboxService = new WebhookOutboxService(this.repositories.webhookOutboxRepository);
+      this._webhookOutboxService = new WebhookOutboxService(
+        this.repositories.webhookOutboxRepository,
+      );
     }
     return this._webhookOutboxService;
   }
@@ -223,7 +227,10 @@ export class ServicesContainer {
   private _internalService: InternalService | undefined;
   get internalService(): InternalService {
     if (!this._internalService) {
-      this._internalService = new InternalService(this.repositories.prisma, this.repositories.internalRepository);
+      this._internalService = new InternalService(
+        this.repositories.prisma,
+        this.repositories.internalRepository,
+      );
     }
     return this._internalService;
   }
@@ -239,7 +246,9 @@ export class ServicesContainer {
   private _paymentMethodService: PaymentMethodService | undefined;
   get paymentMethodService(): PaymentMethodService {
     if (!this._paymentMethodService) {
-      this._paymentMethodService = new PaymentMethodService(this.repositories.paymentMethodRepository);
+      this._paymentMethodService = new PaymentMethodService(
+        this.repositories.paymentMethodRepository,
+      );
     }
     return this._paymentMethodService;
   }
@@ -255,6 +264,18 @@ export class ServicesContainer {
     return this._reportService;
   }
 
+  private _dailyExpiryService: DailyExpiryService | undefined;
+  get dailyExpiryService(): DailyExpiryService {
+    if (!this._dailyExpiryService) {
+      this._dailyExpiryService = new DailyExpiryService(
+        this.repositories.prisma,
+        this.webhookOutboxService,
+        this.mailService,
+      );
+    }
+    return this._dailyExpiryService;
+  }
+
   // ===========================================================================
   // Subscription Services
   // ===========================================================================
@@ -262,9 +283,7 @@ export class ServicesContainer {
   private _subscriptionAuthService: SubscriptionAuthService | undefined;
   get subscriptionAuthService(): SubscriptionAuthService {
     if (!this._subscriptionAuthService) {
-      this._subscriptionAuthService = new SubscriptionAuthService(
-        this.repositories.userRepository,
-      );
+      this._subscriptionAuthService = new SubscriptionAuthService(this.repositories.userRepository);
     }
     return this._subscriptionAuthService;
   }
@@ -272,10 +291,7 @@ export class ServicesContainer {
   private _planService: PlanService | undefined;
   get planService(): PlanService {
     if (!this._planService) {
-      this._planService = new PlanService(
-        this.repositories.planRepository,
-        this.sharedPlanService
-      );
+      this._planService = new PlanService(this.repositories.planRepository, this.sharedPlanService);
     }
     return this._planService;
   }
@@ -323,13 +339,10 @@ export class ServicesContainer {
     return this._bundleService;
   }
 
-
   private _dentalAdService: DentalAdService | undefined;
   get dentalAdService(): DentalAdService {
     if (!this._dentalAdService) {
-      this._dentalAdService = new DentalAdService(
-        this.repositories.dentalAdRepository,
-      );
+      this._dentalAdService = new DentalAdService(this.repositories.dentalAdRepository);
     }
     return this._dentalAdService;
   }
@@ -347,8 +360,6 @@ export class ServicesContainer {
     }
     return this._adminDashboardService;
   }
-
-
 
   // ===========================================================================
   // Reset — clears all cached instances for test isolation
@@ -371,5 +382,6 @@ export class ServicesContainer {
     this._adminDashboardService = undefined;
     this._webhookOutboxService = undefined;
     this._internalService = undefined;
+    this._dailyExpiryService = undefined;
   }
 }

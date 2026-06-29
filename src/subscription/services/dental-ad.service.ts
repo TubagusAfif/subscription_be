@@ -15,7 +15,11 @@ export class DentalAdService {
     });
   }
 
-  async findAll(search?: string, page: number = 1, limit: number = 10): Promise<PaginatedResult<DentalAd>> {
+  async findAll(
+    search?: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedResult<DentalAd>> {
     const { data, total } = await this.dentalAdRepo.findAll(search, page, limit);
     return paginate(data, total, page, limit);
   }
@@ -28,7 +32,11 @@ export class DentalAdService {
     return ad;
   }
 
-  async update(id: number, data: { name?: string; category?: string; image_path?: string }, adminId: number) {
+  async update(
+    id: number,
+    data: { name?: string; category?: string; image_path?: string },
+    adminId: number,
+  ) {
     const ad = await this.dentalAdRepo.findById(id);
     if (!ad) {
       throw new AppError('NOT_FOUND', 'Dental ad not found', 404);

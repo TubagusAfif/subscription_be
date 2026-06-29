@@ -32,6 +32,4 @@ export class CoinMapper {
       currency: bundle.currency ? this.toCurrencyResponse(bundle.currency) : null,
     };
   }
-
-
 }

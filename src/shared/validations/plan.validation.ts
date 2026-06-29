@@ -39,18 +39,20 @@ export const upsertPlanSchema = z.object({
     billing_duration_days: z.number().int().positive().default(30),
     coin_cost: z.number().nonnegative(),
     is_active: z.boolean().default(true),
-    
+
     // Nested components
     benefits: z.array(benefitSchema).optional().default([]),
     features: z.array(featureSchema).optional().default([]),
     addons: z.array(addonSchema).optional().default([]),
-    
+
     // IDs explicitely designated to be soft-deleted during the upsert process
-    removed: z.object({
-      benefits: z.array(z.number()).default([]),
-      addons: z.array(z.number()).default([]),
-      features: z.array(z.number()).default([]),
-    }).optional(),
+    removed: z
+      .object({
+        benefits: z.array(z.number()).default([]),
+        addons: z.array(z.number()).default([]),
+        features: z.array(z.number()).default([]),
+      })
+      .optional(),
   }),
 });
 

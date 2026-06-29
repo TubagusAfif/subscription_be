@@ -25,9 +25,7 @@ export class BundleRepository {
       deleted_at: null,
       ...(search
         ? {
-            OR: [
-              { bundle_name: { contains: search, mode: 'insensitive' } },
-            ],
+            OR: [{ bundle_name: { contains: search, mode: 'insensitive' } }],
           }
         : {}),
     };
@@ -53,10 +51,7 @@ export class BundleRepository {
     });
   }
 
-  async update(
-    id: number,
-    data: Prisma.CoinBundleUpdateInput,
-  ): Promise<CoinBundleWithRelations> {
+  async update(id: number, data: Prisma.CoinBundleUpdateInput): Promise<CoinBundleWithRelations> {
     return this.prisma.coinBundle.update({
       where: { id },
       data,

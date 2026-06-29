@@ -11,10 +11,16 @@ import type { AuthenticatedRequest } from '../types/typed-request';
 export class SharedCurrencyController {
   constructor(private readonly currencyService: CurrencyService) {}
 
-  getActiveCurrency = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getActiveCurrency = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const currency = await this.currencyService.getActiveCurrency();
-      res.status(200).json(successResponse(currency ? CoinMapper.toCurrencyResponse(currency) : null));
+      res
+        .status(200)
+        .json(successResponse(currency ? CoinMapper.toCurrencyResponse(currency) : null));
     } catch (error) {
       next(error);
     }

@@ -44,4 +44,21 @@ export class CoinWalletRepository {
       },
     });
   }
+
+  /**
+   * Atomically deduct `amount` only if the current balance covers it.
+   * Returns true if a row was updated (sufficient funds), false otherwise.
+   * The `balance >= amount` predicate is evaluated by Postgres under the row
+   * write lock, so concurrent spends cannot both succeed and overdraw.
+   */
+  async deductBalanceIfSufficient(userId: number, amount: number): Promise<boolean> {
+    const { count } = await this.prisma.coinWallet.updateMany({
+      where: { user_id: userId, balance: { gte: amount } },
+      data: {
+        balance: { decrement: amount },
+        last_updated: new Date(),
+      },
+    });
+    return count > 0;
+  }
 }

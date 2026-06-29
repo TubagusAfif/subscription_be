@@ -59,8 +59,6 @@ export class PaymentMethodRepository {
       where: {
         is_active: true,
         deleted_at: null,
-        // Only methods supported by the gateway configured in PAYMENT_GATEWAY.
-        ...this.activeGatewayWhere(),
       },
       orderBy: { name: 'asc' },
     });
@@ -77,17 +75,12 @@ export class PaymentMethodRepository {
     return this.prisma.paymentMethod.findFirst({
       where: {
         deleted_at: null,
-        ...(env.PAYMENT_GATEWAY === 'megabank'
-          ? { bank_mega_code: code }
-          : { midtrans_code: code }),
+        ...(env.PAYMENT_GATEWAY === 'megabank' ? { bank_mega_code: code } : { midtrans_code: code }),
       },
     });
   }
 
-  async update(
-    id: number,
-    data: Prisma.PaymentMethodUpdateInput,
-  ): Promise<PaymentMethod> {
+  async update(id: number, data: Prisma.PaymentMethodUpdateInput): Promise<PaymentMethod> {
     return this.prisma.paymentMethod.update({
       where: { id },
       data,

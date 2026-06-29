@@ -9,14 +9,25 @@ import {
   getCoinOrderStatusSchema,
 } from '../../shared/validations/coin-order.validation';
 
-export const createCoinOrderRouter = (coinOrderController: CoinOrderController, authenticate: RequestHandler): Router => {
+export const createCoinOrderRouter = (
+  coinOrderController: CoinOrderController,
+  authenticate: RequestHandler,
+): Router => {
   const router = Router();
 
-  router.get('/status', validate(getCoinOrderStatusSchema), coinOrderController.getOrderByPgOrderId);
+  router.get(
+    '/status',
+    validate(getCoinOrderStatusSchema),
+    coinOrderController.getOrderByPgOrderId,
+  );
 
   router.use(authenticate, authorize(['OWNER']));
 
-  router.post('/bundle', validate(createBundleCoinOrderSchema), coinOrderController.createBundleOrder);
+  router.post(
+    '/bundle',
+    validate(createBundleCoinOrderSchema),
+    coinOrderController.createBundleOrder,
+  );
   router.post('/', validate(createCoinOrderSchema), coinOrderController.createCoinOrder);
   router.get('/', coinOrderController.getMyOrders);
   router.get('/:id', validate(getCoinOrderSchema), coinOrderController.getOrderById);

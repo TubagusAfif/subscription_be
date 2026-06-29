@@ -10,7 +10,7 @@ export class AddonRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<SkuAddon[]> {
     if (!addons || addons.length === 0) return [];
-    
+
     const db = tx || this.prisma;
     const results: SkuAddon[] = [];
 

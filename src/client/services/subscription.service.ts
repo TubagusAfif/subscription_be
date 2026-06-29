@@ -2,6 +2,21 @@ import { AppError } from '../../shared/middlewares/error.middleware';
 import { ClientSubscriptionRepository } from '../repositories/subscription.repository';
 import { CoinWalletService } from './coin-wallet.service';
 import { SharedPlanRepository } from '../../shared/repositories/plan.repository';
+import { WebhookOutboxService } from '../../shared/services/webhook-outbox.service';
+import { WebhookPayload } from '../../shared/types/webhook.types';
+import { WebhookEvent } from '../../shared/constants/webhook.constants';
+import {
+  formatSubscriptionCreated,
+  formatSubscriptionUpgraded,
+  formatSubscriptionDowngraded,
+  formatSubscriptionSync,
+  formatSubscriptionCancelled,
+} from '../../shared/utils/webhook-event-formatters.util';
+import {
+  buildSubscriptionUpdate,
+  extractFeatures,
+} from '../../shared/utils/subscription-update.mapper';
+import { logger } from '../../shared/config/logger';
 import { Subscription, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 
@@ -9,6 +24,7 @@ export interface ClientSubscriptionServiceDeps {
   subscriptionRepository: ClientSubscriptionRepository;
   coinWalletService: CoinWalletService;
   planRepository: SharedPlanRepository;
+  webhookOutboxService: WebhookOutboxService;
   prisma: PrismaClient;
 }
 
@@ -22,13 +38,42 @@ export class ClientSubscriptionService {
   private readonly subscriptionRepo: ClientSubscriptionRepository;
   private readonly walletService: CoinWalletService;
   private readonly planRepo: SharedPlanRepository;
+  private readonly outboxService: WebhookOutboxService;
   private readonly prisma: PrismaClient;
 
   constructor(deps: ClientSubscriptionServiceDeps) {
     this.subscriptionRepo = deps.subscriptionRepository;
     this.walletService = deps.coinWalletService;
     this.planRepo = deps.planRepository;
+    this.outboxService = deps.webhookOutboxService;
     this.prisma = deps.prisma;
+  }
+
+  /**
+   * Enqueue a webhook for Domain 2 after a subscription change has COMMITTED.
+   *
+   * Deliberately best-effort: the business transaction is already durable and
+   * the user has already been charged, so a transient failure to enqueue must
+   * never bubble up as a request error. We log and move on — the outbox worker
+   * handles delivery/retries from there, and the dedupe key keeps re-emits idempotent.
+   * Mirrors the post-commit emit pattern used by the daily-expiry cron.
+   */
+  private async emitWebhook(
+    event: WebhookEvent,
+    companyId: number,
+    payload: WebhookPayload,
+    dedupeKey: string,
+  ): Promise<void> {
+    try {
+      await this.outboxService.insertEvent(event, companyId, payload, dedupeKey);
+    } catch (error) {
+      logger.error('[ClientSubscriptionService] Failed to enqueue webhook', {
+        event,
+        companyId,
+        dedupeKey,
+        error,
+      });
+    }
   }
 
   /** 
@@ -55,7 +100,6 @@ export class ClientSubscriptionService {
     const coinCost = Number(sku.coin_cost);
 
     // If buying a PACKAGE, check user doesn't already have one active
-    let parentSubscriptionId: number | undefined;
     if (sku.sku_type === 'PACKAGE') {
       const existingPackage = await this.subscriptionRepo.findActiveByUserId(userId);
       if (existingPackage) {
@@ -71,11 +115,10 @@ export class ClientSubscriptionService {
       if (!existingPackage) {
         throw new AppError(
           'NO_ACTIVE_PACKAGE',
-          'You need an active package subscription before purchasing add-ons.',
+          'You must purchase a package subscription before buying add-ons.',
           400,
         );
       }
-      parentSubscriptionId = existingPackage.id;
     }
 
     // Deduct coins — this will throw INSUFFICIENT_BALANCE if not enough
@@ -102,12 +145,10 @@ export class ClientSubscriptionService {
 
     // Execute atomic transaction to prevent partial state on failure
     const subscription = await this.prisma.$transaction(async (tx) => {
-      // Re-check wallet balance inside transaction to prevent TOCTOU
       const txWallet = await tx.coinWallet.findUnique({
-        where: { user_id: userId }
+        where: { user_id: userId },
       });
-      
-      if (!txWallet || Number(txWallet.balance) < coinCost) {
+      if (!txWallet) {
         throw new AppError('INSUFFICIENT_BALANCE', 'Not enough coins to purchase this plan.', 400);
       }
 
@@ -116,7 +157,7 @@ export class ClientSubscriptionService {
           user_id: userId,
           sku_id: skuId,
           sku_type: sku.sku_type,
-          parent_subscription_id: parentSubscriptionId ?? null,
+          parent_subscription_id: null,
           purchase_token: purchaseToken,
           status: 'ACTIVE',
           auto_renew: false,
@@ -125,7 +166,7 @@ export class ClientSubscriptionService {
           next_billing_date: billingEnd,
           created_by: userId,
           updated_by: userId,
-        }
+        },
       });
 
       const order = await tx.order.create({
@@ -138,7 +179,7 @@ export class ClientSubscriptionService {
           status: 'COMPLETED',
           created_by: userId,
           updated_by: userId,
-        }
+        },
       });
 
       const billingCycle = await tx.billingCycle.create({
@@ -150,7 +191,7 @@ export class ClientSubscriptionService {
           status: 'PAID',
           created_by: userId,
           updated_by: userId,
-        }
+        },
       });
 
       await tx.subscriptionEvent.create({
@@ -160,14 +201,20 @@ export class ClientSubscriptionService {
           event_type: 'ACTIVATED',
           created_by: userId,
           updated_by: userId,
-        }
+        },
       });
 
-      // Deduct coins inside transaction
-      await tx.coinWallet.update({
-        where: { user_id: userId },
-        data: { balance: { decrement: coinCost }, last_updated: new Date() }
+      // Deduct coins atomically. The WHERE balance >= cost predicate means two
+      // concurrent purchases can't both pass — the loser matches zero rows and we
+      // abort, rolling back the subscription. A plain read-then-decrement (even
+      // inside a tx, under READ COMMITTED) would let both overdraw the wallet.
+      const debit = await tx.coinWallet.updateMany({
+        where: { user_id: userId, balance: { gte: coinCost } },
+        data: { balance: { decrement: coinCost }, last_updated: new Date() },
       });
+      if (debit.count === 0) {
+        throw new AppError('INSUFFICIENT_BALANCE', 'Not enough coins to purchase this plan.', 400);
+      }
 
       await tx.coinTransaction.create({
         data: {
@@ -180,7 +227,7 @@ export class ClientSubscriptionService {
           description: `Subscription purchase: ${sku.sku_name}`,
           created_by: userId,
           updated_by: userId,
-        }
+        },
       });
 
       // Mirror quotas from SKU benefits
@@ -196,29 +243,45 @@ export class ClientSubscriptionService {
               used_quota: 0,
               created_by: userId,
               updated_by: userId,
-            }
+            },
           });
         }
       } else {
         const addons = sku.addons || [];
         for (const addon of addons) {
           const resourceType = addon.resource_type.replace('_ADDON', '').toLowerCase();
-          
+
           const existingQuota = await tx.subscriptionQuota.findFirst({
-            where: { user_id: userId, resource_type: resourceType, deleted_at: null }
+            where: { user_id: userId, resource_type: resourceType, deleted_at: null },
           });
-          
+
           if (existingQuota) {
-             await tx.subscriptionQuota.update({
-               where: { id: existingQuota.id },
-               data: { total_quota: { increment: addon.quota_value }, last_recalculated_at: new Date() }
-             });
+            await tx.subscriptionQuota.update({
+              where: { id: existingQuota.id },
+              data: {
+                total_quota: { increment: addon.quota_value },
+                last_recalculated_at: new Date(),
+              },
+            });
           }
         }
       }
 
       return newSub;
     });
+
+    // Notify Domain 2 of the new company subscription. Only PACKAGE purchases
+    // provision a company in Domain 2; ADDON purchases adjust quota that Domain 2
+    // discovers lazily via /slots/assign, so they emit no event here.
+    if (sku.sku_type === 'PACKAGE') {
+      const update = buildSubscriptionUpdate(sku, 'active', now, billingEnd);
+      await this.emitWebhook(
+        'subscription.created',
+        userId,
+        formatSubscriptionCreated(userId, purchaseToken, update),
+        `subscription.created:${subscription.id}`,
+      );
+    }
 
     return subscription;
   }
@@ -269,6 +332,14 @@ export class ClientSubscriptionService {
       updated_by: userId,
     });
 
+    // Immediate cancellation → Domain 2 locks the company out (full_lockout).
+    await this.emitWebhook(
+      'subscription.cancelled',
+      userId,
+      formatSubscriptionCancelled(userId, subscription.purchase_token ?? `sub_${subscriptionId}`),
+      `subscription.cancelled:${subscriptionId}`,
+    );
+
     return canceledSub;
   }
 
@@ -277,7 +348,11 @@ export class ClientSubscriptionService {
     Switches an active package subscription to a new one.
   ---------------------------------------------------------------
   **/
-  async switchPlan(userId: number, subscriptionId: number, newSkuId: number): Promise<Subscription> {
+  async switchPlan(
+    userId: number,
+    subscriptionId: number,
+    newSkuId: number,
+  ): Promise<Subscription> {
     const oldSubscription = await this.subscriptionRepo.findById(subscriptionId);
     if (!oldSubscription) {
       throw new AppError('SUBSCRIPTION_NOT_FOUND', 'Subscription not found.', 404);
@@ -286,10 +361,18 @@ export class ClientSubscriptionService {
       throw new AppError('FORBIDDEN', 'You do not have access to this subscription.', 403);
     }
     if (oldSubscription.status !== 'ACTIVE') {
-      throw new AppError('SUBSCRIPTION_NOT_ACTIVE', 'Only active subscriptions can be switched.', 400);
+      throw new AppError(
+        'SUBSCRIPTION_NOT_ACTIVE',
+        'Only active subscriptions can be switched.',
+        400,
+      );
     }
     if (oldSubscription.sku_type !== 'PACKAGE') {
-      throw new AppError('INVALID_SWITCH_TYPE', 'Only package subscriptions can be switched, not addons.', 400);
+      throw new AppError(
+        'INVALID_SWITCH_TYPE',
+        'Only package subscriptions can be switched, not addons.',
+        400,
+      );
     }
 
     const newSku = await this.planRepo.findById(newSkuId);
@@ -297,11 +380,15 @@ export class ClientSubscriptionService {
       throw new AppError('SKU_NOT_FOUND', `SKU with ID ${newSkuId} not found.`, 404);
     }
     if (!newSku.is_active || newSku.sku_type !== 'PACKAGE') {
-      throw new AppError('INVALID_NEW_SKU', 'The selected plan is not available or is not a package.', 400);
+      throw new AppError(
+        'INVALID_NEW_SKU',
+        'The selected plan is not available or is not a package.',
+        400,
+      );
     }
 
     if (oldSubscription.sku_id === newSkuId) {
-       throw new AppError('ALREADY_ON_PLAN', 'You are already on this plan.', 400);
+      throw new AppError('ALREADY_ON_PLAN', 'You are already on this plan.', 400);
     }
 
     // Determine Switch Type
@@ -311,13 +398,15 @@ export class ClientSubscriptionService {
     if (newRank > oldRank) switchType = 'UPGRADE';
     else if (newRank < oldRank) switchType = 'DOWNGRADE';
 
-    // Check user wallet
+    // Check user wallet. The authoritative balance check + debit happens
+    // atomically inside executePlanSwitchTransaction; this is a fast-fail
+    // for the common case so we don't build the switch only to roll it back.
     const coinCost = Number(newSku.coin_cost);
     const wallet = await this.walletService.getWallet(userId);
     if (!wallet) throw new AppError('WALLET_NOT_FOUND', 'Coin wallet not found.', 404);
 
     if (Number(wallet.balance) < coinCost) {
-       throw new AppError('INSUFFICIENT_BALANCE', 'Not enough coins to switch plan.', 400);
+      throw new AppError('INSUFFICIENT_BALANCE', 'Not enough coins to switch plan.', 400);
     }
 
     const now = new Date();
@@ -328,7 +417,9 @@ export class ClientSubscriptionService {
     const orderNumber = `ORD-${userId}-${Date.now()}`;
     const benefits = newSku.benefits || [];
 
-    // Execute atomic transaction
+    // Execute atomic transaction — the coin deduction + SPEND ledger entry now
+    // happen INSIDE this transaction, so the switch and the payment commit or
+    // roll back together (no more free switches if the debit fails).
     const { newSubscription } = await this.subscriptionRepo.executePlanSwitchTransaction(
       userId,
       subscriptionId,
@@ -339,17 +430,42 @@ export class ClientSubscriptionService {
       purchaseToken,
       orderNumber,
       switchType,
-      benefits
-    );
-
-    // Deduct coins via service
-    await this.walletService.spend(
-      userId,
-      coinCost,
-      `Plan Switch (${switchType}): ${newSku.sku_name}`,
-      newSubscription.id,
+      benefits,
       wallet.currency_id,
     );
+
+    // Tell Domain 2 about the tier change. The new subscription carries a fresh
+    // purchase_token (external_subscription_id), so the payload references that.
+    const update = buildSubscriptionUpdate(newSku, 'active', now, billingEnd);
+    if (switchType === 'UPGRADE') {
+      await this.emitWebhook(
+        'subscription.upgraded',
+        userId,
+        formatSubscriptionUpgraded(userId, purchaseToken, update),
+        `subscription.upgraded:${newSubscription.id}`,
+      );
+    } else if (switchType === 'DOWNGRADE') {
+      // Features present on the old plan but not the new one must be gated by Domain 2.
+      const newFeatures = update.features;
+      const removedFeatures = extractFeatures(oldSubscription.sku ?? { features: [] }).filter(
+        (f) => !newFeatures.includes(f),
+      );
+      await this.emitWebhook(
+        'subscription.downgraded',
+        userId,
+        formatSubscriptionDowngraded(userId, purchaseToken, update, removedFeatures),
+        `subscription.downgraded:${newSubscription.id}`,
+      );
+    } else {
+      // Same-rank crossgrade: no upgrade/downgrade enforcement fits, so push a full
+      // re-sync and let Domain 2 overwrite its snapshot.
+      await this.emitWebhook(
+        'subscription.sync',
+        userId,
+        formatSubscriptionSync(userId, purchaseToken, update),
+        `subscription.sync:${newSubscription.id}`,
+      );
+    }
 
     return newSubscription;
   }

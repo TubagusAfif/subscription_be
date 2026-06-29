@@ -1,5 +1,10 @@
 import { WebhookPayload, SubscriptionUpdate, Enforcement } from '../types/webhook.types';
-import { WebhookEvent, EnforcementType, EnforcementReason, MessageId } from '../constants/webhook.constants';
+import {
+  WebhookEvent,
+  EnforcementType,
+  EnforcementReason,
+  MessageId,
+} from '../constants/webhook.constants';
 
 /**
  * Helper to build the standard webhook payload envelope.
@@ -59,12 +64,7 @@ export function formatSubscriptionSync(
   externalSubscriptionId: string,
   subscriptionUpdate: Required<SubscriptionUpdate>,
 ): WebhookPayload {
-  return buildPayload(
-    'subscription.sync',
-    companyId,
-    externalSubscriptionId,
-    subscriptionUpdate,
-  );
+  return buildPayload('subscription.sync', companyId, externalSubscriptionId, subscriptionUpdate);
 }
 
 // ─── 3. subscription.renewed ────────────────────────────────────────────────

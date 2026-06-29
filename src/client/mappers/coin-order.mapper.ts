@@ -18,12 +18,14 @@ export class CoinOrderMapper {
       gateway_fee: Number(order.gateway_fee),
       price_paid: Number(order.price_paid),
       payment_method_id: order.payment_method_id,
-      payment_method: order.payment_method ? {
-        id: order.payment_method.id,
-        name: order.payment_method.name,
-        bank_mega_code: order.payment_method.bank_mega_code,
-        midtrans_code: order.payment_method.midtrans_code,
-      } : null,
+      payment_method: order.payment_method
+        ? {
+            id: order.payment_method.id,
+            name: order.payment_method.name,
+            bank_mega_code: order.payment_method.bank_mega_code,
+            midtrans_code: order.payment_method.midtrans_code,
+          }
+        : null,
       status: order.status,
       payment_gateway: order.payment_gateway,
       checkout_url: order.redirect_url,

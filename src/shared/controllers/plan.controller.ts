@@ -7,7 +7,11 @@ import type { AuthenticatedRequest } from '../types/typed-request';
 export class SharedPlanController {
   constructor(private readonly planService: SharedPlanService) {}
 
-  getAllPlans = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getAllPlans = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const search = req.query.search as string | undefined;
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
@@ -20,7 +24,11 @@ export class SharedPlanController {
     }
   };
 
-  getPlanById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getPlanById = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const plan = await this.planService.getPlanById(Number(req.params.id));
       res.status(200).json(successResponse(PlanMapper.toResponse(plan)));

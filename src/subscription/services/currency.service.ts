@@ -35,7 +35,6 @@ export class CurrencyService {
     return paginate(data, total, page, limit);
   }
 
-
   async getActiveCurrency(): Promise<FormattedCoinCurrency | null> {
     return this.currencyRepository.findActive();
   }

@@ -31,7 +31,11 @@ export class ReportController {
       // If formatting as CSV, don't paginate so the user downloads the entire filtered set of data
       const isCSV = format === 'csv';
       const page = isCSV ? undefined : req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = isCSV ? undefined : req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const limit = isCSV
+        ? undefined
+        : req.query.limit
+          ? parseInt(req.query.limit as string, 10)
+          : 10;
 
       const reportResult = await this.reportService.getTransactionReport({
         startDate,
@@ -45,7 +49,7 @@ export class ReportController {
       if (isCSV) {
         const csvContent = this.reportService.generateCSV(reportResult.data);
         const filename = `transaction-report-${new Date().toISOString().split('T')[0]}.csv`;
-        
+
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.status(200).send(csvContent);
@@ -101,7 +105,11 @@ export class ReportController {
       // CSV downloads the entire filtered set, so skip pagination.
       const isCSV = format === 'csv';
       const page = isCSV ? undefined : req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = isCSV ? undefined : req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const limit = isCSV
+        ? undefined
+        : req.query.limit
+          ? parseInt(req.query.limit as string, 10)
+          : 10;
 
       const reportResult = await this.reportService.getCoinPaymentReport({
         startDate,

@@ -26,7 +26,13 @@ export const TIERS = ['basic', 'business', 'enterprise'] as const;
 export type Tier = (typeof TIERS)[number];
 
 // Subscription statuses (for webhook payload)
-export const SUBSCRIPTION_STATUSES = ['active', 'trial', 'expired', 'suspended', 'cancelled'] as const;
+export const SUBSCRIPTION_STATUSES = [
+  'active',
+  'trial',
+  'expired',
+  'suspended',
+  'cancelled',
+] as const;
 export type WebhookSubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
 // Enforcement types — tells Domain 2 WHAT to do
@@ -86,12 +92,12 @@ export type MessageId = (typeof MESSAGE_IDS)[number];
 // Retry backoff delays in milliseconds
 // Attempt 1: immediate, 2: 1min, 3: 5min, 4: 30min, 5: 2hr, 6: 12hr
 export const RETRY_DELAYS_MS = [
-  0,           // attempt 1: immediate
-  60_000,      // attempt 2: 1 minute
-  300_000,     // attempt 3: 5 minutes
-  1_800_000,   // attempt 4: 30 minutes
-  7_200_000,   // attempt 5: 2 hours
-  43_200_000,  // attempt 6: 12 hours
+  0, // attempt 1: immediate
+  60_000, // attempt 2: 1 minute
+  300_000, // attempt 3: 5 minutes
+  1_800_000, // attempt 4: 30 minutes
+  7_200_000, // attempt 5: 2 hours
+  43_200_000, // attempt 6: 12 hours
 ] as const;
 
 // Maximum number of retry attempts before marking as FAILED

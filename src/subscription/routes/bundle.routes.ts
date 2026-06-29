@@ -9,7 +9,10 @@ import {
   deleteBundleSchema,
 } from '../../shared/validations/coin.validation';
 
-export const createBundleRouter = (bundleController: BundleController, authenticate: RequestHandler): Router => {
+export const createBundleRouter = (
+  bundleController: BundleController,
+  authenticate: RequestHandler,
+): Router => {
   const router = Router();
 
   // All bundle master data endpoints require ADMIN or OWNER roles

@@ -3,15 +3,12 @@ import { PlanController } from '../controllers/plan.controller';
 import { SharedPlanController } from '../../shared/controllers/plan.controller';
 import { authorize } from '../../shared/middlewares/auth.middleware';
 import { validate } from '../../shared/middlewares/validate.middleware';
-import {
-  upsertPlanSchema,
-  deactivatePlanSchema,
-} from '../../shared/validations/plan.validation';
+import { upsertPlanSchema, deactivatePlanSchema } from '../../shared/validations/plan.validation';
 
 export const createPlanRouter = (
   planController: PlanController,
   sharedPlanController: SharedPlanController,
-  authenticate: RequestHandler
+  authenticate: RequestHandler,
 ): Router => {
   const router = Router();
 

@@ -31,7 +31,10 @@ export class ClientAccountRepository {
   /**
    * Upserts a user's profile.
    */
-  async upsertProfile(userId: number, data: Prisma.UserProfileUncheckedCreateWithoutUserInput): Promise<UserProfile> {
+  async upsertProfile(
+    userId: number,
+    data: Prisma.UserProfileUncheckedCreateWithoutUserInput,
+  ): Promise<UserProfile> {
     return this.prisma.userProfile.upsert({
       where: { user_id: userId },
       update: data,

@@ -3,7 +3,7 @@ import { SharedTaxController } from '../../shared/controllers/tax.controller';
 
 export const createClientTaxRouter = (
   sharedTaxController: SharedTaxController,
-  authenticate: RequestHandler
+  authenticate: RequestHandler,
 ): Router => {
   const router = Router();
 

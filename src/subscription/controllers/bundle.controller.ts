@@ -26,7 +26,11 @@ export class BundleController {
     this.taxService = deps.taxService;
   }
 
-  createBundle = async (req: AuthenticatedRequest<CreateBundleBody>, res: Response, next: NextFunction): Promise<void> => {
+  createBundle = async (
+    req: AuthenticatedRequest<CreateBundleBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const body = stripUndefined(req.body);
       const currency = await this.currencyService.getCurrencyById(body.currency_id);
@@ -39,8 +43,16 @@ export class BundleController {
 
       const calculatedPrice = Number(body.coin_amount) * Number(currency.conversion_rate);
 
-      if (body.discounted_price !== undefined && body.discounted_price !== null && body.discounted_price >= calculatedPrice) {
-        throw new AppError('INVALID_DISCOUNT_PRICE', 'Discounted price must be less than regular price.', 400);
+      if (
+        body.discounted_price !== undefined &&
+        body.discounted_price !== null &&
+        body.discounted_price >= calculatedPrice
+      ) {
+        throw new AppError(
+          'INVALID_DISCOUNT_PRICE',
+          'Discounted price must be less than regular price.',
+          400,
+        );
       }
 
       const payload = {
@@ -58,22 +70,33 @@ export class BundleController {
     }
   };
 
-  getAllBundles = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getAllBundles = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const search = req.query.search as string | undefined;
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
 
       const { data, meta } = await this.bundleService.getAllBundles(search, page, limit);
-      res
-        .status(200)
-        .json(successResponse(data.map((b) => CoinMapper.toBundleResponse(b)), meta));
+      res.status(200).json(
+        successResponse(
+          data.map((b) => CoinMapper.toBundleResponse(b)),
+          meta,
+        ),
+      );
     } catch (error) {
       next(error);
     }
   };
 
-  getBundleById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getBundleById = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const bundle = await this.bundleService.getBundleById(Number(req.params.id));
       res.status(200).json(successResponse(CoinMapper.toBundleResponse(bundle)));
@@ -82,7 +105,11 @@ export class BundleController {
     }
   };
 
-  updateBundle = async (req: AuthenticatedRequest<UpdateBundleBody>, res: Response, next: NextFunction): Promise<void> => {
+  updateBundle = async (
+    req: AuthenticatedRequest<UpdateBundleBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const payload = { ...req.body } as any;
       const bundleId = Number(req.params.id);
@@ -115,26 +142,37 @@ export class BundleController {
 
       const calculatedPrice = Number(coinAmount) * Number(currency.conversion_rate);
 
-      let newDiscountedPrice = payload.discounted_price !== undefined ? payload.discounted_price : existingBundle.discounted_price;
-      if (newDiscountedPrice !== undefined && newDiscountedPrice !== null && newDiscountedPrice >= calculatedPrice) {
-        throw new AppError('INVALID_DISCOUNT_PRICE', 'Discounted price must be less than regular price.', 400);
+      let newDiscountedPrice =
+        payload.discounted_price !== undefined
+          ? payload.discounted_price
+          : existingBundle.discounted_price;
+      if (
+        newDiscountedPrice !== undefined &&
+        newDiscountedPrice !== null &&
+        newDiscountedPrice >= calculatedPrice
+      ) {
+        throw new AppError(
+          'INVALID_DISCOUNT_PRICE',
+          'Discounted price must be less than regular price.',
+          400,
+        );
       }
 
       payload.price = calculatedPrice;
       payload.tax_rate = taxRate;
 
-      const bundle = await this.bundleService.updateBundle(
-        bundleId,
-        payload,
-        Number(req.user.sub),
-      );
+      const bundle = await this.bundleService.updateBundle(bundleId, payload, Number(req.user.sub));
       res.status(200).json(successResponse(CoinMapper.toBundleResponse(bundle)));
     } catch (error) {
       next(error);
     }
   };
 
-  removeBundle = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  removeBundle = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       await this.bundleService.removeBundle(Number(req.params.id), Number(req.user.sub));
       res.status(204).send();

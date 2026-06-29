@@ -1,11 +1,14 @@
 import { Router, RequestHandler } from 'express';
 import { ClientAccountController } from '../controllers/account.controller';
 import { validate } from '../../shared/middlewares/validate.middleware';
-import { updateAccountSchema, changePasswordSchema } from '../../shared/validations/account.validation';
+import {
+  updateAccountSchema,
+  changePasswordSchema,
+} from '../../shared/validations/account.validation';
 
 export const createClientAccountRouter = (
   controller: ClientAccountController,
-  authenticate: RequestHandler
+  authenticate: RequestHandler,
 ): Router => {
   const router = Router();
 

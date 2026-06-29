@@ -11,12 +11,18 @@ import type { AuthenticatedRequest } from '../types/typed-request';
 export class SharedBundleController {
   constructor(private readonly bundleService: BundleService) {}
 
-  getActiveBundles = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getActiveBundles = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       // Use a large limit to return all active bundles
       const { data } = await this.bundleService.getAllBundles(undefined, 1, 100);
       const activeBundles = data.filter((b) => b.is_active);
-      res.status(200).json(successResponse(activeBundles.map((b) => CoinMapper.toBundleResponse(b))));
+      res
+        .status(200)
+        .json(successResponse(activeBundles.map((b) => CoinMapper.toBundleResponse(b))));
     } catch (error) {
       next(error);
     }

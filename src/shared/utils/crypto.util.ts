@@ -11,15 +11,15 @@ import crypto from 'crypto';
  */
 export function formatPrivateKey(raw: string): string {
   let key = raw.trim();
-  
+
   if (!key.startsWith('-----BEGIN PRIVATE KEY-----')) {
     key = `-----BEGIN PRIVATE KEY-----\n${key}`;
   }
-  
+
   if (!key.endsWith('-----END PRIVATE KEY-----')) {
     key = `${key}\n-----END PRIVATE KEY-----`;
   }
-  
+
   return key;
 }
 
@@ -47,7 +47,7 @@ export function md5Hex(input: string): string {
 
 /**
  * Generates an HMAC-SHA512 symmetric signature.
- * 
+ *
  * @param data - The string to sign
  * @param secret - The client secret
  * @returns Hex-encoded signature
@@ -58,7 +58,7 @@ export function hmacSha512Hex(data: string, secret: string): string {
 
 /**
  * Generates an HMAC-SHA512 symmetric signature.
- * 
+ *
  * @param data - The string to sign
  * @param secret - The client secret
  * @returns Base64-encoded signature
@@ -69,7 +69,7 @@ export function hmacSha512Base64(data: string, secret: string): string {
 
 /**
  * Generates an RSA-SHA256 asymmetric signature.
- * 
+ *
  * @param data - The string to sign
  * @param privateKeyPem - The formatted private key
  * @returns Base64-encoded signature
@@ -84,7 +84,7 @@ export function rsaSha256Sign(data: string, privateKeyPem: string): string {
 /**
  * Constant-time comparison of two hex strings to prevent timing attacks.
  * Includes automatic buffer length checking.
- * 
+ *
  * @param a - First hex string
  * @param b - Second hex string
  * @returns True if equal
@@ -105,7 +105,7 @@ export function timingSafeHexEqual(a: string, b: string): boolean {
 /**
  * Constant-time comparison of two base64 strings to prevent timing attacks.
  * Includes automatic buffer length checking.
- * 
+ *
  * @param a - First base64 string
  * @param b - Second base64 string
  * @returns True if equal
@@ -145,7 +145,11 @@ export function signWebhookPayload(rawBody: string, secret: string): string {
  * Constant-time verification of a webhook signature against the raw body.
  * Returns false on length mismatch or malformed input (never throws).
  */
-export function verifyWebhookSignature(rawBody: string, signature: string, secret: string): boolean {
+export function verifyWebhookSignature(
+  rawBody: string,
+  signature: string,
+  secret: string,
+): boolean {
   const expected = signWebhookPayload(rawBody, secret);
   const sigBuf = Buffer.from(signature);
   const expBuf = Buffer.from(expected);

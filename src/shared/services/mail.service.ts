@@ -38,7 +38,10 @@ export class MailService {
     Sends an account activation email with a clickable activation link.
   ---------------------------------------------------------------
   **/
-  async sendActivationEmail(user: { name: string; email: string }, activationToken: string): Promise<void> {
+  async sendActivationEmail(
+    user: { name: string; email: string },
+    activationToken: string,
+  ): Promise<void> {
     const activationLink = `${env.CLIENT_APP_URL}/activate?token=${activationToken}`;
 
     const html = await this.renderTemplate('client-activation-mail.ejs', {
@@ -59,7 +62,10 @@ export class MailService {
     Sends a password reset email with a clickable reset link.
   ---------------------------------------------------------------
   **/
-  async sendPasswordResetEmail(user: { name: string; email: string }, resetToken: string): Promise<void> {
+  async sendPasswordResetEmail(
+    user: { name: string; email: string },
+    resetToken: string,
+  ): Promise<void> {
     const resetLink = `${env.CLIENT_APP_URL}/reset-password?token=${resetToken}`;
 
     const html = await this.renderTemplate('client-reset-password-mail.ejs', {
@@ -71,6 +77,39 @@ export class MailService {
       from: env.SMTP_MAIL,
       to: user.email,
       subject: 'Reset Your Password',
+      html,
+    });
+  }
+
+  /** 
+  ---------------------------------------------------------------
+    Sends a warning email about subscription expiry
+  ---------------------------------------------------------------
+  **/
+  async sendExpiryWarningEmail(
+    user: { name: string; email: string },
+    daysBefore: number,
+    skuName: string,
+  ): Promise<void> {
+    const html = await this.renderTemplate('client-expiry-warning-mail.ejs', {
+      user,
+      daysBefore,
+      skuName,
+    });
+
+    let subject = `Reminder: Your ${skuName} Subscription Expires in ${daysBefore} Day${daysBefore > 1 ? 's' : ''}`;
+    if (daysBefore === 0) {
+      subject = `Action Required: Your ${skuName} Subscription Expires Today`;
+    } else if (daysBefore === -1) {
+      subject = `Notice: Your ${skuName} Subscription is in Grace Period`;
+    } else if (daysBefore === -7) {
+      subject = `Alert: Your ${skuName} Subscription Grace Period Ended`;
+    }
+
+    await this.transporter.sendMail({
+      from: env.SMTP_MAIL,
+      to: user.email,
+      subject,
       html,
     });
   }

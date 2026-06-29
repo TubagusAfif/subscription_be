@@ -6,13 +6,13 @@ export interface FetchWithTimeoutOptions extends RequestInit {
 
 /**
  * Wraps native fetch with an AbortController timeout.
- * 
+ *
  * @param url The URL to fetch.
  * @param options Fetch options including timeoutMs (default: 30000ms).
  */
 export async function fetchWithTimeout(
   url: string,
-  options: FetchWithTimeoutOptions = {}
+  options: FetchWithTimeoutOptions = {},
 ): Promise<Response> {
   const { timeoutMs = 30000, ...fetchOptions } = options;
 
@@ -39,19 +39,19 @@ export interface RetryOptions {
 
 /**
  * Wraps an asynchronous operation with exponential backoff retry logic.
- * 
+ *
  * @param operation The async function to execute. Receives the attempt number.
  * @param options Configuration for max retries, delays, and a custom shouldRetry predicate.
  */
 export async function withRetry<T>(
   operation: (attempt: number) => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> {
-  const { 
-    maxRetries = 3, 
-    baseDelayMs = 1000, 
+  const {
+    maxRetries = 3,
+    baseDelayMs = 1000,
     maxDelayMs = 8000,
-    shouldRetry = () => true 
+    shouldRetry = () => true,
   } = options;
 
   let lastError: Error = new Error('Operation failed');
@@ -61,17 +61,17 @@ export async function withRetry<T>(
       return await operation(attempt);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (!shouldRetry(error)) {
         throw lastError; // Bubble up immediately if non-retryable
       }
-      
+
       if (attempt < maxRetries) {
         const delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
         logger.warn(`[http.util] Operation failed, retrying after delay`, {
           attempt,
           delayMs: delay,
-          error: lastError.message
+          error: lastError.message,
         });
         await new Promise((resolve) => setTimeout(resolve, delay));
       }

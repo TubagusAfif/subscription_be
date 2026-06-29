@@ -64,4 +64,3 @@ export const resendActivationSchema = z.object({
     email: z.string('Email is required').email('Invalid email address'),
   }),
 });
-

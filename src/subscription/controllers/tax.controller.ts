@@ -17,7 +17,11 @@ export class TaxController {
     this.taxService = deps.taxService;
   }
 
-  createTax = async (req: AuthenticatedRequest<CreateTaxBody>, res: Response, next: NextFunction): Promise<void> => {
+  createTax = async (
+    req: AuthenticatedRequest<CreateTaxBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const tax = await this.taxService.createTax(stripUndefined(req.body), Number(req.user.sub));
       res.status(201).json(successResponse(TaxMapper.toResponse(tax)));
@@ -26,21 +30,33 @@ export class TaxController {
     }
   };
 
-  getAllTaxes = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getAllTaxes = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const search = req.query.search as string | undefined;
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
 
       const { data, meta } = await this.taxService.getAllTaxes(search, page, limit);
-      res.status(200).json(successResponse(data.map((t) => TaxMapper.toResponse(t)), meta));
+      res.status(200).json(
+        successResponse(
+          data.map((t) => TaxMapper.toResponse(t)),
+          meta,
+        ),
+      );
     } catch (error) {
       next(error);
     }
   };
 
-
-  getTaxById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getTaxById = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const tax = await this.taxService.getTaxById(Number(req.params.id));
       res.status(200).json(successResponse(TaxMapper.toResponse(tax)));
@@ -49,16 +65,28 @@ export class TaxController {
     }
   };
 
-  updateTax = async (req: AuthenticatedRequest<UpdateTaxBody>, res: Response, next: NextFunction): Promise<void> => {
+  updateTax = async (
+    req: AuthenticatedRequest<UpdateTaxBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
-      const tax = await this.taxService.updateTax(Number(req.params.id), stripUndefined(req.body), Number(req.user.sub));
+      const tax = await this.taxService.updateTax(
+        Number(req.params.id),
+        stripUndefined(req.body),
+        Number(req.user.sub),
+      );
       res.status(200).json(successResponse(TaxMapper.toResponse(tax)));
     } catch (error) {
       next(error);
     }
   };
 
-  removeTax = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  removeTax = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       await this.taxService.removeTax(Number(req.params.id), Number(req.user.sub));
       res.status(204).send();
@@ -67,7 +95,11 @@ export class TaxController {
     }
   };
 
-  activateTax = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  activateTax = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const tax = await this.taxService.activateTax(Number(req.params.id), Number(req.user.sub));
       res.status(200).json(successResponse(TaxMapper.toResponse(tax)));

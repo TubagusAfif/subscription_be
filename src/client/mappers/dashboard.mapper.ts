@@ -13,10 +13,15 @@ export class ClientDashboardMapper {
     recentTransactions: any[];
     recentOrders: any[];
     recentBillingCycles: any[];
+    activeAddons: any[];
+    slotBreakdown: any;
+    slotDetails?: any[];
   }) {
     return {
       profile: ClientDashboardMapper.mapProfile(data.user),
-      active_subscription: ClientDashboardMapper.mapSubscription(data.subscription),
+      active_subscription: ClientDashboardMapper.mapSubscription(data.subscription, data.activeAddons),
+      slot_breakdown: data.slotBreakdown,
+      slot_details: data.slotDetails ?? [],
       wallet: ClientDashboardMapper.mapWallet(data.wallet),
       recent_transactions: data.recentTransactions.map(ClientDashboardMapper.mapTransaction),
       recent_orders: data.recentOrders.map(ClientDashboardMapper.mapOrder),
@@ -38,7 +43,7 @@ export class ClientDashboardMapper {
     };
   }
 
-  private static mapSubscription(subscription: any) {
+  private static mapSubscription(subscription: any, activeAddons: any[] = []) {
     if (!subscription) return null;
     return {
       id: subscription.id,
@@ -66,8 +71,8 @@ export class ClientDashboardMapper {
             available_quota: q.total_quota - q.used_quota,
           }))
         : [],
-      active_addons: Array.isArray(subscription.child_subscriptions)
-        ? subscription.child_subscriptions.map((addon: any) => ({
+      active_addons: Array.isArray(activeAddons)
+        ? activeAddons.map((addon: any) => ({
             id: addon.id,
             status: addon.status,
             current_billing_start: addon.current_billing_start,

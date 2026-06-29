@@ -5,7 +5,7 @@ import { updateAccountSchema, changePasswordSchema } from '../validations/accoun
 
 export const createAccountRouter = (
   controller: AccountController,
-  authenticate: RequestHandler
+  authenticate: RequestHandler,
 ): Router => {
   const router = Router();
 

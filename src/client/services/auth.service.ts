@@ -76,7 +76,11 @@ export class ClientAuthService {
       });
 
       if (!activeCurrency) {
-        throw new AppError('NO_ACTIVE_CURRENCY', 'Cannot create wallet: No active currency is configured in the system.', 500);
+        throw new AppError(
+          'NO_ACTIVE_CURRENCY',
+          'Cannot create wallet: No active currency is configured in the system.',
+          500,
+        );
       }
 
       const newUser = await tx.user.create({
@@ -113,7 +117,9 @@ export class ClientAuthService {
       activationToken,
     );
 
-    return { message: 'Registration successful. Please check your email to activate your account.' };
+    return {
+      message: 'Registration successful. Please check your email to activate your account.',
+    };
   }
 
   /** 
@@ -129,7 +135,11 @@ export class ClientAuthService {
     }
 
     if (user.activation_token_expires_at && user.activation_token_expires_at < new Date()) {
-      throw new AppError('TOKEN_EXPIRED', 'Activation token has expired. Please register again.', 400);
+      throw new AppError(
+        'TOKEN_EXPIRED',
+        'Activation token has expired. Please register again.',
+        400,
+      );
     }
 
     if (user.is_active) {
@@ -159,7 +169,11 @@ export class ClientAuthService {
     }
 
     if (user.is_active) {
-      throw new AppError('ACCOUNT_ALREADY_ACTIVE', 'This account is already activated. Please log in.', 400);
+      throw new AppError(
+        'ACCOUNT_ALREADY_ACTIVE',
+        'This account is already activated. Please log in.',
+        400,
+      );
     }
 
     // Generate a fresh activation token with a new 24-hour expiry
@@ -203,7 +217,9 @@ export class ClientAuthService {
     // If no user is found, silently succeed. This prevents email enumeration.
     if (!user) {
       logger.warn(`[AuthService] forgotPassword: No user found with email ${data.email}`);
-      return { message: 'If an account exists for this email, a password reset link has been sent.' };
+      return {
+        message: 'If an account exists for this email, a password reset link has been sent.',
+      };
     }
 
     const resetToken = crypto.randomUUID();
@@ -226,9 +242,15 @@ export class ClientAuthService {
       );
       logger.info(`[AuthService] forgotPassword: Email sent successfully to ${user.email}`);
     } catch (error) {
-      logger.error(`[AuthService] forgotPassword: Failed to send email to ${user.email}`, { error });
+      logger.error(`[AuthService] forgotPassword: Failed to send email to ${user.email}`, {
+        error,
+      });
       // We throw an error so the controller can catch it and the client knows the email failed to send
-      throw new AppError('EMAIL_SEND_FAILED', 'Failed to send password reset email. Please try again later.', 500);
+      throw new AppError(
+        'EMAIL_SEND_FAILED',
+        'Failed to send password reset email. Please try again later.',
+        500,
+      );
     }
 
     return { message: 'If an account exists for this email, a password reset link has been sent.' };
@@ -247,7 +269,11 @@ export class ClientAuthService {
     }
 
     if (user.reset_token_expires_at && user.reset_token_expires_at < new Date()) {
-      throw new AppError('TOKEN_EXPIRED', 'Password reset token has expired. Please request a new one.', 400);
+      throw new AppError(
+        'TOKEN_EXPIRED',
+        'Password reset token has expired. Please request a new one.',
+        400,
+      );
     }
 
     const passwordHash = await bcrypt.hash(data.password, 10);
@@ -274,7 +300,11 @@ export class ClientAuthService {
     }
 
     if (!user.is_active) {
-      throw new AppError('ACCOUNT_INACTIVE', 'Your account is not yet activated. Please check your email for the activation link.', 403);
+      throw new AppError(
+        'ACCOUNT_INACTIVE',
+        'Your account is not yet activated. Please check your email for the activation link.',
+        403,
+      );
     }
 
     const { password_hash, ...userWithoutPassword } = user;

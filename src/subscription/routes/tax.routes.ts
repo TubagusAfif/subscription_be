@@ -14,7 +14,7 @@ import {
 export const createTaxRouter = (
   taxController: TaxController,
   sharedTaxController: SharedTaxController,
-  authenticate: RequestHandler
+  authenticate: RequestHandler,
 ): Router => {
   const router = Router();
 
@@ -26,10 +26,10 @@ export const createTaxRouter = (
   router.get('/active', sharedTaxController.getActiveTax);
   router.get('/:id', validate(getTaxSchema), taxController.getTaxById);
   router.put('/:id', validate(updateTaxSchema), taxController.updateTax);
-  
+
   // Only OWNER can delete
   router.delete('/:id', validate(deleteTaxSchema), taxController.removeTax);
-  
+
   router.patch('/:id/activate', validate(activateTaxSchema), taxController.activateTax);
 
   return router;

@@ -5,7 +5,6 @@ import { logger } from './logger';
 
 const isProduction = env.NODE_ENV === 'production';
 
-
 // CORS configuration.
 const allowedOrigins: string[] = [
   env.CLIENT_APP_URL,

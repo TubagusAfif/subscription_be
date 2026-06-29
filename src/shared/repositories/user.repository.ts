@@ -23,9 +23,9 @@ export class UserRepository {
   ---------------------------------------------------------------
   **/
   async findByIdWithProfile(id: number): Promise<User | null> {
-    return this.prisma.user.findUnique({ 
+    return this.prisma.user.findUnique({
       where: { id, deleted_at: null },
-      include: { profile: true } 
+      include: { profile: true },
     });
   }
 
@@ -98,4 +98,3 @@ export class UserRepository {
     return this.prisma.user.update({ where: { id }, data });
   }
 }
-

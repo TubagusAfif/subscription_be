@@ -19,7 +19,11 @@ export class PaymentMethodService {
       });
     } catch (error: any) {
       if (error.code === 'P2002') {
-        throw new AppError('DUPLICATE_PAYMENT_METHOD', 'A payment method with this code already exists.', 409);
+        throw new AppError(
+          'DUPLICATE_PAYMENT_METHOD',
+          'A payment method with this code already exists.',
+          409,
+        );
       }
       throw error;
     }
@@ -41,7 +45,11 @@ export class PaymentMethodService {
   async getPaymentMethodById(id: number): Promise<PaymentMethod> {
     const pm = await this.paymentMethodRepository.findById(id);
     if (!pm) {
-      throw new AppError('PAYMENT_METHOD_NOT_FOUND', `Payment method with ID ${id} not found.`, 404);
+      throw new AppError(
+        'PAYMENT_METHOD_NOT_FOUND',
+        `Payment method with ID ${id} not found.`,
+        404,
+      );
     }
     return pm;
   }
@@ -59,7 +67,11 @@ export class PaymentMethodService {
       });
     } catch (error: any) {
       if (error.code === 'P2002') {
-        throw new AppError('DUPLICATE_PAYMENT_METHOD', 'A payment method with this code already exists.', 409);
+        throw new AppError(
+          'DUPLICATE_PAYMENT_METHOD',
+          'A payment method with this code already exists.',
+          409,
+        );
       }
       throw error;
     }

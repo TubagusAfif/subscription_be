@@ -7,7 +7,6 @@ export class SubscriptionMapper {
       user_id: subscription.user_id,
       sku_id: subscription.sku_id,
       sku_type: subscription.sku_type,
-      parent_subscription_id: subscription.parent_subscription_id,
       status: subscription.status,
       auto_renew: subscription.auto_renew,
       current_billing_start: subscription.current_billing_start,
@@ -40,9 +39,6 @@ export class SubscriptionMapper {
             total_quota: q.total_quota,
             used_quota: q.used_quota,
           }))
-        : [],
-      child_subscriptions: subscription.child_subscriptions
-        ? subscription.child_subscriptions.map((cs: any) => SubscriptionMapper.toResponse(cs))
         : [],
     };
   }

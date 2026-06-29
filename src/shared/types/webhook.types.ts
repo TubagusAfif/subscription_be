@@ -30,8 +30,8 @@ export interface SubscriptionUpdate {
   features?: string[]; // array of feature string codes
   addons?: Record<string, AddonInfo>;
   billing_start?: string | null; // YYYY-MM-DD
-  billing_end?: string | null;   // YYYY-MM-DD
-  trial_end?: string | null;     // YYYY-MM-DD
+  billing_end?: string | null; // YYYY-MM-DD
+  trial_end?: string | null; // YYYY-MM-DD
 }
 
 /**
@@ -41,11 +41,11 @@ export interface SubscriptionUpdate {
 export interface Enforcement {
   type: EnforcementType;
   reason: EnforcementReason;
-  clinic_ids?: number[];     // For deactivate_clinics or reactivate_clinics
-  staff_ids?: number[];      // For suspend_users or reactivate_users
-  doctor_ids?: number[];     // For suspend_users or reactivate_users
+  clinic_ids?: number[]; // For deactivate_clinics or reactivate_clinics
+  staff_ids?: number[]; // For suspend_users or reactivate_users
+  doctor_ids?: number[]; // For suspend_users or reactivate_users
   removed_features?: string[]; // For feature_downgrade or feature_removal
-  message_id?: MessageId;    // The key Domain 2 uses to show UI messages
+  message_id?: MessageId; // The key Domain 2 uses to show UI messages
 }
 
 /**

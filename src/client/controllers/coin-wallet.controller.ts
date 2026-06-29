@@ -15,23 +15,31 @@ export class CoinWalletController {
     this.coinWalletService = deps.coinWalletService;
   }
 
-  getMyWallet = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getMyWallet = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const wallet = await this.coinWalletService.getWallet(Number(req.user.sub));
-      res.status(200).json(
-        successResponse(wallet ? CoinWalletMapper.toWalletResponse(wallet) : null),
-      );
+      res
+        .status(200)
+        .json(successResponse(wallet ? CoinWalletMapper.toWalletResponse(wallet) : null));
     } catch (error) {
       next(error);
     }
   };
 
-  getMyTransactions = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getMyTransactions = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const transactions = await this.coinWalletService.getTransactions(Number(req.user.sub));
-      res.status(200).json(
-        successResponse(transactions.map((t) => CoinWalletMapper.toTransactionResponse(t))),
-      );
+      res
+        .status(200)
+        .json(successResponse(transactions.map((t) => CoinWalletMapper.toTransactionResponse(t))));
     } catch (error) {
       next(error);
     }

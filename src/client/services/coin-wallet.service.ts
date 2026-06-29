@@ -61,16 +61,17 @@ export class CoinWalletService {
       );
     }
 
-    if (Number(wallet.balance) < amount) {
+    // Atomic conditional decrement: deduct only if the balance still covers the
+    // amount. Returns 0 affected rows when another concurrent spend already drew
+    // it below `amount`, so we never overdraw (a read-then-deduct would).
+    const deducted = await this.walletRepo.deductBalanceIfSufficient(userId, amount);
+    if (!deducted) {
       throw new AppError(
         'INSUFFICIENT_BALANCE',
         `Insufficient coin balance. Required: ${amount}, Available: ${Number(wallet.balance)}`,
         400,
       );
     }
-
-    // Deduct balance
-    await this.walletRepo.deductBalance(userId, amount);
 
     // Record SPEND transaction
     return this.transactionRepo.create({

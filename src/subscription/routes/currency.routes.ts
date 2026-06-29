@@ -10,7 +10,10 @@ import {
   activateCurrencySchema,
 } from '../../shared/validations/coin.validation';
 
-export const createCurrencyRouter = (currencyController: CurrencyController, authenticate: RequestHandler): Router => {
+export const createCurrencyRouter = (
+  currencyController: CurrencyController,
+  authenticate: RequestHandler,
+): Router => {
   const router = Router();
 
   // All currency master data endpoints require ADMIN or OWNER roles
@@ -22,7 +25,11 @@ export const createCurrencyRouter = (currencyController: CurrencyController, aut
   router.get('/:id', validate(getCurrencySchema), currencyController.getCurrencyById);
   router.put('/:id', validate(updateCurrencySchema), currencyController.updateCurrency);
   router.delete('/:id', validate(deleteCurrencySchema), currencyController.removeCurrency);
-  router.patch('/:id/activate', validate(activateCurrencySchema), currencyController.activateCurrency);
+  router.patch(
+    '/:id/activate',
+    validate(activateCurrencySchema),
+    currencyController.activateCurrency,
+  );
 
   return router;
 };

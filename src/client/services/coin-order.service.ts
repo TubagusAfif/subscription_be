@@ -96,10 +96,16 @@ export class CoinOrderService {
 
     const paymentMethod = await this.paymentMethodRepo.findById(paymentMethodId);
     if (!paymentMethod || !paymentMethod.is_active) {
-      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method is not available or inactive.`, 400);
+      throw new AppError(
+        'INVALID_PAYMENT_METHOD',
+        `Payment method is not available or inactive.`,
+        400,
+      );
     }
 
-    const basePrice = bundle.discounted_price ? Number(bundle.discounted_price) : Number(bundle.price);
+    const basePrice = bundle.discounted_price
+      ? Number(bundle.discounted_price)
+      : Number(bundle.price);
     const taxAmount = basePrice * (Number(bundle.tax_rate) / 100);
 
     // Calculate gateway fee
@@ -116,25 +122,43 @@ export class CoinOrderService {
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const referenceUrl = `${env.BASE_URL}/api/v1/client/coin-orders/status?order_id=${pgOrderId}`;
 
-    return { bundle, basePrice, taxAmount, gatewayFee, totalPrice, paymentMethod, pgOrderId, referenceUrl };
+    return {
+      bundle,
+      basePrice,
+      taxAmount,
+      gatewayFee,
+      totalPrice,
+      paymentMethod,
+      pgOrderId,
+      referenceUrl,
+    };
   }
 
-  async prepareCustomOrder(userId: number, coinAmount: number, activeTax: any, paymentMethodId: number) {
+  async prepareCustomOrder(
+    userId: number,
+    coinAmount: number,
+    activeTax: any,
+    paymentMethodId: number,
+  ) {
     await this.assertNoActivePendingOrder(userId);
 
     const activeCurrency = await this.currencyRepo.findActive();
 
-    if(!activeCurrency) {
-      throw new AppError("INACTIVE_CURRENCY", "There's no active currency", 404);
+    if (!activeCurrency) {
+      throw new AppError('INACTIVE_CURRENCY', "There's no active currency", 404);
     }
 
     const paymentMethod = await this.paymentMethodRepo.findById(paymentMethodId);
     if (!paymentMethod || !paymentMethod.is_active) {
-      throw new AppError('INVALID_PAYMENT_METHOD', `Payment method is not available or inactive.`, 400);
+      throw new AppError(
+        'INVALID_PAYMENT_METHOD',
+        `Payment method is not available or inactive.`,
+        400,
+      );
     }
 
     const basePrice = Math.round(coinAmount * Number(activeCurrency.conversion_rate));
-    
+
     let taxAmount = 0;
     if (activeTax) {
       if (activeTax.tax_type === 'PERCENTAGE') {
@@ -157,8 +181,17 @@ export class CoinOrderService {
 
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const referenceUrl = `${env.BASE_URL}/payment/status?order_id=${pgOrderId}`;
-    
-    return { pgOrderId, referenceUrl, basePrice, taxAmount, gatewayFee, totalPrice, activeCurrency, paymentMethod };
+
+    return {
+      pgOrderId,
+      referenceUrl,
+      basePrice,
+      taxAmount,
+      gatewayFee,
+      totalPrice,
+      activeCurrency,
+      paymentMethod,
+    };
   }
 
   async saveCustomOrder(
@@ -170,7 +203,7 @@ export class CoinOrderService {
     gatewayFee: number,
     totalPrice: number,
     paymentMethodId: number,
-    pgOrderId: string
+    pgOrderId: string,
   ): Promise<{ order: CoinOrder }> {
     try {
       const order = await this.coinOrderRepo.create({
@@ -211,7 +244,7 @@ export class CoinOrderService {
     gatewayFee: number,
     totalPrice: number,
     paymentMethodId: number,
-    pgOrderId: string
+    pgOrderId: string,
   ): Promise<{ order: CoinOrder }> {
     try {
       const order = await this.coinOrderRepo.create({
@@ -251,7 +284,13 @@ export class CoinOrderService {
     paymentGateway: string,
     snapToken?: string,
   ) {
-    return this.coinOrderRepo.updatePaymentInfo(orderId, pgResponseId, redirectUrl, paymentGateway, snapToken);
+    return this.coinOrderRepo.updatePaymentInfo(
+      orderId,
+      pgResponseId,
+      redirectUrl,
+      paymentGateway,
+      snapToken,
+    );
   }
 
   /**
@@ -298,7 +337,11 @@ export class CoinOrderService {
   async getOrderByPgOrderId(pgOrderId: string): Promise<CoinOrder> {
     const order = await this.coinOrderRepo.findByPgOrderId(pgOrderId);
     if (!order) {
-      throw new AppError('ORDER_NOT_FOUND', `Coin order with PG Order ID ${pgOrderId} not found.`, 404);
+      throw new AppError(
+        'ORDER_NOT_FOUND',
+        `Coin order with PG Order ID ${pgOrderId} not found.`,
+        404,
+      );
     }
     return order;
   }

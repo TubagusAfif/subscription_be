@@ -7,8 +7,6 @@ import { DentalAdMapper } from '../mappers/dental-ad.mapper';
 export class DentalAdController {
   constructor(private readonly dentalAdService: DentalAdService) {}
 
-
-
   create = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const data = req.body;
@@ -29,7 +27,7 @@ export class DentalAdController {
         limit ? parseInt(limit as string, 10) : 10,
       );
 
-      const formattedData = data.map(ad => DentalAdMapper.toResponse(ad));
+      const formattedData = data.map((ad) => DentalAdMapper.toResponse(ad));
       res.status(200).json(successResponse(formattedData, meta));
     } catch (error) {
       next(error);

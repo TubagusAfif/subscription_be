@@ -6,7 +6,6 @@ export interface SuccessResponse<T> {
   meta?: PaginationMeta;
 }
 
-
 export interface ErrorResponse {
   success: false;
   error: {

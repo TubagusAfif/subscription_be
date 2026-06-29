@@ -4,16 +4,16 @@ import { verifyWebhookSignature } from '../utils/crypto.util';
 
 /**
  * Webhook Authentication Middleware
- * 
- * Middleware for internal API and Webhook endpoints that verifies the incoming requests 
- * using HMAC-SHA256 signature verification. It ensures that the request is legitimately 
+ *
+ * Middleware for internal API and Webhook endpoints that verifies the incoming requests
+ * using HMAC-SHA256 signature verification. It ensures that the request is legitimately
  * sent from a trusted party (Domain 1 or Domain 2) by checking:
- * 
+ *
  * 1. Required Headers: `X-Webhook-Signature` and `X-Webhook-Timestamp`.
  * 2. Timestamp Drift: Validates that the request timestamp is within a 5-minute window to prevent replay attacks.
  * 3. Signature Verification: Computes HMAC-SHA256 of the raw body using `WEBHOOK_SHARED_SECRET` and compares it with the signature.
  * 4. Body Parsing: Re-parses the raw Buffer string back into `req.body` object.
- * 
+ *
  * Note: Must be used with `express.raw({ type: "application/json" })` so `req.body` is available as a Buffer.
  */
 
@@ -43,7 +43,8 @@ export const webhookAuthMiddleware = (req: Request, res: Response, next: NextFun
 
     const now = Math.floor(Date.now() / 1000);
     const drift = Math.abs(now - timestamp);
-    if (drift > 300) { // 5 minutes limit
+    if (drift > 300) {
+      // 5 minutes limit
       return res.status(401).json({
         success: false,
         message: 'Webhook timestamp drift exceeded 5 minutes',

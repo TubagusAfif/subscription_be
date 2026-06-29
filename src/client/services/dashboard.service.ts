@@ -41,6 +41,9 @@ export class ClientDashboardService {
       recentTransactions,
       recentOrders,
       recentBillingCycles,
+      activeAddons,
+      slotBreakdown,
+      slotDetails,
     ] = await Promise.all([
       this.userRepository.findByIdWithProfile(userId),
       this.subscriptionRepo.findActiveByUserId(userId),
@@ -48,6 +51,9 @@ export class ClientDashboardService {
       this.transactionRepo.findRecentByUserId(userId, 5),
       this.orderRepo.findRecentByUserId(userId, 5),
       this.billingCycleRepo.findRecentByUserId(userId, 5),
+      this.subscriptionRepo.findActiveAddonsByUserId(userId),
+      this.subscriptionRepo.getSlotBreakdown(userId, 'clinic'),
+      this.subscriptionRepo.getSlotDetails(userId, ['clinic', 'user']),
     ]);
 
     if (!user) {
@@ -61,6 +67,9 @@ export class ClientDashboardService {
       recentTransactions,
       recentOrders,
       recentBillingCycles,
+      activeAddons,
+      slotBreakdown,
+      slotDetails,
     });
   }
 }

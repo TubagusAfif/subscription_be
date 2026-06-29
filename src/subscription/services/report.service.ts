@@ -114,7 +114,7 @@ export class ReportService {
     if (startDate && endDate) {
       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays > 90) {
         interval = 'month';
       } else if (diffDays > 30) {
@@ -130,7 +130,7 @@ export class ReportService {
       interval,
     });
 
-    const formattedData = rawData.map(row => {
+    const formattedData = rawData.map((row) => {
       const rowDate = row.date instanceof Date ? row.date : new Date(row.date);
       let dateString = rowDate.toISOString().split('T')[0];
 
@@ -155,7 +155,7 @@ export class ReportService {
 
     return {
       interval,
-      results: formattedData
+      results: formattedData,
     };
   }
 

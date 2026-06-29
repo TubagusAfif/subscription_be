@@ -3,7 +3,7 @@ import { SharedPlanController } from '../../shared/controllers/plan.controller';
 
 export const createClientPlanRouter = (
   sharedPlanController: SharedPlanController,
-  authenticate: RequestHandler
+  authenticate: RequestHandler,
 ): Router => {
   const router = Router();
 

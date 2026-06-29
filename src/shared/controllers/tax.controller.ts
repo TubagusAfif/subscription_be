@@ -15,14 +15,14 @@ export class SharedTaxController {
     this.taxService = deps.taxService;
   }
 
-  getActiveTax = async (_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getActiveTax = async (
+    _req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const tax = await this.taxService.getActiveTax();
-      res
-        .status(200)
-        .json(
-          successResponse({ tax: tax ? TaxMapper.toResponse(tax) : null }),
-        );
+      res.status(200).json(successResponse({ tax: tax ? TaxMapper.toResponse(tax) : null }));
     } catch (error) {
       next(error);
     }

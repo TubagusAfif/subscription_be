@@ -9,8 +9,14 @@ const formatDates = (currency: CoinCurrency | null): any => {
   if (!currency) return currency;
   return {
     ...currency,
-    effective_from: currency.effective_from instanceof Date ? currency.effective_from.toISOString().split('T')[0] : currency.effective_from,
-    effective_until: currency.effective_until instanceof Date ? currency.effective_until.toISOString().split('T')[0] : currency.effective_until,
+    effective_from:
+      currency.effective_from instanceof Date
+        ? currency.effective_from.toISOString().split('T')[0]
+        : currency.effective_from,
+    effective_until:
+      currency.effective_until instanceof Date
+        ? currency.effective_until.toISOString().split('T')[0]
+        : currency.effective_until,
   };
 };
 
@@ -78,7 +84,6 @@ export class CurrencyRepository {
       total,
     };
   }
-
 
   async findActive(): Promise<FormattedCoinCurrency | null> {
     const result = await this.prisma.coinCurrency.findFirst({

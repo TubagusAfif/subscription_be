@@ -4,7 +4,10 @@ import { PaymentMethodMapper } from '../../shared/mappers/payment-method.mapper'
 import { successResponse } from '../../shared/utils/response.util';
 import { stripUndefined } from '../../shared/utils/strip-undefined.util';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
-import type { CreatePaymentMethodBody, UpdatePaymentMethodBody } from '../../shared/validations/payment-method.validation';
+import type {
+  CreatePaymentMethodBody,
+  UpdatePaymentMethodBody,
+} from '../../shared/validations/payment-method.validation';
 
 export interface PaymentMethodControllerDeps {
   paymentMethodService: PaymentMethodService;
@@ -43,7 +46,11 @@ export class PaymentMethodController {
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
 
-      const { data, meta } = await this.paymentMethodService.getAllPaymentMethods(search, page, limit);
+      const { data, meta } = await this.paymentMethodService.getAllPaymentMethods(
+        search,
+        page,
+        limit,
+      );
       res.status(200).json(
         successResponse(
           data.map((pm) => PaymentMethodMapper.toResponse(pm)),
@@ -63,7 +70,7 @@ export class PaymentMethodController {
     try {
       const data = await this.paymentMethodService.getActivePaymentMethods();
       res.status(200).json(
-        successResponse(PaymentMethodMapper.toListResponse(data)),
+        successResponse(data.map((pm) => PaymentMethodMapper.toResponse(pm))),
       );
     } catch (error) {
       next(error);
@@ -106,7 +113,10 @@ export class PaymentMethodController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      await this.paymentMethodService.removePaymentMethod(Number(req.params.id), Number(req.user.sub));
+      await this.paymentMethodService.removePaymentMethod(
+        Number(req.params.id),
+        Number(req.user.sub),
+      );
       res.status(204).send();
     } catch (error) {
       next(error);

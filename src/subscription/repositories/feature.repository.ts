@@ -10,7 +10,7 @@ export class FeatureRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<SkuFeature[]> {
     if (!features || features.length === 0) return [];
-    
+
     const db = tx || this.prisma;
     const results: SkuFeature[] = [];
 

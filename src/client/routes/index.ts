@@ -48,7 +48,10 @@ export const createClientRouter = (
   router.use('/currency', createClientCurrencyRouter(sharedCurrencyController, authenticate));
   router.use('/dashboard', createClientDashboardRouter(dashboardController, authenticate));
   router.use('/taxes', createClientTaxRouter(sharedTaxController, authenticate));
-  router.use('/payment-methods', createClientPaymentMethodRouter(sharedPaymentMethodController, authenticate));
+  router.use(
+    '/payment-methods',
+    createClientPaymentMethodRouter(sharedPaymentMethodController, authenticate),
+  );
   router.use('/account', createClientAccountRouter(accountController, authenticate));
 
   return router;

@@ -82,11 +82,10 @@ export const deleteBundleSchema = z.object({
   params: idParamSchema,
 });
 
-
 // --------------------------------------------------------------------------
 // Exported Body Types
 // --------------------------------------------------------------------------
-  export type CreateCurrencyBody = z.infer<typeof createCurrencySchema>['body'];
+export type CreateCurrencyBody = z.infer<typeof createCurrencySchema>['body'];
 export type UpdateCurrencyBody = z.infer<typeof updateCurrencySchema>['body'];
 export type CreateBundleBody = z.infer<typeof createBundleSchema>['body'];
 export type UpdateBundleBody = z.infer<typeof updateBundleSchema>['body'];

@@ -10,7 +10,7 @@ export class BenefitRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<SkuBenefit[]> {
     if (!benefits || benefits.length === 0) return [];
-    
+
     const db = tx || this.prisma;
     const results: SkuBenefit[] = [];
 

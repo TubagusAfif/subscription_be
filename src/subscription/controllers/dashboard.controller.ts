@@ -14,7 +14,11 @@ export class AdminDashboardController {
     this.dashboardService = deps.dashboardService;
   }
 
-  getDashboard = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getDashboard = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const month = req.query.month ? parseInt(req.query.month as string) : undefined;
       const year = req.query.year ? parseInt(req.query.year as string) : undefined;
@@ -25,5 +29,4 @@ export class AdminDashboardController {
       next(error);
     }
   };
-
 }

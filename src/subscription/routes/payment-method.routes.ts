@@ -17,16 +17,36 @@ export const createPaymentMethodRouter = (
 
   router.use(authenticate);
 
-  router.get('/active', authorize(['ADMIN', 'SUPERADMIN']), paymentMethodController.getActivePaymentMethods);
+  router.get(
+    '/active',
+    authorize(['ADMIN', 'SUPERADMIN']),
+    paymentMethodController.getActivePaymentMethods,
+  );
 
   // All payment method configuration endpoints require SUPERADMIN role
   router.use(authorize(['SUPERADMIN']));
 
-  router.post('/', validate(createPaymentMethodSchema), paymentMethodController.createPaymentMethod);
+  router.post(
+    '/',
+    validate(createPaymentMethodSchema),
+    paymentMethodController.createPaymentMethod,
+  );
   router.get('/', paymentMethodController.getAllPaymentMethods);
-  router.get('/:id', validate(getPaymentMethodSchema), paymentMethodController.getPaymentMethodById);
-  router.put('/:id', validate(updatePaymentMethodSchema), paymentMethodController.updatePaymentMethod);
-  router.delete('/:id', validate(deletePaymentMethodSchema), paymentMethodController.removePaymentMethod);
+  router.get(
+    '/:id',
+    validate(getPaymentMethodSchema),
+    paymentMethodController.getPaymentMethodById,
+  );
+  router.put(
+    '/:id',
+    validate(updatePaymentMethodSchema),
+    paymentMethodController.updatePaymentMethod,
+  );
+  router.delete(
+    '/:id',
+    validate(deletePaymentMethodSchema),
+    paymentMethodController.removePaymentMethod,
+  );
 
   return router;
 };

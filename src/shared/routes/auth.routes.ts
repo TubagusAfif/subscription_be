@@ -3,7 +3,10 @@ import { SharedAuthController } from '../controllers/auth.controller';
 import { validate } from '../middlewares/validate.middleware';
 import { refreshSchema } from '../validations/auth.validation';
 
-export const createSharedAuthRouter = (controller: SharedAuthController, authenticate: RequestHandler): Router => {
+export const createSharedAuthRouter = (
+  controller: SharedAuthController,
+  authenticate: RequestHandler,
+): Router => {
   const router = Router();
 
   router.post('/refresh', controller.refresh);

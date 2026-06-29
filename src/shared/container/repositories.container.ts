@@ -9,7 +9,7 @@ import { OrderRepository } from '../repositories/order.repository';
 import { BillingCycleRepository } from '../repositories/billing-cycle.repository';
 import { PlanSwitchRepository } from '../repositories/plan-switch.repository';
 import { WebhookOutboxRepository } from '../repositories/webhook-outbox.repository';
-import { InternalRepository } from '../repositories/internal.repository';
+import { InternalRepository } from '../../internal/repositories/internal.repository';
 import { TaxRepository } from '../repositories/tax.repository';
 import { PaymentMethodRepository } from '../repositories/payment-method.repository';
 
@@ -176,7 +176,6 @@ export class RepositoriesContainer {
     return this._clientAccountRepository;
   }
 
-
   // ===========================================================================
   // Subscription Repositories
   // ===========================================================================
@@ -229,7 +228,6 @@ export class RepositoriesContainer {
     return this._bundleRepository;
   }
 
-
   private _dentalAdRepository: DentalAdRepository | undefined;
   get dentalAdRepository(): DentalAdRepository {
     if (!this._dentalAdRepository) {
@@ -245,7 +243,6 @@ export class RepositoriesContainer {
     }
     return this._adminSubscriptionRepository;
   }
-
 
   // ===========================================================================
   // Reset — clears all cached instances for test isolation

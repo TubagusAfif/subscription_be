@@ -10,12 +10,16 @@ const devFormat = printf(({ level, message, timestamp, stack, ...meta }) => {
   let metaStr = '';
   if (Object.keys(meta).length) {
     // Custom replacer to handle Error objects inside meta
-    metaStr = `\n${JSON.stringify(meta, (key, value) => {
-      if (value instanceof Error) {
-        return { ...value, message: value.message, stack: value.stack };
-      }
-      return value;
-    }, 2)}`;
+    metaStr = `\n${JSON.stringify(
+      meta,
+      (key, value) => {
+        if (value instanceof Error) {
+          return { ...value, message: value.message, stack: value.stack };
+        }
+        return value;
+      },
+      2,
+    )}`;
   }
 
   let logOutput = message;
@@ -53,10 +57,9 @@ if (env.GRAFANA_LOKI_HOST && env.GRAFANA_LOKI_API_TOKEN) {
       format: winston.format.json(),
       replaceTimestamp: true,
       onConnectionError: (err) => console.error('Loki connection error:', err),
-    })
+    }),
   );
 }
-
 
 // Express-compatible stream for HTTP request logging.
 export const httpLogStream = {

@@ -7,7 +7,7 @@ import { Prisma, SkuBase } from '@prisma/client';
 export class PlanService {
   constructor(
     private readonly planRepository: PlanRepository,
-    private readonly sharedPlanService: SharedPlanService
+    private readonly sharedPlanService: SharedPlanService,
   ) {}
 
   async upsertPlanBase(

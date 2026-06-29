@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { CoinOrderService } from '../services/coin-order.service';
-import { AccountService } from '../../shared/services/account.service'
+import { AccountService } from '../../shared/services/account.service';
 import { CoinOrderMapper } from '../mappers/coin-order.mapper';
-import type { PaymentGateway, CheckoutResult } from '../../shared/payment/payment-gateway.interface';
-import { TaxService} from '../../shared/services/tax.service';
+import type {
+  PaymentGateway,
+  CheckoutResult,
+} from '../../shared/payment/payment-gateway.interface';
+import { TaxService } from '../../shared/services/tax.service';
 import { successResponse } from '../../shared/utils/response.util';
 import { AppError } from '../../shared/middlewares/error.middleware';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
@@ -20,10 +23,8 @@ import type { PaymentMethod } from '@prisma/client';
  * for whichever gateway PAYMENT_GATEWAY selects, falling back to 'va'.
  */
 const gatewayCodeFor = (paymentMethod: PaymentMethod): string =>
-  (env.PAYMENT_GATEWAY === 'megabank'
-    ? paymentMethod.bank_mega_code
-    : paymentMethod.midtrans_code) || 'va';
-
+  (env.PAYMENT_GATEWAY === 'megabank' ? paymentMethod.bank_mega_code : paymentMethod.midtrans_code) ||
+  'va';
 
 export interface CoinOrderControllerDeps {
   coinOrderService: CoinOrderService;
@@ -45,15 +46,32 @@ export class CoinOrderController {
     this.taxService = deps.taxService;
   }
 
-  createCoinOrder = async (req: AuthenticatedRequest<CreateCoinOrderBody>, res: Response, next: NextFunction): Promise<void> => {
+  createCoinOrder = async (
+    req: AuthenticatedRequest<CreateCoinOrderBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const { coin_amount, payment_method_id, nominal } = req.body;
       const userId = Number(req.user.sub);
 
       const activeTax = await this.taxService.getActiveTax();
 
-      const { pgOrderId, referenceUrl, basePrice, taxAmount, gatewayFee, totalPrice, activeCurrency, paymentMethod } =
-        await this.coinOrderService.prepareCustomOrder(userId, coin_amount, activeTax, payment_method_id);
+      const {
+        pgOrderId,
+        referenceUrl,
+        basePrice,
+        taxAmount,
+        gatewayFee,
+        totalPrice,
+        activeCurrency,
+        paymentMethod,
+      } = await this.coinOrderService.prepareCustomOrder(
+        userId,
+        coin_amount,
+        activeTax,
+        payment_method_id,
+      );
 
       if (nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);
@@ -71,7 +89,7 @@ export class CoinOrderController {
         gatewayFee,
         totalPrice,
         paymentMethod.id,
-        pgOrderId
+        pgOrderId,
       );
 
       let checkoutResult: CheckoutResult;
@@ -96,14 +114,14 @@ export class CoinOrderController {
         throw inquiryError;
       }
 
-      logger.info(`[Checkout Result] : ${JSON.stringify(checkoutResult)}`)
+      logger.info(`[Checkout Result] : ${JSON.stringify(checkoutResult)}`);
 
       await this.coinOrderService.updateOrderPaymentInfo(
         result.order.id,
         checkoutResult.pgResponseId,
-        checkoutResult.checkoutUrl || "",
+        checkoutResult.checkoutUrl || '',
         this.paymentGateway.name,
-        checkoutResult.snapToken
+        checkoutResult.snapToken,
       );
 
       res.status(201).json(
@@ -119,7 +137,11 @@ export class CoinOrderController {
     }
   };
 
-  createBundleOrder = async (req: AuthenticatedRequest<CreateBundleCoinOrderBody>, res: Response, next: NextFunction): Promise<void> => {
+  createBundleOrder = async (
+    req: AuthenticatedRequest<CreateBundleCoinOrderBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const { bundle_id, payment_method_id, nominal } = req.body;
       const userId = Number(req.user.sub);
@@ -199,23 +221,30 @@ export class CoinOrderController {
     }
   };
 
-  getMyOrders = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getMyOrders = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const orders = await this.coinOrderService.getUserOrders(Number(req.user.sub));
-      res.status(200).json(
-        successResponse(orders.map((o) => CoinOrderMapper.toResponse(o))),
-      );
+      res.status(200).json(successResponse(orders.map((o) => CoinOrderMapper.toResponse(o))));
     } catch (error) {
       next(error);
     }
   };
 
-  getOrderById = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  getOrderById = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
-      const order = await this.coinOrderService.getOrderById(Number(req.params.id), Number(req.user.sub));
-      res.status(200).json(
-        successResponse(CoinOrderMapper.toResponse(order)),
+      const order = await this.coinOrderService.getOrderById(
+        Number(req.params.id),
+        Number(req.user.sub),
       );
+      res.status(200).json(successResponse(CoinOrderMapper.toResponse(order)));
     } catch (error) {
       next(error);
     }
@@ -225,9 +254,7 @@ export class CoinOrderController {
     try {
       const pgOrderId = req.query.order_id as string;
       const order = await this.coinOrderService.getOrderByPgOrderId(pgOrderId);
-      res.status(200).json(
-        successResponse(CoinOrderMapper.toResponse(order)),
-      );
+      res.status(200).json(successResponse(CoinOrderMapper.toResponse(order)));
     } catch (error) {
       next(error);
     }

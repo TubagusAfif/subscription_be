@@ -19,7 +19,11 @@ export const createSubscriptionRouter = (
   router.post('/', validate(subscribeSchema), subscriptionController.subscribe);
   router.get('/', subscriptionController.getMySubscription);
   router.get('/all', subscriptionController.getMySubscriptions);
-  router.post('/:id/cancel', validate(cancelSubscriptionSchema), subscriptionController.cancelSubscription);
+  router.post(
+    '/:id/cancel',
+    validate(cancelSubscriptionSchema),
+    subscriptionController.cancelSubscription,
+  );
   router.post('/:id/switch', validate(switchPlanSchema), subscriptionController.switchPlan);
 
   return router;

@@ -30,8 +30,6 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1),
   JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  // Active payment gateway. Midtrans is primary; flip to 'megabank' as a
-  // manual backup during a Midtrans incident (no auto-failover).
   PAYMENT_GATEWAY: z.enum(['midtrans', 'megabank']).default('midtrans'),
   MIDTRANS_SERVER_KEY: z.string().optional(),
   MIDTRANS_CLIENT_KEY: z.string().default(''),
@@ -87,7 +85,9 @@ if (!mpgSecretKey && !mpgMockMode) {
   try {
     mpgSecretKey = fs.readFileSync(secretKeyPath, 'utf-8').trim();
   } catch (err) {
-    process.stderr.write(`Failed to read MPG secret key from ${secretKeyPath} and MPG_SECRET_KEY env variable is not set.\n`);
+    process.stderr.write(
+      `Failed to read MPG secret key from ${secretKeyPath} and MPG_SECRET_KEY env variable is not set.\n`,
+    );
     throw new Error(`Failed to read MPG secret key: missing from both env and file`);
   }
 }
@@ -97,9 +97,7 @@ if (!mpgSecretKey && !mpgMockMode) {
 // client key is required too so the hosted Snap page can initialise.
 if (_env.data.PAYMENT_GATEWAY === 'midtrans' && !mpgMockMode) {
   if (!_env.data.MIDTRANS_SERVER_KEY) {
-    process.stderr.write(
-      '[env] PAYMENT_GATEWAY=midtrans but MIDTRANS_SERVER_KEY is not set.\n',
-    );
+    process.stderr.write('[env] PAYMENT_GATEWAY=midtrans but MIDTRANS_SERVER_KEY is not set.\n');
     throw new Error('Missing MIDTRANS_SERVER_KEY for active Midtrans gateway');
   }
 }
@@ -109,4 +107,3 @@ export const env = {
   MPG_MOCK_MODE: mpgMockMode,
   MPG_SECRET_KEY: mpgSecretKey,
 };
-

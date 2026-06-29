@@ -35,7 +35,11 @@ export class AccountController {
   /**
    * Update current authenticated user's base information and profile.
    */
-  updateMe = async (req: AuthenticatedRequest<UpdateAccountBody>, res: Response, next: NextFunction) => {
+  updateMe = async (
+    req: AuthenticatedRequest<UpdateAccountBody>,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const userId = req.user.sub;
       const data = req.body;
@@ -49,7 +53,11 @@ export class AccountController {
   /**
    * Change current authenticated user's password.
    */
-  changePassword = async (req: AuthenticatedRequest<ChangePasswordBody>, res: Response, next: NextFunction) => {
+  changePassword = async (
+    req: AuthenticatedRequest<ChangePasswordBody>,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const userId = req.user.sub;
       const data = req.body;

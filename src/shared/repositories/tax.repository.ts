@@ -32,9 +32,7 @@ export class TaxRepository {
       deleted_at: null,
       ...(search
         ? {
-            OR: [
-              { tax_name: { contains: search, mode: 'insensitive' as const } },
-            ],
+            OR: [{ tax_name: { contains: search, mode: 'insensitive' as const } }],
           }
         : {}),
     };

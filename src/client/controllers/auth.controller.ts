@@ -5,7 +5,6 @@ import { successResponse } from '../../shared/utils/response.util';
 import { AuthMapper } from '../../shared/mappers/auth.mapper';
 import { AppError } from '../../shared/middlewares/error.middleware';
 
-
 export interface ClientAuthControllerDeps {
   clientAuthService: ClientAuthService;
   tokenService: TokenService;
@@ -93,7 +92,7 @@ export class ClientAuthController {
         throw new AppError('FORBIDDEN', 'Access denied. Only owners can log in here.', 403);
       }
       const tokens = await this.tokenService.generateTokens(user.id, user.role);
-      
+
       res.cookie('refreshToken_client', tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -101,7 +100,11 @@ export class ClientAuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
-      res.status(200).json(successResponse(AuthMapper.toAuthResponse(user, { accessToken: tokens.accessToken })));
+      res
+        .status(200)
+        .json(
+          successResponse(AuthMapper.toAuthResponse(user, { accessToken: tokens.accessToken })),
+        );
     } catch (error) {
       next(error);
     }

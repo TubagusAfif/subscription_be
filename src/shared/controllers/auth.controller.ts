@@ -27,14 +27,15 @@ export class SharedAuthController {
   refresh = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const app = req.body.app;
-      const cookieName = app === 'subscription' ? 'refreshToken_subscription' : 'refreshToken_client';
+      const cookieName =
+        app === 'subscription' ? 'refreshToken_subscription' : 'refreshToken_client';
       const refreshToken = req.cookies[cookieName];
-      
+
       if (!refreshToken) {
         throw new AppError('UNAUTHORIZED', 'No refresh token provided in cookies', 401);
       }
       const tokens = await this.tokenService.rotateRefreshToken(refreshToken);
-      
+
       res.cookie(cookieName, tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -56,21 +57,26 @@ export class SharedAuthController {
   logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const app = req.body.app;
-      const cookieName = app === 'subscription' ? 'refreshToken_subscription' : 'refreshToken_client';
+      const cookieName =
+        app === 'subscription' ? 'refreshToken_subscription' : 'refreshToken_client';
       const refreshToken = req.cookies[cookieName] || req.cookies.refreshToken;
-      
+
       if (refreshToken) {
         await this.tokenService.revokeRefreshToken(refreshToken);
       }
-      
+
       res.clearCookie(cookieName, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
       });
       // Always clear the legacy one just in case
-      res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
-      
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+
       res.status(200).json(successResponse({ message: 'Logged out successfully' }));
     } catch (error) {
       next(error);

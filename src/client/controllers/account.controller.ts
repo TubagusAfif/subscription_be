@@ -3,7 +3,10 @@ import { ClientAccountService } from '../services/account.service';
 import { ClientAccountMapper } from '../mappers/account.mapper';
 import { successResponse } from '../../shared/utils/response.util';
 import type { AuthenticatedRequest } from '../../shared/types/typed-request';
-import type { UpdateAccountBody, ChangePasswordBody } from '../../shared/validations/account.validation';
+import type {
+  UpdateAccountBody,
+  ChangePasswordBody,
+} from '../../shared/validations/account.validation';
 
 export interface ClientAccountControllerDeps {
   accountService: ClientAccountService;
@@ -35,7 +38,11 @@ export class ClientAccountController {
   /**
    * Update current authenticated user's base information and profile.
    */
-  updateMe = async (req: AuthenticatedRequest<UpdateAccountBody>, res: Response, next: NextFunction) => {
+  updateMe = async (
+    req: AuthenticatedRequest<UpdateAccountBody>,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const userId = req.user.sub;
       const data = req.body;
@@ -49,7 +56,11 @@ export class ClientAccountController {
   /**
    * Change current authenticated user's password.
    */
-  changePassword = async (req: AuthenticatedRequest<ChangePasswordBody>, res: Response, next: NextFunction) => {
+  changePassword = async (
+    req: AuthenticatedRequest<ChangePasswordBody>,
+    res: Response,
+    next: NextFunction,
+  ) => {
     try {
       const userId = req.user.sub;
       const data = req.body;

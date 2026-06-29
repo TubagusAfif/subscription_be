@@ -10,7 +10,10 @@ process.env['API_PREFIX'] = '/api/v1';
 process.env['MPG_BASE_URL'] = 'https://developer.bankmega.app';
 process.env['MPG_PARTNER_ID'] = 'test-mpg-partner-id';
 process.env['MPG_CHANNEL_ID'] = '95221';
-process.env['MPG_SECRET_KEY_PATH'] = require('path').resolve(__dirname, 'fixtures/mpg_secret_test.key');
+process.env['MPG_SECRET_KEY_PATH'] = require('path').resolve(
+  __dirname,
+  'fixtures/mpg_secret_test.key',
+);
 process.env['MPG_CLIENT_ID'] = 'test-mpg-client-id';
 process.env['MPG_CLIENT_SECRET'] = 'test-mpg-client-secret';
 process.env['PAYMENT_GATEWAY'] = 'midtrans';
@@ -22,4 +25,3 @@ process.env['SMTP_SERVICE'] = 'gmail';
 process.env['SMTP_MAIL'] = 'test@test.com';
 process.env['SMTP_PASSWORD'] = 'test-password';
 process.env['CLIENT_APP_URL'] = 'http://localhost:8085';
-

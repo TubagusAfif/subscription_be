@@ -19,14 +19,24 @@ export class PlanController {
     private readonly addonService: AddonService,
   ) {}
 
-  upsertPlan = async (req: AuthenticatedRequest<UpsertPlanBody>, res: Response, next: NextFunction): Promise<void> => {
+  upsertPlan = async (
+    req: AuthenticatedRequest<UpsertPlanBody>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       if (req.params?.id && !req.body.id) {
         req.body.id = Number(req.params.id);
       }
 
       const payload = stripUndefined(req.body);
-      const { benefits: payloadBenefits, features: payloadFeatures, addons: payloadAddons, removed, ...planBaseData } = payload;
+      const {
+        benefits: payloadBenefits,
+        features: payloadFeatures,
+        addons: payloadAddons,
+        removed,
+        ...planBaseData
+      } = payload;
       const adminId = Number(req.user.sub);
 
       const plan = await this.prisma.$transaction(async (tx) => {
@@ -53,7 +63,7 @@ export class PlanController {
           addons,
         };
       });
-      
+
       const statusCode = req.body.id ? 200 : 201;
       res.status(statusCode).json(successResponse(PlanMapper.toResponse(plan)));
     } catch (error) {
@@ -61,9 +71,11 @@ export class PlanController {
     }
   };
 
-
-
-  deactivatePlan = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  deactivatePlan = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       await this.planService.deactivatePlan(Number(req.params.id), Number(req.user.sub));
       res.status(204).send();

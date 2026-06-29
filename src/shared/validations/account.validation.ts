@@ -29,7 +29,9 @@ export const updateAccountSchema = z.object({
 
 export const changePasswordSchema = z.object({
   body: z.object({
-    currentPassword: z.string('Current password is required').min(1, 'Current password is required'),
+    currentPassword: z
+      .string('Current password is required')
+      .min(1, 'Current password is required'),
     newPassword: z
       .string('New password is required')
       .min(8, 'New password must be at least 8 characters')
