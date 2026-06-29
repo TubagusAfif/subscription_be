@@ -1,0 +1,19 @@
+name: Daily Subscription Expiry Scheduler
+
+on:
+  schedule:
+    # Runs every day at 00:05 UTC (07:05 WIB)
+    - cron: '5 0 * * *'
+  workflow_dispatch: # Allows manual trigger from the Actions tab
+
+jobs:
+  trigger-expiry-sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit Expiry Sweep Webhook
+        run: |
+          # Replace the URL with your actual production server URL if not using secrets
+          curl -X POST "${{ secrets.SERVER_BASE_URL }}/api/v1/cron/daily-expiry" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+          --fail
