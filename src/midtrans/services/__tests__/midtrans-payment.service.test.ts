@@ -41,8 +41,7 @@ const baseNotification = (overrides: Partial<MidtransNotification> = {}): Midtra
     fraud_status: overrides.fraud_status,
     // Valid signature unless explicitly overridden
     signature_key:
-      overrides.signature_key ??
-      sha512Hex(order_id + status_code + gross_amount + SERVER_KEY),
+      overrides.signature_key ?? sha512Hex(order_id + status_code + gross_amount + SERVER_KEY),
   };
 };
 
@@ -101,21 +100,21 @@ describe('MidtransPaymentService', () => {
     });
 
     it('rejects a forged signature_key', () => {
-      expect(
-        service.verifyWebhookSignature(baseNotification({ signature_key: 'deadbeef' })),
-      ).toBe(false);
+      expect(service.verifyWebhookSignature(baseNotification({ signature_key: 'deadbeef' }))).toBe(
+        false,
+      );
     });
 
     it('rejects a missing signature_key', () => {
-      expect(
-        service.verifyWebhookSignature(baseNotification({ signature_key: '' })),
-      ).toBe(false);
+      expect(service.verifyWebhookSignature(baseNotification({ signature_key: '' }))).toBe(false);
     });
   });
 
   describe('status classification', () => {
     it('treats settlement as success', () => {
-      expect(service.isPaymentSuccess(baseNotification({ transaction_status: 'settlement' }))).toBe(true);
+      expect(service.isPaymentSuccess(baseNotification({ transaction_status: 'settlement' }))).toBe(
+        true,
+      );
     });
 
     it('treats capture as success only when fraud_status is accept', () => {

@@ -108,7 +108,9 @@ export class MidtransPaymentService implements PaymentGateway {
     }
 
     try {
-      const result = await this.snap.createTransaction(parameter as unknown as SnapTransactionParameters);
+      const result = await this.snap.createTransaction(
+        parameter as unknown as SnapTransactionParameters,
+      );
       return {
         pgResponseId: result.token,
         checkoutUrl: result.redirect_url,

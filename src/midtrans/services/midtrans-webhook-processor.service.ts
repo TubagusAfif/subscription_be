@@ -46,10 +46,13 @@ export class MidtransWebhookProcessorService {
       await this.coinOrderService.handlePaymentFailure(orderId);
       logger.info('[MidtransWebhookProcessorService] Payment failure processed', { orderId });
     } else {
-      logger.info('[MidtransWebhookProcessorService] Non-terminal status received, no action taken', {
-        orderId,
-        status: notification.transaction_status,
-      });
+      logger.info(
+        '[MidtransWebhookProcessorService] Non-terminal status received, no action taken',
+        {
+          orderId,
+          status: notification.transaction_status,
+        },
+      );
     }
   }
 }

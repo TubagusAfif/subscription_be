@@ -30,11 +30,7 @@ export class MidtransWebhookController {
   /**
    * Handles POST /api/v1/midtrans/webhook/notification
    */
-  handleNotification = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  handleNotification = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const notification = req.body as MidtransNotification;
 
