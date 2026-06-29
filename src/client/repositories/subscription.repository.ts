@@ -323,7 +323,6 @@ export class ClientSubscriptionRepository {
           user_id: userId,
           sku_id: newSkuId,
           sku_type: newSkuType,
-          parent_subscription_id: null, // Assuming root package
           purchase_token: purchaseToken,
           status: 'ACTIVE',
           auto_renew: false,

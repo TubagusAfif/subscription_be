@@ -97,13 +97,6 @@ export class DailyExpiryService {
       include: {
         user: true,
         sku: true,
-        child_subscriptions: {
-          where: { deleted_at: null, sku_type: 'ADDON', status: 'ON_HOLD' },
-          include: {
-            sku: { include: { addons: true } },
-            addon_slot_maps: { where: { deleted_at: null } },
-          },
-        },
       },
     });
 
@@ -138,7 +131,15 @@ export class DailyExpiryService {
         `subscription.expired:${sub.id}:${runStamp}`,
       );
 
-      for (const addonSub of sub.child_subscriptions) {
+      const child_subscriptions = await this.prisma.subscription.findMany({
+        where: { user_id: sub.user_id, deleted_at: null, sku_type: 'ADDON', status: 'ON_HOLD' },
+        include: {
+          sku: { include: { addons: true } },
+          addon_slot_maps: { where: { deleted_at: null } },
+        },
+      });
+
+      for (const addonSub of child_subscriptions) {
         await this.prisma.subscription.update({
           where: { id: addonSub.id },
           data: { status: 'EXPIRED', expired_at: new Date() },

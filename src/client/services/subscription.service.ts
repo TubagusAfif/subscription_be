@@ -157,7 +157,6 @@ export class ClientSubscriptionService {
           user_id: userId,
           sku_id: skuId,
           sku_type: sku.sku_type,
-          parent_subscription_id: null,
           purchase_token: purchaseToken,
           status: 'ACTIVE',
           auto_renew: false,

@@ -113,12 +113,6 @@ export class InternalRepository {
           },
         },
         quotas: { where: { deleted_at: null } },
-        child_subscriptions: {
-          where: { deleted_at: null, sku_type: 'ADDON' },
-          include: {
-            sku: { include: { addons: { where: { deleted_at: null } } } },
-          },
-        },
       },
     });
   }
