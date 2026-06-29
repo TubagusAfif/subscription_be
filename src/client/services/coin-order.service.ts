@@ -329,7 +329,7 @@ export class CoinOrderService {
     return order;
   }
 
-  /** 
+  /**
   ---------------------------------------------------------------
     Gets a single order by PG Order ID (for unauthenticated status check).
   ---------------------------------------------------------------
@@ -344,6 +344,15 @@ export class CoinOrderService {
       );
     }
     return order;
+  }
+
+  /**
+  ---------------------------------------------------------------
+    Gets the user's pending order (if any) for resume flow.
+  ---------------------------------------------------------------
+  **/
+  async getPendingOrder(userId: number): Promise<CoinOrder | null> {
+    return this.coinOrderRepo.findPendingByUserId(userId);
   }
 
   /** 
