@@ -48,6 +48,10 @@ export class CoinOrderRepository {
         status: 'PENDING',
         deleted_at: null,
       },
+      // Relations are needed when the pending order is returned to the client
+      // to resume payment (payment_method label, currency). Harmless for the
+      // existence/age check in assertNoActivePendingOrder, which ignores them.
+      include: { bundle: true, currency: true, payment_method: true },
     });
   }
 
