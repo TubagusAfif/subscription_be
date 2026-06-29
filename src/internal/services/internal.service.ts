@@ -1,45 +1,72 @@
 import { PrismaClient } from '@prisma/client';
 import { InternalRepository } from '../repositories/internal.repository';
-import { AppError } from '../middlewares/error.middleware';
+import { AppError } from '../../shared/middlewares/error.middleware';
 import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
+import { env } from '../../shared/config/env';
 
 export class InternalService {
   constructor(
     private readonly prisma: PrismaClient,
-    private readonly internalRepo: InternalRepository
+    private readonly internalRepo: InternalRepository,
   ) {}
 
-  async slotAssign(payload: { external_subscription_id: string; resource_type: string; ref_type: string; ref_id: number }) {
+  async slotAssign(payload: {
+    external_subscription_id: string;
+    resource_type: string;
+    ref_type: string;
+    ref_id: number;
+  }) {
     return this.prisma.$transaction(async (tx) => {
-      const subscription = await this.internalRepo.findSubscriptionByToken(payload.external_subscription_id, tx);
+      const subscription = await this.internalRepo.findSubscriptionByToken(
+        payload.external_subscription_id,
+        tx,
+      );
       if (!subscription) {
-        throw new AppError('SUBSCRIPTION_NOT_FOUND', 'Subscription with this external_subscription_id not found', 404);
+        throw new AppError(
+          'SUBSCRIPTION_NOT_FOUND',
+          'Subscription with this external_subscription_id not found',
+          404,
+        );
       }
 
       const quotaResourceType = payload.resource_type.toLowerCase();
-      const quotaRows = await this.internalRepo.getQuotaWithLock(subscription.id, quotaResourceType, tx);
+      const quotaRows = await this.internalRepo.getQuotaWithLock(
+        subscription.id,
+        quotaResourceType,
+        tx,
+      );
 
       // Fail closed: without a configured quota row we cannot grant a slot,
       // otherwise assignment would be unbounded and bypass enforcement.
       if (quotaRows.length === 0) {
-        throw new AppError('QUOTA_EXCEEDED', `Quota ${payload.resource_type} belum dikonfigurasi untuk subscription ini.`, 409);
+        throw new AppError(
+          'QUOTA_EXCEEDED',
+          `Quota ${payload.resource_type} belum dikonfigurasi untuk subscription ini.`,
+          409,
+        );
       }
 
       const quota = quotaRows[0]!;
 
       if (quota.used_quota >= quota.total_quota) {
-        throw new AppError('QUOTA_EXCEEDED', `Quota ${payload.resource_type} habis. Owner harus upgrade tier atau beli addon.`, 409);
+        throw new AppError(
+          'QUOTA_EXCEEDED',
+          `Quota ${payload.resource_type} habis. Owner harus upgrade tier atau beli addon.`,
+          409,
+        );
       }
 
       await this.internalRepo.incrementQuotaUsed(quota.id, tx);
       const quotaRemaining = quota.total_quota - quota.used_quota - 1;
 
-      const slotMap = await this.internalRepo.createAddonSlotMap({
-        addon_subscription_id: subscription.id,
-        ref_type: payload.ref_type,
-        ref_id: payload.ref_id,
-      }, tx);
+      const slotMap = await this.internalRepo.createAddonSlotMap(
+        {
+          addon_subscription_id: subscription.id,
+          ref_type: payload.ref_type,
+          ref_id: payload.ref_id,
+        },
+        tx,
+      );
 
       return {
         slot_id: slotMap.id,
@@ -48,9 +75,16 @@ export class InternalService {
     });
   }
 
-  async slotRelease(payload: { external_subscription_id: string; resource_type: string; ref_id: number }) {
+  async slotRelease(payload: {
+    external_subscription_id: string;
+    resource_type: string;
+    ref_id: number;
+  }) {
     return this.prisma.$transaction(async (tx) => {
-      const subscription = await this.internalRepo.findSubscriptionByTokenAnyStatus(payload.external_subscription_id, tx);
+      const subscription = await this.internalRepo.findSubscriptionByTokenAnyStatus(
+        payload.external_subscription_id,
+        tx,
+      );
       if (!subscription) {
         return { quota_remaining: 0, note: 'subscription not found, treated as already released' };
       }
@@ -58,7 +92,12 @@ export class InternalService {
       // Constrain the lookup to ref_types valid for this resource so a USER release
       // can never match a CLINIC slot that happens to share the same ref_id.
       const refTypes = payload.resource_type === 'CLINIC' ? ['clinic'] : ['staff', 'doctor'];
-      const slotMap = await this.internalRepo.findAddonSlotMap(subscription.id, payload.ref_id, refTypes, tx);
+      const slotMap = await this.internalRepo.findAddonSlotMap(
+        subscription.id,
+        payload.ref_id,
+        refTypes,
+        tx,
+      );
 
       const quotaResourceType = payload.resource_type.toLowerCase();
 
@@ -84,9 +123,14 @@ export class InternalService {
   }
 
   async getSubscriptionByCompany(externalSubscriptionId: string) {
-    const subscription: any = await this.internalRepo.getSubscriptionSnapshot(externalSubscriptionId);
+    const subscription: any =
+      await this.internalRepo.getSubscriptionSnapshot(externalSubscriptionId);
     if (!subscription) {
-      throw new AppError('SUBSCRIPTION_NOT_FOUND', 'Subscription with this external_subscription_id not found', 404);
+      throw new AppError(
+        'SUBSCRIPTION_NOT_FOUND',
+        'Subscription with this external_subscription_id not found',
+        404,
+      );
     }
 
     const clinicQuota = subscription.quotas?.find((q: any) => q.resource_type === 'clinic');
@@ -94,8 +138,8 @@ export class InternalService {
     const features = subscription.sku?.features?.map((f: any) => f.feature) ?? [];
 
     const addons: Record<string, unknown> = {};
-    for (const child of (subscription.child_subscriptions || [])) {
-      for (const addon of (child.sku?.addons || [])) {
+    for (const child of subscription.child_subscriptions || []) {
+      for (const addon of child.sku?.addons || []) {
         addons[addon.resource_type] = {
           quota_value: addon.quota_value,
           display_name: addon.display_name,
@@ -122,16 +166,24 @@ export class InternalService {
           addons,
           billing_start: subscription.current_billing_start?.toISOString().split('T')[0] ?? null,
           billing_end: subscription.current_billing_end?.toISOString().split('T')[0] ?? null,
-          trial_end: null,
+          trial_end: subscription.sku?.sku_code?.toLowerCase().includes('trial')
+            ? (subscription.current_billing_end?.toISOString().split('T')[0] ?? null)
+            : null,
         },
       },
     };
   }
 
   async generateRenewalUrl(payload: { external_subscription_id: string; return_url: string }) {
-    const subscription = await this.internalRepo.findSubscriptionByTokenAnyStatus(payload.external_subscription_id);
+    const subscription = await this.internalRepo.findSubscriptionByTokenAnyStatus(
+      payload.external_subscription_id,
+    );
     if (!subscription) {
-      throw new AppError('SUBSCRIPTION_NOT_FOUND', 'Subscription with this external_subscription_id not found', 404);
+      throw new AppError(
+        'SUBSCRIPTION_NOT_FOUND',
+        'Subscription with this external_subscription_id not found',
+        404,
+      );
     }
 
     let returnUrl: URL;
@@ -164,7 +216,7 @@ export class InternalService {
         action: 'renewal',
       },
       env.JWT_SECRET,
-      { algorithm: 'HS256', expiresIn: '30m' }
+      { algorithm: 'HS256', expiresIn: '30m' },
     );
 
     const frontendUrl = env.CLIENT_APP_URL || 'http://localhost:3000';

@@ -24,7 +24,11 @@ export class InternalRepository {
     });
   }
 
-  async getQuotaWithLock(subscriptionId: number, resourceType: string, tx: Prisma.TransactionClient) {
+  async getQuotaWithLock(
+    subscriptionId: number,
+    resourceType: string,
+    tx: Prisma.TransactionClient,
+  ) {
     return tx.$queryRaw<Array<{ id: number; total_quota: number; used_quota: number }>>`
       SELECT id, total_quota, used_quota
       FROM subscription_quotas
@@ -49,11 +53,19 @@ export class InternalRepository {
     });
   }
 
-  async createAddonSlotMap(data: Prisma.AddonSlotMapUncheckedCreateInput, tx: Prisma.TransactionClient) {
+  async createAddonSlotMap(
+    data: Prisma.AddonSlotMapUncheckedCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
     return tx.addonSlotMap.create({ data });
   }
 
-  async findAddonSlotMap(subscriptionId: number, refId: number, refType?: string | string[], tx?: Prisma.TransactionClient) {
+  async findAddonSlotMap(
+    subscriptionId: number,
+    refId: number,
+    refType?: string | string[],
+    tx?: Prisma.TransactionClient,
+  ) {
     const db = tx || this.prisma;
     const slotMapWhere: Prisma.AddonSlotMapWhereInput = {
       addon_subscription_id: subscriptionId,

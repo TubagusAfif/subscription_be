@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import express from 'express';
 import { InternalController } from '../controllers/internal.controller';
-import { webhookAuthMiddleware } from '../middlewares/webhook-auth.middleware';
+import { webhookAuthMiddleware } from '../../shared/middlewares/webhook-auth.middleware';
 
 /**
  * Internal API routes (Domain 2 → Domain 1).
@@ -25,7 +25,10 @@ export const createInternalRouter = (internalController: InternalController): Ro
   router.post('/slots/release', internalController.slotRelease);
 
   // Subscription snapshot
-  router.get('/subscriptions/by-company/:external_subscription_id', internalController.getSubscriptionByCompany);
+  router.get(
+    '/subscriptions/by-company/:external_subscription_id',
+    internalController.getSubscriptionByCompany,
+  );
 
   // Billing
   router.post('/billing/renewal-url', internalController.generateRenewalUrl);

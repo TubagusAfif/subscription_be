@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { successResponse } from '../utils/response.util';
-import { slotAssignSchema, slotReleaseSchema, renewalUrlSchema } from '../validations/internal.validation';
-import { AppError } from '../middlewares/error.middleware';
+import { successResponse } from '../../shared/utils/response.util';
+import {
+  slotAssignSchema,
+  slotReleaseSchema,
+  renewalUrlSchema,
+} from '../validations/internal.validation';
+import { AppError } from '../../shared/middlewares/error.middleware';
 import { InternalService } from '../services/internal.service';
 
 export class InternalController {
@@ -33,7 +37,7 @@ export class InternalController {
           const quotaResourceType = req.body?.resource_type?.toLowerCase() ?? '';
           const quota = await this.internalService.getQuotaDetails(
             req.body?.external_subscription_id,
-            quotaResourceType
+            quotaResourceType,
           );
 
           res.status(409).json({
@@ -87,11 +91,16 @@ export class InternalController {
    * Returns full subscription snapshot in subscription.sync format.
    * Domain 2 uses this for re-sync, reconciliation, or startup.
    */
-  getSubscriptionByCompany = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  getSubscriptionByCompany = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const externalSubscriptionId = req.params.external_subscription_id as string;
 
-      const syncPayload = await this.internalService.getSubscriptionByCompany(externalSubscriptionId);
+      const syncPayload =
+        await this.internalService.getSubscriptionByCompany(externalSubscriptionId);
 
       res.status(200).json(successResponse(syncPayload));
     } catch (error) {
