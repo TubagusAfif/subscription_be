@@ -234,6 +234,19 @@ export class CoinOrderController {
     }
   };
 
+  getPendingOrder = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const order = await this.coinOrderService.getPendingOrder(Number(req.user.sub));
+      res.status(200).json(successResponse(order ? CoinOrderMapper.toResponse(order) : null));
+    } catch (error) {
+      next(error);
+    }
+  };
+
   getOrderById = async (
     req: AuthenticatedRequest,
     res: Response,
