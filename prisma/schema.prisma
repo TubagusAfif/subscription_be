@@ -432,37 +432,34 @@ model CoinTransaction {
 // --------------------------------------------------------------------------
 
 model Subscription {
-  id                     Int                @id @default(autoincrement())
-  user_id                Int
-  sku_id                 Int
-  sku_type               SkuType // PACKAGE or ADDON
-  parent_subscription_id Int?
-  purchase_token         String?            @unique
-  status                 SubscriptionStatus @default(ACTIVE)
-  auto_renew             Boolean            @default(false)
-  current_billing_start  DateTime?          @db.Date
-  current_billing_end    DateTime?          @db.Date
-  next_billing_date      DateTime?          @db.Date
-  canceled_at            DateTime?
-  expired_at             DateTime?
-  created_at             DateTime           @default(now())
-  created_by             Int?
-  updated_at             DateTime           @updatedAt
-  updated_by             Int?
-  deleted_at             DateTime?
-  deleted_by             Int?
+  id                    Int                @id @default(autoincrement())
+  user_id               Int
+  sku_id                Int
+  sku_type              SkuType // PACKAGE or ADDON
+  purchase_token        String?            @unique
+  status                SubscriptionStatus @default(ACTIVE)
+  auto_renew            Boolean            @default(false)
+  current_billing_start DateTime?          @db.Date
+  current_billing_end   DateTime?          @db.Date
+  next_billing_date     DateTime?          @db.Date
+  canceled_at           DateTime?
+  expired_at            DateTime?
+  created_at            DateTime           @default(now())
+  created_by            Int?
+  updated_at            DateTime           @updatedAt
+  updated_by            Int?
+  deleted_at            DateTime?
+  deleted_by            Int?
 
-  user                User                @relation(fields: [user_id], references: [id])
-  sku                 SkuBase             @relation(fields: [sku_id], references: [id])
-  parent_subscription Subscription?       @relation("SubscriptionSelfRef", fields: [parent_subscription_id], references: [id])
-  child_subscriptions Subscription[]      @relation("SubscriptionSelfRef")
-  quotas              SubscriptionQuota[]
-  addon_slot_maps     AddonSlotMap[]
-  orders              Order[]
-  events              SubscriptionEvent[]
-  billing_cycles      BillingCycle[]
-  switches_from       PlanSwitch[]        @relation("OldSubscription")
-  switches_to         PlanSwitch[]        @relation("NewSubscription")
+  user            User                @relation(fields: [user_id], references: [id])
+  sku             SkuBase             @relation(fields: [sku_id], references: [id])
+  quotas          SubscriptionQuota[]
+  addon_slot_maps AddonSlotMap[]
+  orders          Order[]
+  events          SubscriptionEvent[]
+  billing_cycles  BillingCycle[]
+  switches_from   PlanSwitch[]        @relation("OldSubscription")
+  switches_to     PlanSwitch[]        @relation("NewSubscription")
 
   @@map("subscriptions")
 }

@@ -288,7 +288,6 @@ Table subscriptions {
   user_id Int [not null]
   sku_id Int [not null]
   sku_type SkuType [not null]
-  parent_subscription_id Int
   purchase_token String [unique]
   status SubscriptionStatus [not null, default: 'ACTIVE']
   auto_renew Boolean [not null, default: false]
@@ -305,8 +304,6 @@ Table subscriptions {
   deleted_by Int
   user users [not null]
   sku sku_base [not null]
-  parent_subscription subscriptions
-  child_subscriptions subscriptions [not null]
   quotas subscription_quotas [not null]
   addon_slot_maps addon_slot_map [not null]
   orders orders [not null]
@@ -573,8 +570,6 @@ Ref: coin_transactions.payment_method_id > payment_methods.id
 Ref: subscriptions.user_id > users.id
 
 Ref: subscriptions.sku_id > sku_base.id
-
-Ref: subscriptions.parent_subscription_id - subscriptions.id
 
 Ref: subscription_quotas.user_id > users.id
 
