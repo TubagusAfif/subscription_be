@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Activate Your Account</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Barlow:wght@900&display=swap');
 
     * {
       margin: 0;
@@ -14,10 +14,11 @@
     }
 
     body {
-      background-color: #f9fafb;
-      font-family: 'Sora', sans-serif;
-      color: #1f2937;
+      background-color: #F4F6F8;
+      font-family: 'Public Sans', Helvetica, Arial, sans-serif;
+      color: #212B36;
       padding: 40px 16px;
+      -webkit-font-smoothing: antialiased;
     }
 
     .wrapper {
@@ -33,29 +34,28 @@
 
     .logo {
       display: inline-block;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 22px;
-      color: #111827;
+      font-family: 'Barlow', Helvetica, Arial, sans-serif;
+      font-weight: 900;
+      font-size: 24px;
+      color: #212B36;
       letter-spacing: -0.5px;
     }
 
     .logo span {
-      color: #22c55e;
+      color: #00AB55;
     }
 
     /* Card */
     .card {
       background: #ffffff;
-      border: 1px solid #e5e7eb;
       border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 0 2px 0 rgba(145, 158, 171, 0.2), 0 12px 24px -4px rgba(145, 158, 171, 0.12);
     }
 
     .card-accent {
       height: 4px;
-      background: linear-gradient(90deg, #22c55e 0%, #4ade80 50%, #86efac 100%);
+      background: linear-gradient(90deg, #007B55 0%, #00AB55 50%, #5BE584 100%);
     }
 
     .card-body {
@@ -65,19 +65,19 @@
     /* Greeting */
     .greeting {
       font-size: 24px;
-      font-weight: 700;
-      color: #111827;
+      font-weight: 800;
+      color: #212B36;
       margin-bottom: 12px;
       line-height: 1.3;
     }
 
     .greeting .name {
-      color: #4ade80;
+      color: #00AB55;
     }
 
     .subtext {
-      font-size: 14px;
-      color: #4b5563;
+      font-size: 15px;
+      color: #637381;
       line-height: 1.7;
       margin-bottom: 32px;
     }
@@ -85,55 +85,44 @@
     /* Code block */
     .code-label {
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: #6b7280;
+      color: #919EAB;
       margin-bottom: 10px;
     }
 
     .code-container {
-      background: #f3f4f6;
-      border: 1px solid #e5e7eb;
+      background: #F4F6F8;
+      border: 1px solid #DFE3E8;
       border-radius: 12px;
       padding: 24px;
       text-align: center;
       margin-bottom: 28px;
-      position: relative;
-    }
-
-    .code-container::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 12px;
-      background: radial-gradient(ellipse at center, rgba(34, 197, 94, 0.06) 0%, transparent 70%);
-      pointer-events: none;
     }
 
     .activation-code {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Public Sans', Helvetica, Arial, sans-serif;
       font-size: 38px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 10px;
-      color: #111827;
-      text-shadow: 0 0 24px rgba(34, 197, 94, 0.2);
+      color: #212B36;
     }
 
     .code-expiry {
       margin-top: 10px;
       font-size: 12px;
-      color: #6b7280;
+      color: #637381;
     }
 
     .code-expiry strong {
-      color: #4ade80;
+      color: #00AB55;
     }
 
     /* Divider */
     .divider {
       border: none;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid #DFE3E8;
       margin: 28px 0;
     }
 
@@ -142,8 +131,8 @@
       display: flex;
       gap: 12px;
       align-items: flex-start;
-      background: #fef3c7;
-      border: 1px solid #fde68a;
+      background: #FFF5CC;
+      border: 1px solid #FFD666;
       border-radius: 10px;
       padding: 14px 16px;
       margin-bottom: 28px;
@@ -157,7 +146,7 @@
 
     .warning-text {
       font-size: 13px;
-      color: #92400e;
+      color: #7A4100;
       line-height: 1.6;
     }
 
@@ -169,12 +158,12 @@
 
     .footer p {
       font-size: 12px;
-      color: #6b7280;
+      color: #919EAB;
       line-height: 1.8;
     }
 
     .footer a {
-      color: #22c55e;
+      color: #00AB55;
       text-decoration: none;
     }
 
@@ -185,7 +174,7 @@
     .footer .company {
       margin-top: 16px;
       font-size: 11px;
-      color: #9ca3af;
+      color: #C4CDD5;
     }
 
     @media (max-width: 480px) {
@@ -240,7 +229,7 @@
 
         <hr class="divider" />
 
-        <p style="font-size: 13px; color: #6b7280; line-height: 1.7;">
+        <p style="font-size: 13px; color: #919EAB; line-height: 1.7;">
           If you didn't create an account, you can safely ignore this email.
           Someone may have entered your email address by mistake.
         </p>

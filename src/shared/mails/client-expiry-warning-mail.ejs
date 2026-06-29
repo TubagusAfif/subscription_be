@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reset Your Password</title>
+  <title>Subscription Expiry Notice</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Barlow:wght@900&display=swap');
 
@@ -62,6 +62,28 @@
       padding: 40px 40px 36px;
     }
 
+    /* Status badge */
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .badge-info {
+      background: #FFF5CC;
+      color: #7A4100;
+    }
+
+    .badge-danger {
+      background: #FFE9D5;
+      color: #7A0916;
+    }
+
     /* Greeting */
     .greeting {
       font-size: 24px;
@@ -79,13 +101,52 @@
       font-size: 15px;
       color: #637381;
       line-height: 1.7;
-      margin-bottom: 32px;
+      margin-bottom: 16px;
+    }
+
+    .subtext strong {
+      color: #212B36;
+      font-weight: 700;
+    }
+
+    .highlight {
+      color: #00AB55;
+      font-weight: 700;
+    }
+
+    .highlight-danger {
+      color: #B71D18;
+      font-weight: 700;
+    }
+
+    /* Info panel */
+    .panel {
+      background: #F4F6F8;
+      border: 1px solid #DFE3E8;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #919EAB;
+      margin-bottom: 6px;
+    }
+
+    .panel-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: #212B36;
     }
 
     /* CTA Button */
     .cta-container {
       text-align: center;
-      margin-bottom: 28px;
+      margin: 28px 0 8px;
     }
 
     .cta-button {
@@ -102,47 +163,11 @@
       box-shadow: 0 8px 16px 0 rgba(0, 171, 85, 0.24);
     }
 
-    .link-fallback {
-      margin-top: 16px;
-      font-size: 12px;
-      color: #919EAB;
-      word-break: break-all;
-    }
-
-    .link-fallback a {
-      color: #00AB55;
-      text-decoration: none;
-    }
-
     /* Divider */
     .divider {
       border: none;
       border-top: 1px solid #DFE3E8;
       margin: 28px 0;
-    }
-
-    /* Warning */
-    .warning {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      background: #FFF5CC;
-      border: 1px solid #FFD666;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 28px;
-    }
-
-    .warning-icon {
-      font-size: 16px;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .warning-text {
-      font-size: 13px;
-      color: #7A4100;
-      line-height: 1.6;
     }
 
     /* Footer */
@@ -201,36 +226,63 @@
       <div class="card-accent"></div>
       <div class="card-body">
 
+        <% if (daysBefore === 0) { %>
+          <span class="badge badge-info">Expires Today</span>
+        <% } else if (daysBefore === -1) { %>
+          <span class="badge badge-info">Grace Period</span>
+        <% } else if (daysBefore === -7) { %>
+          <span class="badge badge-danger">Access Restricted</span>
+        <% } else { %>
+          <span class="badge badge-info">Renewal Reminder</span>
+        <% } %>
+
         <h1 class="greeting">
-          Hello, <span class="name"><%= user.name %></span> 🔒
+          Hello, <span class="name"><%= user.name %></span>
         </h1>
-        <p class="subtext">
-          We received a request to reset your password. Please click the button below to set a new password for your account.
-        </p>
 
-        <div class="cta-container">
-          <a href="<%= resetLink %>" class="cta-button" target="_blank">
-            Reset Password
-          </a>
-          <p class="link-fallback">
-            Or copy and paste this link into your browser:<br/>
-            <a href="<%= resetLink %>"><%= resetLink %></a>
-          </p>
+        <div class="panel">
+          <p class="panel-label">Subscription</p>
+          <p class="panel-value"><%= skuName %></p>
         </div>
 
-        <div class="warning">
-          <span class="warning-icon">⚠️</span>
-          <p class="warning-text">
-            This reset link expires in <strong>1 hour</strong>. If you didn't request a password reset,
-            you can safely ignore this email. Your password will remain unchanged.
+        <% if (daysBefore === 0) { %>
+          <p class="subtext">
+            This is a reminder that your subscription for <strong><%= skuName %></strong>
+            expires <span class="highlight-danger">today</span>.
           </p>
-        </div>
+          <p class="subtext">
+            Please renew your subscription to continue enjoying our services without interruption.
+          </p>
+        <% } else if (daysBefore === -1) { %>
+          <p class="subtext">
+            Your subscription for <strong><%= skuName %></strong> expired <strong>yesterday</strong>.
+          </p>
+          <p class="subtext">
+            You have entered a <span class="highlight">7-day grace period</span> where your services
+            will continue to work normally. Please renew immediately to avoid interruption.
+          </p>
+        <% } else if (daysBefore === -7) { %>
+          <p class="subtext">
+            Your 7-day grace period for <strong><%= skuName %></strong> has ended.
+          </p>
+          <p class="subtext">
+            Your services have now been <span class="highlight-danger">restricted</span>.
+            Please renew to reactivate your access.
+          </p>
+        <% } else { %>
+          <p class="subtext">
+            This is a reminder that your subscription for <strong><%= skuName %></strong> will expire in
+            <span class="highlight"><%= daysBefore %> day<%= daysBefore > 1 ? 's' : '' %></span>.
+          </p>
+          <p class="subtext">
+            Please renew your subscription before the expiry date to avoid any service interruptions.
+          </p>
+        <% } %>
 
         <hr class="divider" />
 
         <p style="font-size: 13px; color: #919EAB; line-height: 1.7;">
-          If you're having trouble clicking the button, copy and paste the URL above
-          into your web browser.
+          If you have already renewed, please ignore this email.
         </p>
 
       </div>
