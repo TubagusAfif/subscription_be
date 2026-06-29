@@ -19,7 +19,10 @@ jest.mock('../../../subscription/services/addon.service');
 jest.mock('../../../shared/services/plan.service');
 
 const mockSharedPlanService = new SharedPlanService({} as any) as jest.Mocked<SharedPlanService>;
-const mockPlanService = new PlanService({} as any, mockSharedPlanService as any) as jest.Mocked<PlanService>;
+const mockPlanService = new PlanService(
+  {} as any,
+  mockSharedPlanService as any,
+) as jest.Mocked<PlanService>;
 const mockBenefitService = new BenefitService({} as any) as jest.Mocked<BenefitService>;
 const mockFeatureService = new FeatureService({} as any) as jest.Mocked<FeatureService>;
 const mockAddonService = new AddonService({} as any) as jest.Mocked<AddonService>;
@@ -46,12 +49,10 @@ const planController = new PlanController(
   mockPlanService,
   mockBenefitService,
   mockFeatureService,
-  mockAddonService
+  mockAddonService,
 );
 
-const sharedPlanController = new SharedPlanController(
-  mockSharedPlanService
-);
+const sharedPlanController = new SharedPlanController(mockSharedPlanService);
 
 const planRouter = createPlanRouter(planController, sharedPlanController, mockAuthenticate);
 

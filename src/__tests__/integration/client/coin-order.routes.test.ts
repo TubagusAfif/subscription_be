@@ -63,12 +63,12 @@ describe('Coin Order API Routes', () => {
         totalPrice: 100000,
         paymentMethod: { id: 1, name: 'VA', bank_mega_code: 'va', midtrans_code: 'va' },
         pgOrderId: 'COIN-1-123',
-        referenceUrl: 'https://reference'
+        referenceUrl: 'https://reference',
       } as any);
 
       mockAccountService.getAccount.mockResolvedValue({
         name: 'User 1',
-        email: 'user1@example.com'
+        email: 'user1@example.com',
       });
 
       mockPaymentGateway.createCheckout.mockResolvedValue({
@@ -92,7 +92,9 @@ describe('Coin Order API Routes', () => {
     });
 
     it('should return 401 if missing auth token', async () => {
-      const response = await request(app).post('/api/v1/client/coin-orders/bundle').send({ bundle_id: 1, nominal: 100000, payment_source: 'va' });
+      const response = await request(app)
+        .post('/api/v1/client/coin-orders/bundle')
+        .send({ bundle_id: 1, nominal: 100000, payment_source: 'va' });
 
       expect(response.status).toBe(401);
       expect(mockCoinOrderService.saveOrder).not.toHaveBeenCalled();

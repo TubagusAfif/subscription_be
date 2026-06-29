@@ -46,8 +46,8 @@ describe('Account Routes Integration', () => {
         password_hash: 'secret',
         profile: {
           city: 'Jakarta',
-          country: 'ID'
-        }
+          country: 'ID',
+        },
       };
 
       mockAccountService.getAccount.mockResolvedValue(dbResponse as any);
@@ -61,7 +61,9 @@ describe('Account Routes Integration', () => {
     });
 
     it('should return 404 if account not found', async () => {
-      mockAccountService.getAccount.mockRejectedValue(new AppError('NOT_FOUND', 'User account not found', 404));
+      mockAccountService.getAccount.mockRejectedValue(
+        new AppError('NOT_FOUND', 'User account not found', 404),
+      );
 
       const response = await request(app).get('/api/v1/shared/account/me');
 

@@ -91,7 +91,9 @@ describe('Report API Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/csv');
-      expect(response.headers['content-disposition']).toContain('attachment; filename=transaction-report');
+      expect(response.headers['content-disposition']).toContain(
+        'attachment; filename=transaction-report',
+      );
       expect(response.text).toBe('Header1,Header2\nValue1,Value2');
     });
 

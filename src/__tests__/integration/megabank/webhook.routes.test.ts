@@ -35,9 +35,11 @@ const webhookController = new WebhookController({
 } as any);
 const webhookRouter = createWebhookRouter(webhookController);
 
-app.use('/api/v1/megabank/webhooks', webhookRouter);
+app.use('/api/v1/config/webhooks', webhookRouter);
 app.use((err: any, req: any, res: any, next: any) => {
-  res.status(err.statusCode || 500).json({ success: false, error: { message: err.message, code: err.code } });
+  res
+    .status(err.statusCode || 500)
+    .json({ success: false, error: { message: err.message, code: err.code } });
 });
 
 describe('MegaBank Webhook API Routes', () => {
@@ -45,7 +47,7 @@ describe('MegaBank Webhook API Routes', () => {
     jest.clearAllMocks();
   });
 
-  describe('POST /api/v1/megabank/webhooks/mpg', () => {
+  describe('POST /api/v1/config/webhooks/mpg', () => {
     it('should process successful payment webhook', async () => {
       const payload = {
         type: 'payment.received',
@@ -69,7 +71,7 @@ describe('MegaBank Webhook API Routes', () => {
       mockCoinOrderService.handlePaymentSuccess.mockResolvedValue(undefined);
 
       const response = await request(app)
-        .post('/api/v1/megabank/webhooks/mpg')
+        .post('/api/v1/config/webhooks/mpg')
         .set('Signature', 'sig123;1234567890')
         .send(payload);
 
@@ -102,7 +104,7 @@ describe('MegaBank Webhook API Routes', () => {
       mockWebhookProcessorService.processWebhook.mockResolvedValue(undefined);
 
       const response = await request(app)
-        .post('/api/v1/megabank/webhooks/mpg')
+        .post('/api/v1/config/webhooks/mpg')
         .set('Signature', 'sig123;1234567890')
         .send(payload);
 
@@ -128,7 +130,7 @@ describe('MegaBank Webhook API Routes', () => {
       mockMegaBankPaymentService.verifyWebhookSignature.mockReturnValue(false);
 
       const response = await request(app)
-        .post('/api/v1/megabank/webhooks/mpg')
+        .post('/api/v1/config/webhooks/mpg')
         .set('Signature', 'invalid-sig;1234567890')
         .send(payload);
 
