@@ -1,5 +1,6 @@
 import { WebhookOutboxRepository } from '../shared/repositories/webhook-outbox.repository';
 import { signWebhookPayload } from '../shared/utils/crypto.util';
+import { logDomain2Outbound } from '../shared/utils/domain2-dev-log.util';
 import { env } from '../shared/config/env';
 import { logger } from '../shared/config/logger';
 import {
@@ -97,26 +98,44 @@ export class OutboxWorker {
       return;
     }
 
-    try {
-      // Step 2: Prepare the request
-      const rawBody = JSON.stringify(event.payload);
-      const signature = signWebhookPayload(rawBody, env.WEBHOOK_SHARED_SECRET);
-      const timestamp = Math.floor(Date.now() / 1000).toString();
+    // Step 2: Prepare the request
+    const rawBody = JSON.stringify(event.payload);
+    const signature = signWebhookPayload(rawBody, env.WEBHOOK_SHARED_SECRET);
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const attempt = event.attempts + 1;
 
-      // Step 3: Send HTTP POST to Domain 2
-      const webhookUrl = `${env.DOMAIN2_BASE_URL}/api/internal/webhook/subscription-change`;
+    // Step 3: Send HTTP POST to Domain 2
+    const webhookUrl = `${env.DOMAIN2_BASE_URL}/api/internal/webhook/subscription-change`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Webhook-Signature': signature,
+      'X-Webhook-Event': event.event_type,
+      'X-Idempotency-Key': event.idempotency_key,
+      'X-Webhook-Timestamp': timestamp,
+      'X-Webhook-Attempt': String(attempt),
+    };
+
+    // Dev-only: record exactly what we send to Domain 2 (no-op outside development).
+    const startedAt = Date.now();
+
+    try {
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Webhook-Signature': signature,
-          'X-Webhook-Event': event.event_type,
-          'X-Idempotency-Key': event.idempotency_key,
-          'X-Webhook-Timestamp': timestamp,
-          'X-Webhook-Attempt': String(event.attempts + 1),
-        },
+        headers,
         body: rawBody,
         signal: AbortSignal.timeout(30_000), // 30 second timeout
+      });
+
+      logDomain2Outbound({
+        event_type: event.event_type,
+        idempotency_key: event.idempotency_key,
+        attempt,
+        url: webhookUrl,
+        method: 'POST',
+        headers,
+        body: event.payload,
+        response: { status: response.status, ok: response.ok },
+        duration_ms: Date.now() - startedAt,
       });
 
       // Step 4: Handle response
@@ -157,6 +176,19 @@ export class OutboxWorker {
     } catch (error) {
       // Network error, timeout, etc. — Retry.
       const errorMsg = error instanceof Error ? error.message : String(error);
+
+      logDomain2Outbound({
+        event_type: event.event_type,
+        idempotency_key: event.idempotency_key,
+        attempt,
+        url: webhookUrl,
+        method: 'POST',
+        headers,
+        body: event.payload,
+        error: errorMsg,
+        duration_ms: Date.now() - startedAt,
+      });
+
       await this.scheduleRetry(event, `Network error: ${errorMsg}`, false);
     }
   }
