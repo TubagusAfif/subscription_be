@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: idental
+      POSTGRES_PASSWORD: idental
+      POSTGRES_DB: idental
+    ports:
+      # Host port is overridable so this can run next to a local Postgres.
+      - "${DB_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idental -d idental"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    init: true
+    # The app loads config via dotenv. We mount your real .env (and the MPG key)
+    # read-only so values are parsed exactly as in local dev — no env_file quote
+    # mangling. The `environment` block below still wins because dotenv does not
+    # override variables already present in the process environment.
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./mpg_secret.key:/app/mpg_secret.key:ro   # not needed if MPG_MOCK_MODE=true
+      - uploads:/app/public/uploads               # persist user uploads
+    environment:
+      NODE_ENV: production
+      PORT: "8000"
+      DATABASE_URL: postgresql://idental:idental@postgres:5432/idental
+      # Seed only on the first boot of a fresh DB, then set back to false.
+      RUN_SEED: "false"
+    ports:
+      # Host port is overridable so this can run next to a local app on 8000.
+      - "${APP_HOST_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:

@@ -1,0 +1,36 @@
+# Dependencies & build output (rebuilt inside the image)
+node_modules
+dist
+coverage
+
+# Secrets — provided at runtime via env / mounted secret, never baked in
+.env
+.env.*
+!.env.example
+*.key
+!src/__tests__/fixtures/*.key
+
+# Runtime-generated uploads — persisted via a volume, not the image
+public/uploads
+
+# Git / IDE / OS
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+
+# Tests, docs, local tooling
+src/**/__tests__
+src/**/*.test.ts
+docs
+SPEC.md
+.agents
+.claude
+.github
+ecosystem.config.js
+railway.toml
+deploy.sh
+Dockerfile
+.dockerignore
+docker-compose*.yml
