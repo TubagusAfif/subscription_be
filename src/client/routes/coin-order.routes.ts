@@ -29,6 +29,7 @@ export const createCoinOrderRouter = (
     coinOrderController.createBundleOrder,
   );
   router.post('/', validate(createCoinOrderSchema), coinOrderController.createCoinOrder);
+  router.get('/pending', coinOrderController.getPendingOrder);
   router.get('/', coinOrderController.getMyOrders);
   router.get('/:id', validate(getCoinOrderSchema), coinOrderController.getOrderById);
 
