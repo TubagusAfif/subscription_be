@@ -6,8 +6,6 @@ initSentry();
 import { env } from './shared/config/env';
 import { createApp } from './app';
 import { container } from './shared/container';
-import { OutboxWorker } from './workers/outbox.worker';
-import { startDailyExpiryCron } from './cron/daily-expiry.cron';
 
 import { createAuthenticateMiddleware } from './shared/middlewares/auth.middleware';
 
@@ -16,7 +14,8 @@ import { createSubscriptionRouter } from './subscription/routes';
 import { createSharedRouter } from './shared/routes';
 import { createMegaBankRouter } from './megabank/routes';
 import { createMidtransRouter } from './midtrans/routes';
-import { createInternalRouter } from './shared/routes/internal.routes';
+import { createInternalRouter } from './internal/routes/internal.routes';
+import { createCronRouter } from './cron/routes/cron.routes';
 
 // Initialize Middlewares
 const authenticate = createAuthenticateMiddleware(container.services.tokenService);
@@ -64,34 +63,31 @@ const megaBankRouter = createMegaBankRouter(
   container.services.webhookProcessorService,
 );
 
-const midtransRouter = createMidtransRouter(
-  container.controllers.midtransWebhookController,
-);
+const midtransRouter = createMidtransRouter(container.controllers.midtransWebhookController);
 
-const internalRouter = createInternalRouter(
-  container.controllers.internalController,
-);
+const internalRouter = createInternalRouter(container.controllers.internalController);
 
-const app = createApp(clientRouter, subscriptionRouter, sharedRouter, megaBankRouter, midtransRouter, internalRouter);
+const cronRouter = createCronRouter(container.controllers.cronController);
+
+const app = createApp(
+  clientRouter,
+  subscriptionRouter,
+  sharedRouter,
+  megaBankRouter,
+  midtransRouter,
+  internalRouter,
+  cronRouter,
+);
 
 async function bootstrap() {
   try {
     logger.info('Running startup health checks...');
-    
+
     // Check Database connection
     await container.prisma.$connect();
     // A simple query to ensure the connection is truly active
     await container.prisma.$queryRaw`SELECT 1`;
     logger.info('Database connected successfully.');
-
-    // Start Webhook Outbox Worker
-    const outboxWorker = new OutboxWorker(container.repositories.webhookOutboxRepository);
-    outboxWorker.start();
-    logger.info('OutboxWorker started.');
-
-    // Start Daily Expiry Cron Job
-    startDailyExpiryCron(container.prisma, container.services.webhookOutboxService, container.services.mailService);
-    logger.info('DailyExpiryCron started.');
 
     // Start server only if health checks pass
     const server = app.listen(env.PORT, () => {
@@ -100,7 +96,6 @@ async function bootstrap() {
 
     const gracefulShutdown = async (signal: string) => {
       logger.info(`Received ${signal}. Shutting down gracefully...`);
-      outboxWorker.stop();
       server.close(async () => {
         logger.info('HTTP server closed.');
         await container.prisma.$disconnect();

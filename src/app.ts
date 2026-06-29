@@ -11,8 +11,10 @@ import { env } from './shared/config/env';
 import { httpLogStream } from './shared/config/logger';
 import { createSwaggerRouter as createClientSwaggerRouter } from './client/config/swagger';
 import { createSwaggerRouter as createSubscriptionSwaggerRouter } from './subscription/config/swagger';
-import { createMegaBankSwaggerRouter } from './shared/megabank/swagger';
-import { createInternalSwaggerRouter } from './shared/config/swagger-internal';
+import { createMegaBankSwaggerRouter } from './megabank/config/swagger';
+import { createInternalSwaggerRouter } from './internal/config/swagger';
+import { createCronSwaggerRouter } from './cron/config/swagger';
+import { createDevMailPreviewRouter } from './shared/routes/dev-mail-preview.routes';
 
 export const createApp = (
   clientRouter: express.Router,
@@ -21,6 +23,7 @@ export const createApp = (
   megaBankRouter: express.Router,
   midtransRouter: express.Router,
   internalRouter: express.Router,
+  cronRouter: express.Router,
 ): Express => {
   const app = express();
 
@@ -38,11 +41,14 @@ export const createApp = (
   // Mount internal router BEFORE express.json() because it needs raw body for HMAC verification
   app.use(`${env.API_PREFIX}/internal`, internalRouter);
 
-  // Mount megabank router BEFORE express.json() — webhook handler uses captureRawBody middleware
+  // Mount config router BEFORE express.json() — webhook handler uses captureRawBody middleware
   app.use(`${env.API_PREFIX}/megabank`, megaBankRouter);
 
   // Mount midtrans router BEFORE express.json() — webhook handler uses captureRawBody middleware
   app.use(`${env.API_PREFIX}/midtrans`, midtransRouter);
+
+  // Mount cron router
+  app.use(`${env.API_PREFIX}/cron`, cronRouter);
 
   // Body & Cookie Parsers
   app.use(express.json({ limit: '1mb' }));
@@ -52,11 +58,18 @@ export const createApp = (
   // API Documentation
   app.use('/api-docs/client', createClientSwaggerRouter());
   app.use('/api-docs/subscription', createSubscriptionSwaggerRouter());
-  app.use('/api-docs/megabank', createMegaBankSwaggerRouter());
+  app.use('/api-docs/config', createMegaBankSwaggerRouter());
   app.use('/api-docs/internal', createInternalSwaggerRouter());
+  app.use('/api-docs/cron', createCronSwaggerRouter());
 
   // Static Assets
   app.use('/public', express.static(path.join(process.cwd(), 'public')));
+
+  // Dev-only email template previews (never mounted in production)
+  if (env.NODE_ENV !== 'production') {
+    const mailPreviewPath = '/dev/mail-preview';
+    app.use(mailPreviewPath, createDevMailPreviewRouter(mailPreviewPath));
+  }
 
   // Domain Routers
   app.use(`${env.API_PREFIX}/client`, clientRouter);

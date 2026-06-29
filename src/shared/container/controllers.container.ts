@@ -10,9 +10,10 @@ import { AccountController } from '../controllers/account.controller';
 import { SharedPlanController } from '../controllers/plan.controller';
 import { SharedBundleController } from '../controllers/bundle.controller';
 import { SharedCurrencyController } from '../controllers/currency.controller';
-import { InternalController } from '../controllers/internal.controller';
+import { InternalController } from '../../internal/controllers/internal.controller';
 import { SharedTaxController } from '../controllers/tax.controller';
 import { SharedPaymentMethodController } from '../controllers/payment-method.controller';
+import { CronController } from '../../cron/controllers/cron.controller';
 
 // --- Client Controllers ---
 import { ClientAuthController } from '../../client/controllers/auth.controller';
@@ -128,6 +129,14 @@ export class ControllersContainer {
     return this._sharedPaymentMethodController;
   }
 
+  private _cronController: CronController | undefined;
+  get cronController(): CronController {
+    if (!this._cronController) {
+      this._cronController = new CronController(this.services.dailyExpiryService);
+    }
+    return this._cronController;
+  }
+
   // ===========================================================================
   // Client Controllers
   // ===========================================================================
@@ -135,9 +144,7 @@ export class ControllersContainer {
   private _sharedPlanController: SharedPlanController | undefined;
   get sharedPlanController(): SharedPlanController {
     if (!this._sharedPlanController) {
-      this._sharedPlanController = new SharedPlanController(
-        this.services.sharedPlanService
-      );
+      this._sharedPlanController = new SharedPlanController(this.services.sharedPlanService);
     }
     return this._sharedPlanController;
   }
@@ -145,9 +152,7 @@ export class ControllersContainer {
   private _sharedBundleController: SharedBundleController | undefined;
   get sharedBundleController(): SharedBundleController {
     if (!this._sharedBundleController) {
-      this._sharedBundleController = new SharedBundleController(
-        this.services.bundleService
-      );
+      this._sharedBundleController = new SharedBundleController(this.services.bundleService);
     }
     return this._sharedBundleController;
   }
@@ -155,9 +160,7 @@ export class ControllersContainer {
   private _sharedCurrencyController: SharedCurrencyController | undefined;
   get sharedCurrencyController(): SharedCurrencyController {
     if (!this._sharedCurrencyController) {
-      this._sharedCurrencyController = new SharedCurrencyController(
-        this.services.currencyService
-      );
+      this._sharedCurrencyController = new SharedCurrencyController(this.services.currencyService);
     }
     return this._sharedCurrencyController;
   }
@@ -226,8 +229,6 @@ export class ControllersContainer {
     return this._clientAccountController;
   }
 
-
-
   // ===========================================================================
   // Subscription Controllers
   // ===========================================================================
@@ -279,7 +280,6 @@ export class ControllersContainer {
     return this._bundleController;
   }
 
-
   private _taxController: TaxController | undefined;
   get taxController(): TaxController {
     if (!this._taxController) {
@@ -303,9 +303,7 @@ export class ControllersContainer {
   private _dentalAdController: DentalAdController | undefined;
   get dentalAdController(): DentalAdController {
     if (!this._dentalAdController) {
-      this._dentalAdController = new DentalAdController(
-        this.services.dentalAdService,
-      );
+      this._dentalAdController = new DentalAdController(this.services.dentalAdService);
     }
     return this._dentalAdController;
   }
@@ -329,8 +327,6 @@ export class ControllersContainer {
     }
     return this._reportController;
   }
-
-
 
   // ===========================================================================
   // Reset — clears all cached instances for test isolation
@@ -360,5 +356,6 @@ export class ControllersContainer {
     this._adminDashboardController = undefined;
     this._reportController = undefined;
     this._internalController = undefined;
+    this._cronController = undefined;
   }
 }
