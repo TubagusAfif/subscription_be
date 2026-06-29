@@ -24,4 +24,7 @@ public/
 # Deploy File
 deploy.sh
 
+# Notes
+notes/
+
 .agents
