@@ -111,11 +111,17 @@ export class ClientAuthService {
       return newUser;
     });
 
-    // Send activation email
-    await this.mailService.sendActivationEmail(
-      { name: user.name, email: user.email },
-      activationToken,
-    );
+    // Fire-and-forget: send activation email in the background so the
+    // API response is not blocked by SMTP latency.
+    this.mailService
+      .sendActivationEmail({ name: user.name, email: user.email }, activationToken)
+      .catch((err) => {
+        logger.error('[ClientAuthService] Failed to send activation email', {
+          userId: user.id,
+          email: user.email,
+          error: err,
+        });
+      });
 
     return {
       message: 'Registration successful. Please check your email to activate your account.',
@@ -186,10 +192,16 @@ export class ClientAuthService {
       activation_token_expires_at: activationTokenExpiresAt,
     });
 
-    await this.mailService.sendActivationEmail(
-      { name: user.name, email: user.email },
-      activationToken,
-    );
+    // Fire-and-forget: send activation email in the background
+    this.mailService
+      .sendActivationEmail({ name: user.name, email: user.email }, activationToken)
+      .catch((err) => {
+        logger.error('[ClientAuthService] Failed to resend activation email', {
+          userId: user.id,
+          email: user.email,
+          error: err,
+        });
+      });
 
     return { message: 'Activation email has been resent. Please check your inbox.' };
   }
