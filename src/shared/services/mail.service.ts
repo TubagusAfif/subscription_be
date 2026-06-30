@@ -1,26 +1,18 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import ejs from 'ejs';
 import path from 'path';
 import { env } from '../config/env';
 
 /** 
 ---------------------------------------------------------------
-  Service handling email delivery using Nodemailer and EJS templates.
+  Service handling email delivery using Resend (HTTP API) and EJS templates.
 ---------------------------------------------------------------
 **/
 export class MailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      service: env.SMTP_SERVICE,
-      auth: {
-        user: env.SMTP_MAIL,
-        pass: env.SMTP_PASSWORD,
-      },
-    });
+    this.resend = new Resend(env.RESEND_API_KEY);
   }
 
   /** 
@@ -49,12 +41,16 @@ export class MailService {
       activationLink,
     });
 
-    await this.transporter.sendMail({
-      from: env.SMTP_MAIL,
+    const { error } = await this.resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
       to: user.email,
       subject: 'Activate Your Account',
       html,
     });
+
+    if (error) {
+      throw new Error(`Resend error: ${error.message}`);
+    }
   }
 
   /** 
@@ -73,12 +69,16 @@ export class MailService {
       resetLink,
     });
 
-    await this.transporter.sendMail({
-      from: env.SMTP_MAIL,
+    const { error } = await this.resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
       to: user.email,
       subject: 'Reset Your Password',
       html,
     });
+
+    if (error) {
+      throw new Error(`Resend error: ${error.message}`);
+    }
   }
 
   /** 
@@ -106,11 +106,15 @@ export class MailService {
       subject = `Alert: Your ${skuName} Subscription Grace Period Ended`;
     }
 
-    await this.transporter.sendMail({
-      from: env.SMTP_MAIL,
+    const { error } = await this.resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
       to: user.email,
       subject,
       html,
     });
+
+    if (error) {
+      throw new Error(`Resend error: ${error.message}`);
+    }
   }
 }

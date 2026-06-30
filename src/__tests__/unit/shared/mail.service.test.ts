@@ -1,27 +1,29 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import ejs from 'ejs';
 import { MailService } from '../../../shared/services/mail.service';
 
-jest.mock('nodemailer');
+jest.mock('resend');
 jest.mock('ejs');
 
 describe('MailService', () => {
   let mailService: MailService;
-  const mockSendMail = jest.fn();
+  const mockSend = jest.fn();
 
   const user = { name: 'John Doe', email: 'john@example.com' };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({ sendMail: mockSendMail });
+    (Resend as jest.MockedClass<typeof Resend>).mockImplementation(() => ({
+      emails: { send: mockSend },
+    }) as any);
     (ejs.renderFile as unknown as jest.Mock).mockResolvedValue('<html>rendered</html>');
-    mockSendMail.mockResolvedValue({ messageId: 'abc' });
+    mockSend.mockResolvedValue({ data: { id: 'abc' }, error: null });
 
     mailService = new MailService();
   });
 
-  it('should create a nodemailer transport on construction', () => {
-    expect(nodemailer.createTransport).toHaveBeenCalledTimes(1);
+  it('should create a Resend client on construction', () => {
+    expect(Resend).toHaveBeenCalledTimes(1);
   });
 
   describe('sendActivationEmail', () => {
@@ -35,12 +37,20 @@ describe('MailService', () => {
           activationLink: expect.stringContaining('token=activation-token-123'),
         }),
       );
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'john@example.com',
           subject: 'Activate Your Account',
           html: '<html>rendered</html>',
         }),
+      );
+    });
+
+    it('should throw when Resend returns an error', async () => {
+      mockSend.mockResolvedValue({ data: null, error: { message: 'Invalid API key' } });
+
+      await expect(mailService.sendActivationEmail(user, 'token')).rejects.toThrow(
+        'Resend error: Invalid API key',
       );
     });
   });
@@ -55,7 +65,7 @@ describe('MailService', () => {
           resetLink: expect.stringContaining('token=reset-token-xyz'),
         }),
       );
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({ subject: 'Reset Your Password', to: 'john@example.com' }),
       );
     });
@@ -65,7 +75,7 @@ describe('MailService', () => {
     it('should pluralize the subject for multiple days before expiry', async () => {
       await mailService.sendExpiryWarningEmail(user, 3, 'Gold');
 
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: 'Reminder: Your Gold Subscription Expires in 3 Days',
         }),
@@ -75,7 +85,7 @@ describe('MailService', () => {
     it('should use the singular day form when exactly 1 day before', async () => {
       await mailService.sendExpiryWarningEmail(user, 1, 'Gold');
 
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: 'Reminder: Your Gold Subscription Expires in 1 Day',
         }),
@@ -85,7 +95,7 @@ describe('MailService', () => {
     it('should use the "Expires Today" subject when daysBefore is 0', async () => {
       await mailService.sendExpiryWarningEmail(user, 0, 'Gold');
 
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: 'Action Required: Your Gold Subscription Expires Today',
         }),
@@ -95,7 +105,7 @@ describe('MailService', () => {
     it('should use the grace-period subject when daysBefore is -1', async () => {
       await mailService.sendExpiryWarningEmail(user, -1, 'Gold');
 
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: 'Notice: Your Gold Subscription is in Grace Period',
         }),
@@ -105,7 +115,7 @@ describe('MailService', () => {
     it('should use the grace-ended subject when daysBefore is -7', async () => {
       await mailService.sendExpiryWarningEmail(user, -7, 'Gold');
 
-      expect(mockSendMail).toHaveBeenCalledWith(
+      expect(mockSend).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: 'Alert: Your Gold Subscription Grace Period Ended',
         }),
@@ -122,3 +132,4 @@ describe('MailService', () => {
     });
   });
 });
+
