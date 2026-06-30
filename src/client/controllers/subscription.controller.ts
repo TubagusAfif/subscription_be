@@ -39,12 +39,28 @@ export class ClientSubscriptionController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const subscription = await this.subscriptionService.getMySubscription(Number(req.user.sub));
-      res
-        .status(200)
-        .json(
-          successResponse(subscription ? SubscriptionMapper.toDetailResponse(subscription) : null),
-        );
+      const userId = Number(req.user.sub);
+
+      // get subscription
+      const subscription = await this.subscriptionService.getMySubscription(userId);
+
+      let responseData = null;
+
+      if (subscription) {
+        // call get addons value
+        const addons = await this.subscriptionService.getMyAddons(userId);
+
+        // breakdown list clinic and user, i mean we need to show the source of accumulation quota + usage
+        const slotDetails = await this.subscriptionService.getSlotDetails(userId, ['clinic', 'user']);
+
+        responseData = {
+          ...SubscriptionMapper.toDetailResponse(subscription),
+          addons: addons.map((addon) => SubscriptionMapper.toDetailResponse(addon)),
+          slots: slotDetails,
+        };
+      }
+
+      res.status(200).json(successResponse(responseData));
     } catch (error) {
       next(error);
     }

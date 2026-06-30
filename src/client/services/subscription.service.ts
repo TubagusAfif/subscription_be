@@ -294,6 +294,28 @@ export class ClientSubscriptionService {
     return this.subscriptionRepo.findActiveByUserId(userId);
   }
 
+  async getMyAddons(userId: number): Promise<Subscription[]> {
+    return this.subscriptionRepo.findActiveAddonsByUserId(userId);
+  }
+
+  /** 
+  ---------------------------------------------------------------
+    Gets slot breakdown for a specific resource type.
+  ---------------------------------------------------------------
+  **/
+  async getSlotBreakdown(userId: number, resourceType: string = 'clinic') {
+    return this.subscriptionRepo.getSlotBreakdown(userId, resourceType);
+  }
+
+  /** 
+  ---------------------------------------------------------------
+    Gets per-source slot breakdown for the given resource types.
+  ---------------------------------------------------------------
+  **/
+  async getSlotDetails(userId: number, resourceTypes: string[] = ['clinic', 'user']) {
+    return this.subscriptionRepo.getSlotDetails(userId, resourceTypes);
+  }
+
   /** 
   ---------------------------------------------------------------
     Gets all subscriptions for a user (history).
