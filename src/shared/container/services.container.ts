@@ -16,8 +16,11 @@ import { TaxService } from '../services/tax.service';
 import { PaymentMethodService } from '../services/payment-method.service';
 import { DailyExpiryService } from '../../cron/services/daily-expiry.service';
 
-// --- Client Services ---
+// --- MegaBank Services ---
 import { WebhookProcessorService } from '../../megabank/services/webhook-processor.service';
+import { CoinOrderService as MegaBankCoinOrderService } from '../../megabank/services/coin-order.service';
+
+// --- Client Services ---
 import { ClientAuthService } from '../../client/services/auth.service';
 import { CoinOrderService } from '../../client/services/coin-order.service';
 import { CoinWalletService } from '../../client/services/coin-wallet.service';
@@ -76,6 +79,16 @@ export class ServicesContainer {
       this._megaBankPaymentService = new MegaBankPaymentService();
     }
     return this._megaBankPaymentService;
+  }
+
+  private _megaBankCoinOrderService: MegaBankCoinOrderService | undefined;
+  get megaBankCoinOrderService(): MegaBankCoinOrderService {
+    if (!this._megaBankCoinOrderService) {
+      this._megaBankCoinOrderService = new MegaBankCoinOrderService({
+        coinOrderRepository: this.repositories.megaBankCoinOrderRepository,
+      });
+    }
+    return this._megaBankCoinOrderService;
   }
 
   private _midtransPaymentService: MidtransPaymentService | undefined;
@@ -271,6 +284,7 @@ export class ServicesContainer {
         this.repositories.prisma,
         this.webhookOutboxService,
         this.mailService,
+        this.repositories.internalRepository,
       );
     }
     return this._dailyExpiryService;
@@ -368,6 +382,8 @@ export class ServicesContainer {
   reset(): void {
     this._tokenService = undefined;
     this._megaBankPaymentService = undefined;
+    this._megaBankCoinOrderService = undefined;
+    this._webhookProcessorService = undefined;
     this._midtransPaymentService = undefined;
     this._midtransWebhookProcessorService = undefined;
     this._accountService = undefined;

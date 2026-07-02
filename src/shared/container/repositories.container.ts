@@ -13,6 +13,9 @@ import { InternalRepository } from '../../internal/repositories/internal.reposit
 import { TaxRepository } from '../repositories/tax.repository';
 import { PaymentMethodRepository } from '../repositories/payment-method.repository';
 
+// --- MegaBank Repositories ---
+import { CoinOrderRepository as MegaBankCoinOrderRepository } from '../../megabank/repositories/coin-order.repository';
+
 // --- Client Repositories ---
 import { CoinOrderRepository } from '../../client/repositories/coin-order.repository';
 import { CoinWalletRepository } from '../../client/repositories/coin-wallet.repository';
@@ -130,6 +133,18 @@ export class RepositoriesContainer {
       this._paymentMethodRepository = new PaymentMethodRepository(this.prisma);
     }
     return this._paymentMethodRepository;
+  }
+
+  // ===========================================================================
+  // MegaBank Repositories
+  // ===========================================================================
+
+  private _megaBankCoinOrderRepository: MegaBankCoinOrderRepository | undefined;
+  get megaBankCoinOrderRepository(): MegaBankCoinOrderRepository {
+    if (!this._megaBankCoinOrderRepository) {
+      this._megaBankCoinOrderRepository = new MegaBankCoinOrderRepository(this.prisma);
+    }
+    return this._megaBankCoinOrderRepository;
   }
 
   // ===========================================================================
@@ -258,6 +273,7 @@ export class RepositoriesContainer {
     this._planSwitchRepository = undefined;
     this._webhookOutboxRepository = undefined;
     this._internalRepository = undefined;
+    this._megaBankCoinOrderRepository = undefined;
     this._coinOrderRepository = undefined;
     this._coinWalletRepository = undefined;
     this._coinTransactionRepository = undefined;

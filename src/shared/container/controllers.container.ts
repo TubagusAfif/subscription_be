@@ -5,6 +5,7 @@ import { ServicesContainer } from './services.container';
 import { SharedAuthController } from '../controllers/auth.controller';
 import { UploadController } from '../controllers/upload.controller';
 import { WebhookController as MegaBankWebhookController } from '../../megabank/controllers/webhook.controller';
+import { CoinOrderController as MegaBankCoinOrderController } from '../../megabank/controllers/coin-order.controller';
 import { MidtransWebhookController } from '../../midtrans/controllers/midtrans-webhook.controller';
 import { AccountController } from '../controllers/account.controller';
 import { SharedPlanController } from '../controllers/plan.controller';
@@ -78,6 +79,16 @@ export class ControllersContainer {
       });
     }
     return this._megaBankWebhookController;
+  }
+
+  private _megaBankCoinOrderController: MegaBankCoinOrderController | undefined;
+  get megaBankCoinOrderController(): MegaBankCoinOrderController {
+    if (!this._megaBankCoinOrderController) {
+      this._megaBankCoinOrderController = new MegaBankCoinOrderController({
+        coinOrderService: this.services.megaBankCoinOrderService,
+      });
+    }
+    return this._megaBankCoinOrderController;
   }
 
   private _midtransWebhookController: MidtransWebhookController | undefined;
@@ -336,6 +347,7 @@ export class ControllersContainer {
     this._sharedAuthController = undefined;
     this._uploadController = undefined;
     this._megaBankWebhookController = undefined;
+    this._megaBankCoinOrderController = undefined;
     this._midtransWebhookController = undefined;
     this._accountController = undefined;
     this._clientAuthController = undefined;
