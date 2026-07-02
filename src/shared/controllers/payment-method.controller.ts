@@ -23,7 +23,7 @@ export class SharedPaymentMethodController {
   ): Promise<void> => {
     try {
       const isOwner = req.user.role === 'OWNER';
-      const data = await this.paymentMethodService.getActivePaymentMethods();
+      const data = await this.paymentMethodService.getActivePaymentMethods(isOwner, env.PAYMENT_GATEWAY);
       let mappedData: any = data.map((pm) => PaymentMethodMapper.toResponse(pm, isOwner));
 
       if (isOwner) {

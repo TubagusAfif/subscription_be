@@ -68,7 +68,7 @@ export class PaymentMethodController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const data = await this.paymentMethodService.getActivePaymentMethods();
+      const data = await this.paymentMethodService.getActivePaymentMethods(false);
       res.status(200).json(
         successResponse(data.map((pm) => PaymentMethodMapper.toResponse(pm))),
       );

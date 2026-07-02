@@ -38,8 +38,11 @@ export class PaymentMethodService {
     return paginate(data, total, page, limit);
   }
 
-  async getActivePaymentMethods(): Promise<PaymentMethod[]> {
-    return this.paymentMethodRepository.findActive();
+  async getActivePaymentMethods(
+    isOwner: boolean,
+    paymentGateway?: 'midtrans' | 'megabank',
+  ): Promise<PaymentMethod[]> {
+    return this.paymentMethodRepository.findActive(isOwner, paymentGateway);
   }
 
   async getPaymentMethodById(id: number): Promise<PaymentMethod> {

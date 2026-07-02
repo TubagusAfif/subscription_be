@@ -54,12 +54,23 @@ export class PaymentMethodRepository {
     return { data, total };
   }
 
-  async findActive(): Promise<PaymentMethod[]> {
+  async findActive(isOwner: boolean, paymentGateway?: 'midtrans' | 'megabank'): Promise<PaymentMethod[]> {
+    const where: Prisma.PaymentMethodWhereInput = {
+      is_active: true,
+      deleted_at: null,
+    };
+
+    if (isOwner) {
+      Object.assign(
+        where,
+        paymentGateway === 'megabank'
+          ? { bank_mega_code: { not: null } }
+          : { midtrans_code: { not: null } },
+      );
+    }
+
     return this.prisma.paymentMethod.findMany({
-      where: {
-        is_active: true,
-        deleted_at: null,
-      },
+      where,
       orderBy: { name: 'asc' },
     });
   }
