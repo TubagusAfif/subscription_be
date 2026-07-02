@@ -14,7 +14,7 @@
     }
 
     body {
-      background-color: #F4F6F8;
+      background-color: #FFFFFF;
       font-family: 'Public Sans', Helvetica, Arial, sans-serif;
       color: #212B36;
       padding: 40px 16px;
@@ -26,10 +26,20 @@
       margin: 0 auto;
     }
 
-    /* Header */
-    .header {
+    /* Card */
+    .card {
+      background: #ffffff;
+      border: 1px solid #ECEFF1;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 2px 0 rgba(145, 158, 171, 0.2), 0 12px 24px -4px rgba(145, 158, 171, 0.12);
+    }
+
+    /* Header / Logo */
+    .card-header {
       text-align: center;
-      margin-bottom: 32px;
+      padding: 28px 40px;
+      border-bottom: 1px solid #ECEFF1;
     }
 
     .logo {
@@ -41,25 +51,8 @@
       letter-spacing: -0.5px;
     }
 
-    .logo span {
-      color: #00AB55;
-    }
-
-    /* Card */
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 0 2px 0 rgba(145, 158, 171, 0.2), 0 12px 24px -4px rgba(145, 158, 171, 0.12);
-    }
-
-    .card-accent {
-      height: 4px;
-      background: linear-gradient(90deg, #007B55 0%, #00AB55 50%, #5BE584 100%);
-    }
-
     .card-body {
-      padding: 40px 40px 36px;
+      padding: 36px 40px;
     }
 
     /* Greeting */
@@ -72,7 +65,7 @@
     }
 
     .greeting .name {
-      color: #00AB55;
+      color: #212B36;
     }
 
     .subtext {
@@ -91,7 +84,7 @@
     .cta-button {
       display: inline-block;
       padding: 15px 48px;
-      background: #00AB55;
+      background: #212B36;
       color: #ffffff;
       font-family: 'Public Sans', Helvetica, Arial, sans-serif;
       font-size: 15px;
@@ -99,7 +92,7 @@
       text-decoration: none;
       border-radius: 8px;
       letter-spacing: 0.2px;
-      box-shadow: 0 8px 16px 0 rgba(0, 171, 85, 0.24);
+      box-shadow: 0 8px 16px 0 rgba(33, 43, 54, 0.24);
     }
 
     .link-fallback {
@@ -110,8 +103,8 @@
     }
 
     .link-fallback a {
-      color: #00AB55;
-      text-decoration: none;
+      color: #212B36;
+      text-decoration: underline;
     }
 
     /* Divider */
@@ -158,11 +151,7 @@
     }
 
     .footer a {
-      color: #00AB55;
-      text-decoration: none;
-    }
-
-    .footer a:hover {
+      color: #212B36;
       text-decoration: underline;
     }
 
@@ -173,6 +162,10 @@
     }
 
     @media (max-width: 480px) {
+      .card-header {
+        padding: 24px;
+      }
+
       .card-body {
         padding: 28px 24px;
       }
@@ -191,14 +184,14 @@
 <body>
   <div class="wrapper">
 
-    <!-- Header / Logo -->
-    <div class="header">
-      <div class="logo">Idental <span>x Artoo Pay</span></div>
-    </div>
-
     <!-- Main Card -->
     <div class="card">
-      <div class="card-accent"></div>
+
+      <!-- Header / Logo -->
+      <div class="card-header">
+        <div class="logo">Idental</div>
+      </div>
+
       <div class="card-body">
 
         <h1 class="greeting">
@@ -242,7 +235,7 @@
       <p>
         Need help? <a href="mailto:support@idental.id">Contact Support</a>
       </p>
-      <p class="company">© <%= new Date().getFullYear() %> Idental x Artoo Pay. · All rights reserved.</p>
+      <p class="company">© <%= new Date().getFullYear() %> Idental · All rights reserved.</p>
     </div>
 
   </div>

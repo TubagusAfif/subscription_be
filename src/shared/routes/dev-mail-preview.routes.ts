@@ -80,6 +80,80 @@ const SAMPLES: Record<string, MailSample> = {
     subject: 'Alert: Your Pro Plan Subscription Grace Period Ended',
     data: { user: SAMPLE_USER, skuName: 'Pro Plan', daysBefore: -7 },
   },
+  'purchase-coin': {
+    label: 'Purchase — Coin Top-up Successful',
+    template: 'purchase-success-mail.ejs',
+    subject: 'Payment Successful — 500 Coins Added',
+    data: {
+      user: SAMPLE_USER,
+      purchase: {
+        type: 'coin',
+        orderId: 'COIN-42-1719628800-a1b2c3d4',
+        purchaseDate: '30 Jun 2026',
+        paymentMethod: 'BCA Virtual Account',
+        currencySymbol: 'Rp',
+        coinAmount: 500,
+        newBalance: 1250,
+        lineItems: [
+          { label: 'Subtotal', amount: 50000 },
+          { label: 'Tax (11%)', amount: 5500 },
+          { label: 'Payment Fee', amount: 4000 },
+        ],
+        totalPaid: 59500,
+        ctaUrl: 'https://app.idental.id/wallet',
+        ctaLabel: 'View My Wallet',
+      },
+    },
+  },
+  'purchase-plan': {
+    label: 'Purchase — Plan Subscription Successful',
+    template: 'purchase-success-mail.ejs',
+    subject: 'Payment Successful — Pro Plan Activated',
+    data: {
+      user: SAMPLE_USER,
+      purchase: {
+        type: 'plan',
+        orderId: 'PLAN-42-1719628800-e5f6g7h8',
+        purchaseDate: '30 Jun 2026',
+        paymentMethod: 'GoPay',
+        currencySymbol: 'Rp',
+        planName: 'Pro Plan',
+        planPeriod: '12 months · Annual billing',
+        validUntil: '30 Jun 2027',
+        lineItems: [
+          { label: 'Subtotal', amount: 1200000 },
+          { label: 'Tax (11%)', amount: 132000 },
+        ],
+        totalPaid: 1332000,
+        ctaUrl: 'https://app.idental.id/subscription',
+        ctaLabel: 'View My Subscription',
+      },
+    },
+  },
+  'purchase-addon': {
+    label: 'Purchase — Add-on Successful',
+    template: 'purchase-success-mail.ejs',
+    subject: 'Payment Successful — Extra Clinic Slots Added',
+    data: {
+      user: SAMPLE_USER,
+      purchase: {
+        type: 'addon',
+        orderId: 'ADDON-42-1719628800-i9j0k1l2',
+        purchaseDate: '30 Jun 2026',
+        paymentMethod: 'BCA Virtual Account',
+        currencySymbol: 'Rp',
+        addonName: 'Extra Clinic Slots',
+        addonQty: 5,
+        lineItems: [
+          { label: 'Subtotal', amount: 250000 },
+          { label: 'Tax (11%)', amount: 27500 },
+        ],
+        totalPaid: 277500,
+        ctaUrl: 'https://app.idental.id/subscription',
+        ctaLabel: 'View My Subscription',
+      },
+    },
+  },
 };
 
 export const createDevMailPreviewRouter = (basePath: string): Router => {
@@ -109,13 +183,12 @@ export const createDevMailPreviewRouter = (basePath: string): Router => {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Public Sans', Helvetica, Arial, sans-serif; background: #F4F6F8; color: #212B36; padding: 48px 16px; -webkit-font-smoothing: antialiased; }
     .wrapper { max-width: 720px; margin: 0 auto; }
-    .brand { font-family: 'Barlow', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: -0.5px; margin-bottom: 4px; }
-    .brand span { color: #00AB55; }
+    .brand { font-family: 'Barlow', sans-serif; font-weight: 900; font-size: 26px; letter-spacing: -0.5px; margin-bottom: 4px; color: #212B36; }
     .lead { color: #637381; font-size: 15px; margin-bottom: 32px; }
-    ul { list-style: none; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
+    ul { list-style: none; background: #fff; border: 1px solid #ECEFF1; border-radius: 16px; overflow: hidden; box-shadow: 0 0 2px 0 rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12); }
     li { padding: 18px 24px; border-bottom: 1px solid #DFE3E8; display: flex; flex-direction: column; gap: 4px; }
     li:last-child { border-bottom: none; }
-    li a { font-size: 16px; font-weight: 700; color: #00AB55; text-decoration: none; }
+    li a { font-size: 16px; font-weight: 700; color: #212B36; text-decoration: none; }
     li a:hover { text-decoration: underline; }
     .subject { font-size: 13px; color: #637381; }
     code { font-size: 12px; color: #919EAB; }
@@ -123,7 +196,7 @@ export const createDevMailPreviewRouter = (basePath: string): Router => {
 </head>
 <body>
   <div class="wrapper">
-    <div class="brand">Idental <span>x Artoo Pay</span></div>
+    <div class="brand">Idental</div>
     <p class="lead">Email template previews · rendered with sample data (dev only)</p>
     <ul>${items}</ul>
   </div>

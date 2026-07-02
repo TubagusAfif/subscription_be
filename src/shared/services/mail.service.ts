@@ -117,4 +117,71 @@ export class MailService {
       throw new Error(`Resend error: ${error.message}`);
     }
   }
+
+  /**
+  ---------------------------------------------------------------
+    Sends a purchase receipt / confirmation email. Handles all three
+    purchase types (coin top-up, plan subscription, add-on) through a
+    single template discriminated by `purchase.type`.
+  ---------------------------------------------------------------
+  **/
+  async sendPurchaseSuccessEmail(
+    user: { name: string; email: string },
+    purchase: PurchaseSuccessDetails,
+  ): Promise<void> {
+    const html = await this.renderTemplate('purchase-success-mail.ejs', {
+      user,
+      purchase,
+    });
+
+    let subject = 'Your Purchase Was Successful';
+    if (purchase.type === 'coin' && purchase.coinAmount !== undefined) {
+      subject = `Payment Successful — ${purchase.coinAmount.toLocaleString('id-ID')} Coins Added`;
+    } else if (purchase.type === 'plan' && purchase.planName) {
+      subject = `Payment Successful — ${purchase.planName} Activated`;
+    } else if (purchase.type === 'addon' && purchase.addonName) {
+      subject = `Payment Successful — ${purchase.addonName} Added`;
+    }
+
+    const { error } = await this.resend.emails.send({
+      from: env.RESEND_FROM_EMAIL,
+      to: user.email,
+      subject,
+      html,
+    });
+
+    if (error) {
+      throw new Error(`Resend error: ${error.message}`);
+    }
+  }
+}
+
+/**
+ * Data accepted by {@link MailService.sendPurchaseSuccessEmail}. Shared fields
+ * describe the order; type-specific fields populate the highlight panel.
+ */
+export interface PurchaseSuccessDetails {
+  type: 'coin' | 'plan' | 'addon';
+  orderId: string;
+  totalPaid: number;
+  /** Pre-formatted date string. Defaults to the send date if omitted. */
+  purchaseDate?: string;
+  paymentMethod?: string;
+  /** Currency symbol prefix for amounts. Defaults to 'Rp'. */
+  currencySymbol?: string;
+  /** Breakdown rows rendered above the total (e.g. subtotal, tax, fee). */
+  lineItems?: { label: string; amount: number }[];
+  /** Optional call-to-action button. */
+  ctaUrl?: string;
+  ctaLabel?: string;
+  // ── coin ──
+  coinAmount?: number;
+  newBalance?: number;
+  // ── plan ──
+  planName?: string;
+  planPeriod?: string;
+  validUntil?: string;
+  // ── addon ──
+  addonName?: string;
+  addonQty?: number;
 }
