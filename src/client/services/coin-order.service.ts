@@ -85,7 +85,7 @@ export class CoinOrderService {
     return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
   }
 
-  async prepareBundleOrder(userId: number, bundleId: number, paymentMethodId: number) {
+  async prepareBundleOrder(userId: number, bundleId: number, paymentMethodId: number, activeTax: any) {
     await this.assertNoActivePendingOrder(userId);
 
     const bundle = await this.bundleRepo.findById(bundleId);
@@ -106,7 +106,7 @@ export class CoinOrderService {
     const basePrice = bundle.discounted_price
       ? Number(bundle.discounted_price)
       : Number(bundle.price);
-    const taxAmount = basePrice * (Number(bundle.tax_rate) / 100);
+    const taxAmount = activeTax ? basePrice * (Number(activeTax.tax_value) / 100) : 0;
 
     // Calculate gateway fee
     let gatewayFee = 0;

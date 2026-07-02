@@ -85,7 +85,7 @@ describe('Subscription Bundle API Routes', () => {
 
       expect(res.status).toBe(201);
       expect(mockBundleService.createBundle).toHaveBeenCalledWith(
-        expect.objectContaining({ price: 100000, tax_rate: 11 }),
+        expect.objectContaining({ price: 100000 }),
         1,
       );
     });

@@ -282,11 +282,7 @@ const spec = {
             nullable: true,
             example: 65000,
           },
-          tax_rate: {
-            type: 'number',
-            default: 0,
-            example: 11,
-          },
+
           is_active: {
             type: 'boolean',
             default: true,

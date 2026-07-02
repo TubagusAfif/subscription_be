@@ -280,7 +280,6 @@ model CoinBundle {
   currency_id      Int
   price            Decimal   @db.Decimal(15, 2)
   discounted_price Decimal?  @db.Decimal(15, 2)
-  tax_rate         Decimal   @db.Decimal(5, 2)
   is_active        Boolean   @default(true)
   created_at       DateTime  @default(now())
   created_by       Int?
@@ -321,23 +320,23 @@ model TaxConfig {
 }
 
 model PaymentMethod {
-  id             Int     @id @default(autoincrement())
+  id             Int       @id @default(autoincrement())
   name           String // e.g., Virtual Account Bank Mega, Credit Card, GoPay
   // Gateway-specific codes. A method is offered for a given gateway only when
   // its code for that gateway is set (non-null). e.g. bank_mega_code=megaqris,
   // midtrans_code=qris. Either may be null when a method is unsupported there.
-  bank_mega_code String? @unique
-  midtrans_code  String? @unique
+  bank_mega_code String?   @unique
+  midtrans_code  String?   @unique
   fee_type       FeeType // FIXED or PERCENTAGE
-  fee_value      Decimal @db.Decimal(15, 2)
+  fee_value      Decimal   @db.Decimal(15, 2)
   image_path     String?
-  is_active      Boolean @default(true)
-  created_at DateTime  @default(now())
-  created_by Int?
-  updated_at DateTime  @updatedAt
-  updated_by Int?
-  deleted_at DateTime?
-  deleted_by Int?
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now())
+  created_by     Int?
+  updated_at     DateTime  @updatedAt
+  updated_by     Int?
+  deleted_at     DateTime?
+  deleted_by     Int?
 
   coin_orders       CoinOrder[]
   coin_transactions CoinTransaction[]

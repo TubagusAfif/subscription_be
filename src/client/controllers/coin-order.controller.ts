@@ -145,6 +145,7 @@ export class CoinOrderController {
     try {
       const { bundle_id, payment_method_id, nominal } = req.body;
       const userId = Number(req.user.sub);
+      const activeTax = await this.taxService.getActiveTax();
 
       const {
         bundle,
@@ -155,7 +156,7 @@ export class CoinOrderController {
         paymentMethod,
         pgOrderId,
         referenceUrl,
-      } = await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_method_id);
+      } = await this.coinOrderService.prepareBundleOrder(userId, bundle_id, payment_method_id, activeTax);
 
       if (nominal !== totalPrice) {
         logger.error(`Nominal : ${nominal} is different with total price : ${totalPrice}`);

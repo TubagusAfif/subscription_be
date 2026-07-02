@@ -169,7 +169,6 @@ Table coin_bundles {
   currency_id Int [not null]
   price Decimal [not null]
   discounted_price Decimal
-  tax_rate Decimal [not null]
   is_active Boolean [not null, default: true]
   created_at DateTime [default: `now()`, not null]
   created_by Int

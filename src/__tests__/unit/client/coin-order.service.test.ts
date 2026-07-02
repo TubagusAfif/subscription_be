@@ -109,10 +109,10 @@ describe('CoinOrderService', () => {
     });
 
     it('should throw INVALID_PAYMENT_METHOD if payment method does not exist or is inactive', async () => {
-      mockBundleRepo.findById.mockResolvedValue({ id: 1, price: '100000', tax_rate: '11' });
+      mockBundleRepo.findById.mockResolvedValue({ id: 1, price: '100000' });
       mockPaymentMethodRepo.findById.mockResolvedValue(null);
 
-      await expect(coinOrderService.prepareBundleOrder(1, 1, 99)).rejects.toMatchObject({
+      await expect(coinOrderService.prepareBundleOrder(1, 1, 99, { tax_value: '11' })).rejects.toMatchObject({
         statusCode: 400,
         code: 'INVALID_PAYMENT_METHOD',
       });
@@ -126,7 +126,6 @@ describe('CoinOrderService', () => {
         currency_id: 1,
         price: '100000',
         discounted_price: '90000',
-        tax_rate: '11',
       });
       mockPaymentMethodRepo.findById.mockResolvedValue({
         id: 1,
@@ -135,7 +134,7 @@ describe('CoinOrderService', () => {
         is_active: true,
       });
 
-      const result = await coinOrderService.prepareBundleOrder(1, 1, 1);
+      const result = await coinOrderService.prepareBundleOrder(1, 1, 1, { tax_value: '11' });
 
       expect(mockBundleRepo.findById).toHaveBeenCalledWith(1);
       expect(mockPaymentMethodRepo.findById).toHaveBeenCalledWith(1);
@@ -153,7 +152,6 @@ describe('CoinOrderService', () => {
         currency_id: 1,
         price: '100000',
         discounted_price: '90000',
-        tax_rate: '11',
       });
       mockPaymentMethodRepo.findById.mockResolvedValue({
         id: 2,
@@ -162,7 +160,7 @@ describe('CoinOrderService', () => {
         is_active: true,
       });
 
-      const result = await coinOrderService.prepareBundleOrder(1, 1, 2);
+      const result = await coinOrderService.prepareBundleOrder(1, 1, 2, { tax_value: '11' });
 
       const expectedFee = Math.round((90000 + 9900) * 0.029); // 2897
       expect(result.gatewayFee).toBe(expectedFee);

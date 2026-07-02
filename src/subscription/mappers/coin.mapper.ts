@@ -27,7 +27,6 @@ export class CoinMapper {
       coin_amount: bundle.coin_amount,
       price: bundle.price,
       discounted_price: bundle.discounted_price,
-      tax_rate: bundle.tax_rate,
       is_active: bundle.is_active,
       currency: bundle.currency ? this.toCurrencyResponse(bundle.currency) : null,
     };

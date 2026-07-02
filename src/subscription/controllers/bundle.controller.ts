@@ -35,8 +35,6 @@ export class BundleController {
       const body = stripUndefined(req.body);
       const currency = await this.currencyService.getCurrencyById(body.currency_id);
 
-      const tax = await this.taxService.getActiveTax();
-
       if (!currency.is_active) {
         throw new AppError('CURRENCY_INACTIVE', `This Currency is inactive.`, 404);
       }
@@ -57,7 +55,6 @@ export class BundleController {
 
       const payload = {
         ...body,
-        tax_rate: tax?.tax_value || 0,
         price: calculatedPrice,
         currency: { connect: { id: body.currency_id } },
       };
@@ -114,15 +111,8 @@ export class BundleController {
       const payload = { ...req.body } as any;
       const bundleId = Number(req.params.id);
       const existingBundle = await this.bundleService.getBundleById(bundleId);
-      const tax = await this.taxService.getActiveTax();
-
-      let taxRate = existingBundle.tax_rate || 0;
       let currencyId = existingBundle.currency_id;
       let coinAmount = existingBundle.coin_amount;
-
-      if (tax) {
-        taxRate = tax.tax_value;
-      }
 
       if (payload.currency_id !== undefined) {
         currencyId = payload.currency_id;
@@ -159,7 +149,6 @@ export class BundleController {
       }
 
       payload.price = calculatedPrice;
-      payload.tax_rate = taxRate;
 
       const bundle = await this.bundleService.updateBundle(bundleId, payload, Number(req.user.sub));
       res.status(200).json(successResponse(CoinMapper.toBundleResponse(bundle)));
