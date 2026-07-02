@@ -10,6 +10,8 @@ const mockSubscriptionService = {
   getMySubscriptions: jest.fn(),
   cancelSubscription: jest.fn(),
   switchPlan: jest.fn(),
+  getMyAddons: jest.fn(),
+  getSlotDetails: jest.fn(),
 } as unknown as jest.Mocked<ClientSubscriptionService>;
 
 let mockUser: { sub: number; role: string };
@@ -71,6 +73,8 @@ describe('Client Subscription API Routes', () => {
         id: 99,
         status: 'ACTIVE',
       } as any);
+      mockSubscriptionService.getMyAddons.mockResolvedValue([]);
+      mockSubscriptionService.getSlotDetails.mockResolvedValue({});
 
       const response = await request(app)
         .get('/api/v1/client/subscriptions')
