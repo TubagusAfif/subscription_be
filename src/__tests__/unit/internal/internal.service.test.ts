@@ -15,11 +15,15 @@ describe('InternalService', () => {
   const mockRepo = {
     findSubscriptionByToken: jest.fn(),
     getQuotaWithLock: jest.fn(),
+    getAssignmentSources: jest.fn(),
+    countSlotsBySource: jest.fn(),
     incrementQuotaUsed: jest.fn(),
     createAddonSlotMap: jest.fn(),
     findSubscriptionByTokenAnyStatus: jest.fn(),
     findAddonSlotMap: jest.fn(),
+    findUserSlotMap: jest.fn(),
     findQuota: jest.fn(),
+    reconcileQuota: jest.fn(),
     softDeleteAddonSlotMap: jest.fn(),
     decrementQuotaUsed: jest.fn(),
     getSubscriptionSnapshot: jest.fn(),
@@ -28,6 +32,12 @@ describe('InternalService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: a single package source with plenty of room, no slots used yet —
+    // so attribution lands on the package unless a test overrides it.
+    mockRepo.getAssignmentSources.mockResolvedValue([
+      { subscriptionId: 1, capacity: 5, is_unlimited: false },
+    ]);
+    mockRepo.countSlotsBySource.mockResolvedValue(new Map());
     service = new InternalService(mockPrisma as any, mockRepo as any);
   });
 
@@ -72,7 +82,7 @@ describe('InternalService', () => {
     });
 
     it('should increment usage, create a slot map and return the remaining quota', async () => {
-      mockRepo.findSubscriptionByToken.mockResolvedValue({ id: 1 });
+      mockRepo.findSubscriptionByToken.mockResolvedValue({ id: 1, user_id: 1 });
       mockRepo.getQuotaWithLock.mockResolvedValue([{ id: 9, used_quota: 2, total_quota: 5 }]);
       mockRepo.createAddonSlotMap.mockResolvedValue({ id: 77 });
 
@@ -80,7 +90,44 @@ describe('InternalService', () => {
 
       expect(mockRepo.getQuotaWithLock).toHaveBeenCalledWith(1, 'clinic', mockTx);
       expect(mockRepo.incrementQuotaUsed).toHaveBeenCalledWith(9, mockTx);
-      expect(result).toEqual({ slot_id: 77, quota_remaining: 2 }); // 5 - 2 - 1
+      expect(result).toEqual({ slot_id: 77, quota_remaining: 2, attributed_subscription_id: 1 }); // 5 - 2 - 1
+    });
+
+    it('should attribute the slot to the add-on once the package is full', async () => {
+      mockRepo.findSubscriptionByToken.mockResolvedValue({ id: 1, user_id: 1 });
+      mockRepo.getQuotaWithLock.mockResolvedValue([{ id: 9, used_quota: 5, total_quota: 5, is_unlimited: true }]);
+      // Package (id 1) capacity 5 is full; unlimited add-on (id 2) takes the rest.
+      mockRepo.getAssignmentSources.mockResolvedValue([
+        { subscriptionId: 1, capacity: 5, is_unlimited: false },
+        { subscriptionId: 2, capacity: 0, is_unlimited: true },
+      ]);
+      mockRepo.countSlotsBySource.mockResolvedValue(new Map([[1, 5]]));
+      mockRepo.createAddonSlotMap.mockResolvedValue({ id: 80 });
+
+      const result = await service.slotAssign(assignPayload);
+
+      expect(mockRepo.createAddonSlotMap).toHaveBeenCalledWith(
+        { addon_subscription_id: 2, ref_type: 'clinic', ref_id: 100 },
+        mockTx,
+      );
+      expect(result).toEqual({ slot_id: 80, quota_remaining: -1, attributed_subscription_id: 2 });
+    });
+
+    it('should never block an unlimited quota even when used >= total', async () => {
+      mockRepo.findSubscriptionByToken.mockResolvedValue({ id: 1, user_id: 1 });
+      // used_quota already past total_quota — would normally be QUOTA_EXCEEDED.
+      mockRepo.getQuotaWithLock.mockResolvedValue([
+        { id: 9, used_quota: 50, total_quota: 0, is_unlimited: true },
+      ]);
+      mockRepo.getAssignmentSources.mockResolvedValue([
+        { subscriptionId: 1, capacity: 0, is_unlimited: true },
+      ]);
+      mockRepo.createAddonSlotMap.mockResolvedValue({ id: 78 });
+
+      const result = await service.slotAssign(assignPayload);
+
+      expect(mockRepo.incrementQuotaUsed).toHaveBeenCalledWith(9, mockTx);
+      expect(result).toEqual({ slot_id: 78, quota_remaining: -1, attributed_subscription_id: 1 }); // -1 = unlimited
     });
   });
 
@@ -97,30 +144,31 @@ describe('InternalService', () => {
     });
 
     it('should constrain CLINIC releases to the clinic ref_type', async () => {
-      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1 });
-      mockRepo.findAddonSlotMap.mockResolvedValue(null);
+      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1, user_id: 7 });
+      mockRepo.findUserSlotMap.mockResolvedValue(null);
       mockRepo.findQuota.mockResolvedValue({ total_quota: 5, used_quota: 3 });
 
       const result = await service.slotRelease(releasePayload);
 
-      expect(mockRepo.findAddonSlotMap).toHaveBeenCalledWith(1, 100, ['clinic'], mockTx);
+      // Searches across the owner's subscriptions (by user_id), not just the package.
+      expect(mockRepo.findUserSlotMap).toHaveBeenCalledWith(7, 100, ['clinic'], mockTx);
       expect(result).toMatchObject({ quota_remaining: 2 });
       expect(result.note).toContain('already released');
     });
 
     it('should use staff/doctor ref_types for non-clinic releases', async () => {
-      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1 });
-      mockRepo.findAddonSlotMap.mockResolvedValue(null);
+      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1, user_id: 7 });
+      mockRepo.findUserSlotMap.mockResolvedValue(null);
       mockRepo.findQuota.mockResolvedValue(null);
 
       await service.slotRelease({ ...releasePayload, resource_type: 'USER' });
 
-      expect(mockRepo.findAddonSlotMap).toHaveBeenCalledWith(1, 100, ['staff', 'doctor'], mockTx);
+      expect(mockRepo.findUserSlotMap).toHaveBeenCalledWith(7, 100, ['staff', 'doctor'], mockTx);
     });
 
     it('should soft-delete the slot, decrement usage and report remaining quota', async () => {
-      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1 });
-      mockRepo.findAddonSlotMap.mockResolvedValue({ id: 55 });
+      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1, user_id: 7 });
+      mockRepo.findUserSlotMap.mockResolvedValue({ id: 55 });
       mockRepo.findQuota.mockResolvedValue({ id: 9, total_quota: 5, used_quota: 3 });
 
       const result = await service.slotRelease(releasePayload);
@@ -131,8 +179,8 @@ describe('InternalService', () => {
     });
 
     it('should not decrement when used_quota is already zero', async () => {
-      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1 });
-      mockRepo.findAddonSlotMap.mockResolvedValue({ id: 55 });
+      mockRepo.findSubscriptionByTokenAnyStatus.mockResolvedValue({ id: 1, user_id: 7 });
+      mockRepo.findUserSlotMap.mockResolvedValue({ id: 55 });
       mockRepo.findQuota.mockResolvedValue({ id: 9, total_quota: 5, used_quota: 0 });
 
       await service.slotRelease(releasePayload);
@@ -184,6 +232,29 @@ describe('InternalService', () => {
         billing_start: '2025-01-01',
         billing_end: '2025-02-01',
         trial_end: null,
+      });
+    });
+
+    it('should map an unlimited quota to the -1 sentinel', async () => {
+      mockRepo.getSubscriptionSnapshot.mockResolvedValue({
+        user_id: 42,
+        purchase_token: 'tok-1',
+        status: 'ACTIVE',
+        current_billing_start: new Date('2025-01-01T00:00:00.000Z'),
+        current_billing_end: new Date('2025-02-01T00:00:00.000Z'),
+        quotas: [
+          { resource_type: 'clinic', total_quota: 0, is_unlimited: true },
+          { resource_type: 'user', total_quota: 10, is_unlimited: false },
+        ],
+        sku: { package_tier: 'ENTERPRISE', sku_code: 'ENT', features: [] },
+        child_subscriptions: [],
+      });
+
+      const result = await service.getSubscriptionByCompany('ext-1');
+
+      expect(result.data.subscription_update).toMatchObject({
+        max_clinics: -1, // unlimited
+        max_users_per_clinic: 10,
       });
     });
   });

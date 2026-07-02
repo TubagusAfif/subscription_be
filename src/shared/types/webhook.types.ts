@@ -25,8 +25,8 @@ export interface AddonInfo {
 export interface SubscriptionUpdate {
   tier?: string;
   status?: string;
-  max_clinics?: number;
-  max_users_per_clinic?: number;
+  max_clinics?: number; // -1 means unlimited (no cap)
+  max_users_per_clinic?: number; // -1 means unlimited (no cap)
   features?: string[]; // array of feature string codes
   addons?: Record<string, AddonInfo>;
   billing_start?: string | null; // YYYY-MM-DD

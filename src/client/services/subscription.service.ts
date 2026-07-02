@@ -238,7 +238,10 @@ export class ClientSubscriptionService {
               user_id: userId,
               package_subscription_id: newSub.id,
               resource_type: benefit.benefit_type,
-              total_quota: benefit.max_usage ?? 0,
+              // Unlimited benefits ignore the numeric cap; store 0 so the column
+              // is never mistaken for a real limit and let is_unlimited gate.
+              total_quota: benefit.is_unlimited ? 0 : (benefit.max_usage ?? 0),
+              is_unlimited: benefit.is_unlimited,
               used_quota: 0,
               created_by: userId,
               updated_by: userId,
@@ -254,13 +257,15 @@ export class ClientSubscriptionService {
             where: { user_id: userId, resource_type: resourceType, deleted_at: null },
           });
 
-          if (existingQuota) {
+          if (existingQuota && !existingQuota.is_unlimited) {
+            // An unlimited add-on flips the whole resource to uncapped; a finite
+            // one just adds its quota_value. Once unlimited, further increments
+            // are meaningless (the cap is ignored), so we stop touching total.
             await tx.subscriptionQuota.update({
               where: { id: existingQuota.id },
-              data: {
-                total_quota: { increment: addon.quota_value },
-                last_recalculated_at: new Date(),
-              },
+              data: addon.is_unlimited
+                ? { is_unlimited: true, last_recalculated_at: new Date() }
+                : { total_quota: { increment: addon.quota_value }, last_recalculated_at: new Date() },
             });
           }
         }

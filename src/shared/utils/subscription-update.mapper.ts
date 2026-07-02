@@ -1,5 +1,6 @@
 import { SubscriptionUpdate } from '../types/webhook.types';
 import { PlanWithRelations } from '../repositories/plan.repository';
+import { UNLIMITED_QUOTA } from '../constants/quota.constants';
 
 /**
  * Maps a Domain 1 SKU + billing window into the `subscription_update` block that
@@ -8,7 +9,7 @@ import { PlanWithRelations } from '../repositories/plan.repository';
  * endpoint) so a live `created`/`upgraded` event and a later `sync` describe the
  * same company identically:
  *   - tier      → lowercased package_tier (defaults to 'basic')
- *   - max_*     → from the 'clinic' / 'user' SKU benefits
+ *   - max_*     → from the 'clinic' / 'user' SKU benefits; -1 means unlimited
  *   - features  → SkuFeature.feature codes
  *   - trial_end → billing_end when the sku_code looks like a trial, else null
  */
@@ -44,8 +45,10 @@ export function buildSubscriptionUpdate(
   return {
     tier: sku.package_tier?.toLowerCase() ?? 'basic',
     status,
-    max_clinics: clinicBenefit?.max_usage ?? 0,
-    max_users_per_clinic: userBenefit?.max_usage ?? 0,
+    max_clinics: clinicBenefit?.is_unlimited ? UNLIMITED_QUOTA : (clinicBenefit?.max_usage ?? 0),
+    max_users_per_clinic: userBenefit?.is_unlimited
+      ? UNLIMITED_QUOTA
+      : (userBenefit?.max_usage ?? 0),
     features: extractFeatures(sku),
     addons: {},
     billing_start: toYmd(billingStart),

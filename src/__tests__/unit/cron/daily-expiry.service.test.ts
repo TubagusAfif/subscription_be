@@ -4,19 +4,35 @@ describe('DailyExpiryService', () => {
   let service: DailyExpiryService;
 
   const mockFindMany = jest.fn();
+  const mockFindFirst = jest.fn();
   const mockUpdate = jest.fn();
+  const mockUpdateMany = jest.fn();
   const mockPrisma = {
-    subscription: { findMany: mockFindMany, update: mockUpdate },
+    subscription: { findMany: mockFindMany, findFirst: mockFindFirst, update: mockUpdate },
+    addonSlotMap: { updateMany: mockUpdateMany },
+    $transaction: jest.fn(async (cb: any) => cb(mockPrisma)),
   };
   const mockOutbox = { insertEvent: jest.fn() };
   const mockMail = { sendExpiryWarningEmail: jest.fn() };
+  const mockInternalRepo = { reconcileQuota: jest.fn() };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Base: every unqueued findMany returns [] so trailing passes (child add-ons,
+    // the standalone add-on-expiry sweep) are no-ops unless a test opts in.
+    mockFindMany.mockResolvedValue([]);
+    mockFindFirst.mockResolvedValue(null);
     mockUpdate.mockResolvedValue({});
+    mockUpdateMany.mockResolvedValue({ count: 0 });
     mockOutbox.insertEvent.mockResolvedValue(undefined);
     mockMail.sendExpiryWarningEmail.mockResolvedValue(undefined);
-    service = new DailyExpiryService(mockPrisma as any, mockOutbox as any, mockMail as any);
+    mockInternalRepo.reconcileQuota.mockResolvedValue(undefined);
+    service = new DailyExpiryService(
+      mockPrisma as any,
+      mockOutbox as any,
+      mockMail as any,
+      mockInternalRepo as any,
+    );
   });
 
   const sub = (overrides = {}) => ({
@@ -92,6 +108,59 @@ describe('DailyExpiryService', () => {
       42,
       expect.anything(),
       expect.stringContaining('subscription.expired:1:'),
+    );
+  });
+
+  it('should revoke only the add-on slots and suspend those users when an add-on expires', async () => {
+    const addonSub = {
+      id: 2,
+      user_id: 42,
+      purchase_token: 'addon-tok',
+      sku: { addons: [{ resource_type: 'USER_ADDON', is_unlimited: true, quota_value: 0 }] },
+      addon_slot_maps: [
+        { ref_type: 'staff', ref_id: 501 },
+        { ref_type: 'doctor', ref_id: 601 },
+      ],
+    };
+    // Calls 1-6 empty (pre-expiry x4, grace-start, package-enforcement), call 7
+    // (the standalone add-on sweep) returns the expired add-on.
+    mockFindMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([addonSub]);
+    // The owner's package supplies the external_subscription_id + reconcile target.
+    mockFindFirst.mockResolvedValue({ id: 1, purchase_token: 'pkg-tok' });
+
+    await service.runDailyExpirySweep();
+
+    // Add-on marked expired.
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 2 }, data: expect.objectContaining({ status: 'EXPIRED' }) }),
+    );
+    // Only this add-on's slots are released.
+    expect(mockUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ addon_subscription_id: 2 }) }),
+    );
+    // Package quota reconciled for the user resource.
+    expect(mockInternalRepo.reconcileQuota).toHaveBeenCalledWith(1, 42, 'user', expect.anything());
+    // Domain 2 told to suspend exactly the users riding on the add-on.
+    expect(mockOutbox.insertEvent).toHaveBeenCalledWith(
+      'addon.expired',
+      42,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          enforcement: expect.objectContaining({
+            type: 'suspend_users',
+            staff_ids: [501],
+            doctor_ids: [601],
+          }),
+        }),
+      }),
+      expect.stringContaining('addon.expired:user:2:'),
     );
   });
 

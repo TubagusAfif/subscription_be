@@ -99,6 +99,7 @@ Table sku_benefits {
   benefit_type String [not null]
   benefit_value String
   max_usage Int
+  is_unlimited Boolean [not null, default: false]
   created_at DateTime [default: `now()`, not null]
   created_by Int
   updated_at DateTime [not null]
@@ -129,6 +130,7 @@ Table sku_addons {
   resource_type ResourceType [not null]
   display_name String [not null]
   quota_value Int [not null]
+  is_unlimited Boolean [not null, default: false]
   description String
   created_at DateTime [default: `now()`, not null]
   created_by Int
@@ -319,6 +321,7 @@ Table subscription_quotas {
   package_subscription_id Int [not null]
   resource_type String [not null]
   total_quota Int [not null]
+  is_unlimited Boolean [not null, default: false]
   used_quota Int [not null, default: 0]
   last_recalculated_at DateTime
   created_at DateTime [default: `now()`, not null]

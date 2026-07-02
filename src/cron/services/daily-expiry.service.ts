@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { WebhookOutboxService } from '../../shared/services/webhook-outbox.service';
 import { MailService } from '../../shared/services/mail.service';
+import { InternalRepository } from '../../internal/repositories/internal.repository';
 import {
   formatSubscriptionExpired,
   formatAddonExpired,
@@ -12,6 +13,7 @@ export class DailyExpiryService {
     private readonly prisma: PrismaClient,
     private readonly outboxService: WebhookOutboxService,
     private readonly mailService: MailService,
+    private readonly internalRepo: InternalRepository,
   ) {}
 
   public async runDailyExpirySweep(): Promise<void> {
@@ -24,6 +26,9 @@ export class DailyExpiryService {
       await this.processPreExpiryNotifications(today);
       await this.processGracePeriodStarts(today);
       await this.processGracePeriodEnforcements(today);
+      // Add-ons that expired on their OWN billing cycle (before the package)
+      // revoke only the slots they provided — the package's own capacity stays.
+      await this.processAddonExpiries(today);
 
       logger.info('[DailyExpiryService] Daily expiry check completed');
     } catch (error) {
@@ -92,6 +97,7 @@ export class DailyExpiryService {
       where: {
         current_billing_end: graceEndDate,
         status: 'ON_HOLD',
+        sku_type: 'PACKAGE',
         deleted_at: null,
       },
       include: {
@@ -194,6 +200,115 @@ export class DailyExpiryService {
             );
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Standalone add-on expiry (H+7). Handles add-ons whose OWN billing cycle
+   * ended while the package is still active — the case where an owner bought,
+   * say, an unlimited-users add-on on top of a 5-user plan.
+   *
+   * Strict revocation: every slot ATTRIBUTED to the expiring add-on (users 6..N)
+   * is released and its ref_ids are sent to Domain 2 for suspension, so those
+   * users lose access. The first 5 users live on the package subscription, are
+   * never attributed to the add-on, and keep working. The package quota is then
+   * reconciled so its cap shrinks back and the unlimited flag clears if this was
+   * the only unlimited source.
+   */
+  private async processAddonExpiries(today: Date): Promise<void> {
+    const graceEndDate = new Date(today);
+    graceEndDate.setDate(graceEndDate.getDate() - 7);
+    const runStamp = graceEndDate.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const expiredAddons = await this.prisma.subscription.findMany({
+      where: {
+        current_billing_end: graceEndDate,
+        status: 'ON_HOLD',
+        sku_type: 'ADDON',
+        deleted_at: null,
+      },
+      include: {
+        sku: { include: { addons: { where: { deleted_at: null } } } },
+        addon_slot_maps: { where: { deleted_at: null } },
+      },
+    });
+
+    for (const addonSub of expiredAddons) {
+      logger.info(`[DailyExpiryService] Enforcing add-on expiry for subscription ${addonSub.id}`);
+
+      // The package holds the aggregate quota and the external_subscription_id
+      // Domain 2 keys on. Prefer a live package; fall back to any of the owner's.
+      const pkg = await this.prisma.subscription.findFirst({
+        where: { user_id: addonSub.user_id, sku_type: 'PACKAGE', deleted_at: null },
+        orderBy: { created_at: 'desc' },
+      });
+      const externalId =
+        pkg?.purchase_token ?? addonSub.purchase_token ?? `sub_${addonSub.id}`;
+
+      const slots = addonSub.addon_slot_maps;
+      const clinicIds = slots.filter((s) => s.ref_type === 'clinic').map((s) => s.ref_id);
+      const staffIds = slots.filter((s) => s.ref_type === 'staff').map((s) => s.ref_id);
+      const doctorIds = slots.filter((s) => s.ref_type === 'doctor').map((s) => s.ref_id);
+
+      const affectedResources = new Set(
+        addonSub.sku.addons.map((a) => (a.resource_type === 'CLINIC_ADDON' ? 'clinic' : 'user')),
+      );
+
+      // Commit the expiry, slot release, and quota reconcile atomically so the
+      // aggregate can never drift if the process dies mid-sweep.
+      await this.prisma.$transaction(async (tx) => {
+        await tx.subscription.update({
+          where: { id: addonSub.id },
+          data: { status: 'EXPIRED', expired_at: new Date() },
+        });
+
+        await tx.addonSlotMap.updateMany({
+          where: { addon_subscription_id: addonSub.id, deleted_at: null },
+          data: { deleted_at: new Date() },
+        });
+
+        if (pkg) {
+          for (const resourceType of affectedResources) {
+            await this.internalRepo.reconcileQuota(pkg.id, addonSub.user_id, resourceType, tx);
+          }
+        }
+      });
+
+      // Post-commit enforcement: tell Domain 2 to suspend exactly the entities
+      // that were riding on this add-on. Dedupe keys are per-addon+run so a
+      // retried sweep never double-emits.
+      if (clinicIds.length > 0) {
+        await this.outboxService.insertEvent(
+          'addon.expired',
+          addonSub.user_id,
+          formatAddonExpired({
+            companyId: addonSub.user_id,
+            externalSubscriptionId: externalId,
+            subscriptionUpdate: { addons: {} },
+            enforcementType: 'deactivate_clinics',
+            reason: 'addon_clinic_expired',
+            clinicIds,
+          }),
+          `addon.expired:clinic:${addonSub.id}:${runStamp}`,
+        );
+      }
+
+      if (staffIds.length > 0 || doctorIds.length > 0) {
+        await this.outboxService.insertEvent(
+          'addon.expired',
+          addonSub.user_id,
+          formatAddonExpired({
+            companyId: addonSub.user_id,
+            externalSubscriptionId: externalId,
+            subscriptionUpdate: { addons: {} },
+            enforcementType: 'suspend_users',
+            reason: 'addon_user_expired',
+            staffIds,
+            doctorIds,
+          }),
+          `addon.expired:user:${addonSub.id}:${runStamp}`,
+        );
       }
     }
   }

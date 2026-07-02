@@ -194,6 +194,7 @@ model SkuBenefit {
   benefit_type  String // e.g., "clinic", "user"
   benefit_value String?
   max_usage     Int?
+  is_unlimited  Boolean   @default(false) // when true, max_usage is ignored and the resource has no cap
   created_at    DateTime  @default(now())
   created_by    Int?
   updated_at    DateTime  @updatedAt
@@ -230,6 +231,7 @@ model SkuAddon {
   resource_type ResourceType // e.g., CLINIC_ADDON, USER_ADDON
   display_name  String
   quota_value   Int
+  is_unlimited  Boolean      @default(false) // when true, quota_value is ignored and the addon grants uncapped slots
   description   String?      @db.Text
   created_at    DateTime     @default(now())
   created_by    Int?
@@ -470,6 +472,7 @@ model SubscriptionQuota {
   package_subscription_id Int
   resource_type           String // clinic, user
   total_quota             Int
+  is_unlimited            Boolean   @default(false) // when true, total_quota is ignored and assignment is uncapped
   used_quota              Int       @default(0)
   last_recalculated_at    DateTime?
   created_at              DateTime  @default(now())
@@ -499,6 +502,11 @@ model AddonSlotMap {
 
   subscription Subscription @relation(fields: [addon_subscription_id], references: [id])
 
+  // Slots are attributed to the specific source subscription that provided them
+  // (package first, then add-ons oldest-first). These indexes back the expiry
+  // revocation sweep (by source) and the release lookup (by ref).
+  @@index([addon_subscription_id, deleted_at])
+  @@index([ref_id, ref_type])
   @@map("addon_slot_map")
 }
 

@@ -1,3 +1,5 @@
+import { UNLIMITED_QUOTA } from '../../shared/constants/quota.constants';
+
 /**
 ---------------------------------------------------------------
   Mapper for Client Dashboard API response.
@@ -66,9 +68,11 @@ export class ClientDashboardMapper {
         ? subscription.quotas.map((q: any) => ({
             id: q.id,
             resource_type: q.resource_type,
-            total_quota: q.total_quota,
+            is_unlimited: q.is_unlimited ?? false,
+            // -1 (UNLIMITED_QUOTA) signals no cap; clients should check is_unlimited.
+            total_quota: q.is_unlimited ? UNLIMITED_QUOTA : q.total_quota,
             used_quota: q.used_quota,
-            available_quota: q.total_quota - q.used_quota,
+            available_quota: q.is_unlimited ? UNLIMITED_QUOTA : q.total_quota - q.used_quota,
           }))
         : [],
       active_addons: Array.isArray(activeAddons)

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { InternalRepository } from '../repositories/internal.repository';
 import { AppError } from '../../shared/middlewares/error.middleware';
+import { UNLIMITED_QUOTA } from '../../shared/constants/quota.constants';
 import jwt from 'jsonwebtoken';
 import { env } from '../../shared/config/env';
 
@@ -48,7 +49,9 @@ export class InternalService {
 
       const quota = quotaRows[0]!;
 
-      if (quota.used_quota >= quota.total_quota) {
+      // Unlimited quotas never block. We still increment used_quota below so
+      // real usage stays observable for reporting, it just isn't a ceiling.
+      if (!quota.is_unlimited && quota.used_quota >= quota.total_quota) {
         throw new AppError(
           'QUOTA_EXCEEDED',
           `Quota ${payload.resource_type} habis. Owner harus upgrade tier atau beli addon.`,
@@ -56,12 +59,42 @@ export class InternalService {
         );
       }
 
+      // Attribute this slot to a specific source, package first then add-ons
+      // oldest-first. Persisting the source on the slot map is what lets add-on
+      // expiry later revoke exactly the slots that add-on provided — the
+      // package's own capacity (e.g. the first 5 users) is never touched.
+      const refTypes = quotaResourceType === 'clinic' ? ['clinic'] : ['staff', 'doctor'];
+      const sources = await this.internalRepo.getAssignmentSources(
+        subscription.id,
+        subscription.user_id,
+        quotaResourceType,
+        tx,
+      );
+      const usedBySource = await this.internalRepo.countSlotsBySource(
+        sources.map((s) => s.subscriptionId),
+        refTypes,
+        tx,
+      );
+
+      // Default to the package sub; the aggregate check above guarantees at
+      // least one source has room, so this fallback is only hit if config drifts.
+      let attributedSubscriptionId = subscription.id;
+      for (const source of sources) {
+        const used = usedBySource.get(source.subscriptionId) ?? 0;
+        if (source.is_unlimited || used < source.capacity) {
+          attributedSubscriptionId = source.subscriptionId;
+          break;
+        }
+      }
+
       await this.internalRepo.incrementQuotaUsed(quota.id, tx);
-      const quotaRemaining = quota.total_quota - quota.used_quota - 1;
+      const quotaRemaining = quota.is_unlimited
+        ? UNLIMITED_QUOTA
+        : quota.total_quota - quota.used_quota - 1;
 
       const slotMap = await this.internalRepo.createAddonSlotMap(
         {
-          addon_subscription_id: subscription.id,
+          addon_subscription_id: attributedSubscriptionId,
           ref_type: payload.ref_type,
           ref_id: payload.ref_id,
         },
@@ -71,6 +104,7 @@ export class InternalService {
       return {
         slot_id: slotMap.id,
         quota_remaining: quotaRemaining,
+        attributed_subscription_id: attributedSubscriptionId,
       };
     });
   }
@@ -90,10 +124,12 @@ export class InternalService {
       }
 
       // Constrain the lookup to ref_types valid for this resource so a USER release
-      // can never match a CLINIC slot that happens to share the same ref_id.
+      // can never match a CLINIC slot that happens to share the same ref_id. Search
+      // across ALL the owner's subscriptions — the slot may be attributed to an
+      // add-on, not the package the release token points at.
       const refTypes = payload.resource_type === 'CLINIC' ? ['clinic'] : ['staff', 'doctor'];
-      const slotMap = await this.internalRepo.findAddonSlotMap(
-        subscription.id,
+      const slotMap = await this.internalRepo.findUserSlotMap(
+        subscription.user_id,
         payload.ref_id,
         refTypes,
         tx,
@@ -104,7 +140,11 @@ export class InternalService {
       if (!slotMap) {
         const quota = await this.internalRepo.findQuota(subscription.id, quotaResourceType, tx);
         return {
-          quota_remaining: quota ? quota.total_quota - quota.used_quota : undefined,
+          quota_remaining: quota
+            ? quota.is_unlimited
+              ? UNLIMITED_QUOTA
+              : quota.total_quota - quota.used_quota
+            : undefined,
           note: 'already released or never existed',
         };
       }
@@ -117,7 +157,11 @@ export class InternalService {
       }
 
       return {
-        quota_remaining: quota ? quota.total_quota - (quota.used_quota - 1) : undefined,
+        quota_remaining: quota
+          ? quota.is_unlimited
+            ? UNLIMITED_QUOTA
+            : quota.total_quota - (quota.used_quota - 1)
+          : undefined,
       };
     });
   }
@@ -160,8 +204,17 @@ export class InternalService {
         subscription_update: {
           tier,
           status: subscription.status.toLowerCase(),
-          max_clinics: clinicQuota?.total_quota,
-          max_users_per_clinic: userQuota?.total_quota,
+          // -1 (UNLIMITED_QUOTA) signals "no cap" to Domain 2.
+          max_clinics: clinicQuota
+            ? clinicQuota.is_unlimited
+              ? UNLIMITED_QUOTA
+              : clinicQuota.total_quota
+            : undefined,
+          max_users_per_clinic: userQuota
+            ? userQuota.is_unlimited
+              ? UNLIMITED_QUOTA
+              : userQuota.total_quota
+            : undefined,
           features,
           addons,
           billing_start: subscription.current_billing_start?.toISOString().split('T')[0] ?? null,

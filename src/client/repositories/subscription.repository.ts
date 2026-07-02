@@ -10,6 +10,7 @@ import {
   PlanSwitch,
 } from '@prisma/client';
 import { AppError } from '../../shared/middlewares/error.middleware';
+import { UNLIMITED_QUOTA } from '../../shared/constants/quota.constants';
 import {
   buildSlotDetails,
   AddonSlotInput,
@@ -118,6 +119,7 @@ export class ClientSubscriptionRepository {
           benefits: packageSub.sku.benefits.map((b) => ({
             benefit_type: b.benefit_type,
             max_usage: b.max_usage,
+            is_unlimited: b.is_unlimited,
           })),
         }
       : null;
@@ -146,6 +148,23 @@ export class ClientSubscriptionRepository {
    */
   async getSlotBreakdown(userId: number, resourceType: string = 'clinic') {
     const [detail] = await this.getSlotDetails(userId, [resourceType]);
+    const usedSlots = detail?.total_used ?? 0;
+
+    // Unlimited package → the cap is uncountable; report the sentinel for the
+    // capped figures and let `is_unlimited` drive the UI.
+    if (detail?.is_unlimited) {
+      const addonSlots = detail.sources
+        .filter((s) => s.sku_type === 'ADDON')
+        .reduce((sum, s) => sum + s.capacity, 0);
+      return {
+        is_unlimited: true,
+        packageSlots: UNLIMITED_QUOTA,
+        addonSlots,
+        totalSlots: UNLIMITED_QUOTA,
+        usedSlots,
+        availableSlots: UNLIMITED_QUOTA,
+      };
+    }
 
     const packageSlots = detail?.sources
       .filter((s) => s.sku_type === 'PACKAGE')
@@ -153,9 +172,9 @@ export class ClientSubscriptionRepository {
     const addonSlots = detail?.sources
       .filter((s) => s.sku_type === 'ADDON')
       .reduce((sum, s) => sum + s.capacity, 0) ?? 0;
-    const usedSlots = detail?.total_used ?? 0;
 
     return {
+      is_unlimited: false,
       packageSlots,
       addonSlots,
       totalSlots: packageSlots + addonSlots,
@@ -407,7 +426,9 @@ export class ClientSubscriptionRepository {
             user_id: userId,
             package_subscription_id: newSubscription.id,
             resource_type: benefit.benefit_type,
-            total_quota: benefit.max_usage ?? 0,
+            // Mirror the benefit's unlimited flag; numeric cap is moot when unlimited.
+            total_quota: benefit.is_unlimited ? 0 : (benefit.max_usage ?? 0),
+            is_unlimited: benefit.is_unlimited ?? false,
             used_quota: 0,
             created_by: userId,
             updated_by: userId,

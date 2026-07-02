@@ -11,6 +11,7 @@ const benefitSchema = z.object({
   benefit_type: z.string().min(1),
   benefit_value: z.string().nullable().optional(),
   max_usage: z.number().int().nonnegative().nullable().optional(),
+  is_unlimited: z.boolean().optional().default(false),
 });
 
 const featureSchema = z.object({

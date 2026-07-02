@@ -6,6 +6,7 @@ import {
   renewalUrlSchema,
 } from '../validations/internal.validation';
 import { AppError } from '../../shared/middlewares/error.middleware';
+import { UNLIMITED_QUOTA } from '../../shared/constants/quota.constants';
 import { InternalService } from '../services/internal.service';
 
 export class InternalController {
@@ -46,7 +47,7 @@ export class InternalController {
             message: error.message,
             data: {
               resource_type: req.body?.resource_type,
-              max_quota: quota?.total_quota,
+              max_quota: quota?.is_unlimited ? UNLIMITED_QUOTA : quota?.total_quota,
               used_quota: quota?.used_quota,
             },
           });

@@ -16,9 +16,13 @@
 ---------------------------------------------------------------
 **/
 
+import { UNLIMITED_QUOTA } from '../../shared/constants/quota.constants';
+
 export type SlotSkuType = 'PACKAGE' | 'ADDON';
 
-/** A capacity-contributing source before used/remaining are computed. */
+/** A capacity-contributing source before used/remaining are computed. When
+ *  `is_unlimited` is set the `capacity` field is meaningless and reported as
+ *  the UNLIMITED_QUOTA sentinel. Only package sources can be unlimited. */
 export interface SlotSourceInput {
   subscription_id: number;
   sku_type: SlotSkuType;
@@ -26,16 +30,19 @@ export interface SlotSourceInput {
   sku_name: string;
   sku_code: string;
   capacity: number;
+  is_unlimited?: boolean;
 }
 
 /** A source after package-first draining has assigned used/remaining. */
 export interface SlotSource extends SlotSourceInput {
+  is_unlimited: boolean;
   used: number;
   remaining: number;
 }
 
 export interface SlotResourceDetail {
   resource_type: string;
+  is_unlimited: boolean;
   total_capacity: number;
   total_used: number;
   total_remaining: number;
@@ -46,7 +53,7 @@ export interface SlotResourceDetail {
 export interface PackageSlotInput {
   subscription_id: number;
   sku: { id: number; sku_name: string; sku_code: string };
-  benefits: Array<{ benefit_type: string; max_usage: number | null }>;
+  benefits: Array<{ benefit_type: string; max_usage: number | null; is_unlimited?: boolean }>;
 }
 
 /** Normalized add-on input (capacity read from SKU add-ons, the same source
@@ -72,10 +79,29 @@ export function addonResourceToQuotaType(resourceType: string): string {
 export function drainSources(sources: SlotSourceInput[], used: number): SlotSource[] {
   let remainingUsed = Math.max(0, Math.trunc(used));
   return sources.map((source) => {
+    // An unlimited source absorbs all remaining used slots and reports the
+    // sentinel for capacity/remaining — there is no finite cap to drain against.
+    if (source.is_unlimited) {
+      const sourceUsed = remainingUsed;
+      remainingUsed = 0;
+      return {
+        ...source,
+        is_unlimited: true,
+        capacity: UNLIMITED_QUOTA,
+        used: sourceUsed,
+        remaining: UNLIMITED_QUOTA,
+      };
+    }
     const capacity = Math.max(0, source.capacity);
     const sourceUsed = Math.min(capacity, remainingUsed);
     remainingUsed -= sourceUsed;
-    return { ...source, capacity, used: sourceUsed, remaining: capacity - sourceUsed };
+    return {
+      ...source,
+      is_unlimited: false,
+      capacity,
+      used: sourceUsed,
+      remaining: capacity - sourceUsed,
+    };
   });
 }
 
@@ -87,13 +113,19 @@ export function buildSlotResourceDetail(
   used: number,
 ): SlotResourceDetail {
   const drained = drainSources(sources, used);
-  const totalCapacity = drained.reduce((sum, s) => sum + s.capacity, 0);
+  const isUnlimited = drained.some((s) => s.is_unlimited);
   const totalUsed = Math.max(0, Math.trunc(used));
+  // When any source is unlimited the whole group is uncapped; sum only the
+  // finite sources for display but report capacity/remaining as the sentinel.
+  const finiteCapacity = drained
+    .filter((s) => !s.is_unlimited)
+    .reduce((sum, s) => sum + s.capacity, 0);
   return {
     resource_type: resourceType,
-    total_capacity: totalCapacity,
+    is_unlimited: isUnlimited,
+    total_capacity: isUnlimited ? UNLIMITED_QUOTA : finiteCapacity,
     total_used: totalUsed,
-    total_remaining: totalCapacity - totalUsed,
+    total_remaining: isUnlimited ? UNLIMITED_QUOTA : finiteCapacity - totalUsed,
     sources: drained,
   };
 }
@@ -115,14 +147,15 @@ export function buildSlotDetails(
     const sources: SlotSourceInput[] = [];
 
     if (pkg) {
-      const capacity = pkg.benefits.find((b) => b.benefit_type === resourceType)?.max_usage ?? 0;
+      const benefit = pkg.benefits.find((b) => b.benefit_type === resourceType);
       sources.push({
         subscription_id: pkg.subscription_id,
         sku_type: 'PACKAGE',
         sku_id: pkg.sku.id,
         sku_name: pkg.sku.sku_name,
         sku_code: pkg.sku.sku_code,
-        capacity,
+        capacity: benefit?.max_usage ?? 0,
+        is_unlimited: benefit?.is_unlimited ?? false,
       });
     }
 

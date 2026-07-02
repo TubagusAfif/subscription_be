@@ -210,5 +210,53 @@ describe('slot-details.util', () => {
       expect(details[0].total_used).toBe(0);
       expect(details[0].total_remaining).toBe(2); // package capacity
     });
+
+    it('should surface unlimited package capacity as the sentinel', () => {
+      const unlimitedPkg: PackageSlotInput = {
+        subscription_id: 1,
+        sku: { id: 10, sku_name: 'Enterprise', sku_code: 'ENT' },
+        benefits: [{ benefit_type: 'clinic', max_usage: null, is_unlimited: true }],
+      };
+
+      const details = buildSlotDetails(['clinic'], unlimitedPkg, [], { clinic: 7 });
+
+      expect(details[0].is_unlimited).toBe(true);
+      expect(details[0].total_capacity).toBe(-1);
+      expect(details[0].total_remaining).toBe(-1);
+      expect(details[0].total_used).toBe(7); // real usage still tracked
+      // The unlimited package source absorbs all used slots.
+      expect(details[0].sources[0]).toMatchObject({
+        sku_type: 'PACKAGE',
+        is_unlimited: true,
+        capacity: -1,
+        used: 7,
+        remaining: -1,
+      });
+    });
+  });
+
+  describe('drainSources with unlimited', () => {
+    it('should let an unlimited source absorb all used and report sentinel', () => {
+      const sources: SlotSourceInput[] = [
+        {
+          subscription_id: 1,
+          sku_type: 'PACKAGE',
+          sku_id: 10,
+          sku_name: 'Ent',
+          sku_code: 'ENT',
+          capacity: 0,
+          is_unlimited: true,
+        },
+      ];
+
+      const drained = drainSources(sources, 99);
+
+      expect(drained[0]).toMatchObject({
+        is_unlimited: true,
+        capacity: -1,
+        used: 99,
+        remaining: -1,
+      });
+    });
   });
 });

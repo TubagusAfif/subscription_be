@@ -1,4 +1,5 @@
 import { Subscription } from '@prisma/client';
+import { UNLIMITED_QUOTA } from '../../shared/constants/quota.constants';
 
 export class SubscriptionMapper {
   static toResponse(subscription: Subscription) {
@@ -36,7 +37,8 @@ export class SubscriptionMapper {
         ? subscription.quotas.map((q: any) => ({
             id: q.id,
             resource_type: q.resource_type,
-            total_quota: q.total_quota,
+            is_unlimited: q.is_unlimited ?? false,
+            total_quota: q.is_unlimited ? UNLIMITED_QUOTA : q.total_quota,
             used_quota: q.used_quota,
           }))
         : [],
