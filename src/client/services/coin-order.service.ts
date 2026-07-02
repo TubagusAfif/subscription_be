@@ -120,7 +120,7 @@ export class CoinOrderService {
     const totalPrice = Math.round(basePrice + taxAmount + gatewayFee);
 
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    const referenceUrl = `${env.BASE_URL}/api/v1/client/coin-orders/status?order_id=${pgOrderId}`;
+    const referenceUrl = `${env.BASE_URL}/api/v1/megabank/coin-order/${pgOrderId}`;
 
     return {
       bundle,
@@ -180,7 +180,7 @@ export class CoinOrderService {
     const totalPrice = Math.round(basePrice + taxAmount + gatewayFee);
 
     const pgOrderId = `COIN-${userId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    const referenceUrl = `${env.BASE_URL}/payment/status?order_id=${pgOrderId}`;
+    const referenceUrl = `${env.BASE_URL}/api/v1/megabank/coin-order/${pgOrderId}`;
 
     return {
       pgOrderId,

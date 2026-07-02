@@ -61,6 +61,7 @@ const sharedRouter = createSharedRouter(
 const megaBankRouter = createMegaBankRouter(
   container.controllers.megaBankWebhookController,
   container.services.webhookProcessorService,
+  container.controllers.megaBankCoinOrderController,
 );
 
 const midtransRouter = createMidtransRouter(container.controllers.midtransWebhookController);

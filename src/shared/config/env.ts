@@ -52,6 +52,9 @@ const envSchema = z.object({
   DOMAIN2_BASE_URL: z.string().url(),
   GRAFANA_LOKI_HOST: z.string().url().optional(),
   GRAFANA_LOKI_API_TOKEN: z.string().optional(),
+  // Comma-separated list of IPs allowed to reach the MegaBank routes.
+  // Leave unset/empty to allow all IPs (whitelist becomes null).
+  MEGABANK_IP_WHITELIST: z.string().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);
@@ -99,8 +102,19 @@ if (_env.data.PAYMENT_GATEWAY === 'midtrans' && !mpgMockMode) {
   }
 }
 
+// Parse the MegaBank IP whitelist into a string[] or null. An unset or empty
+// value yields null, which the whitelist middleware treats as "allow all IPs".
+const megabankIpWhitelistRaw = _env.data.MEGABANK_IP_WHITELIST?.trim();
+const megabankIpWhitelist: string[] | null = megabankIpWhitelistRaw
+  ? megabankIpWhitelistRaw
+      .split(',')
+      .map((ip) => ip.trim())
+      .filter(Boolean)
+  : null;
+
 export const env = {
   ..._env.data,
   MPG_MOCK_MODE: mpgMockMode,
   MPG_SECRET_KEY: mpgSecretKey,
+  MEGABANK_IP_WHITELIST: megabankIpWhitelist,
 };
